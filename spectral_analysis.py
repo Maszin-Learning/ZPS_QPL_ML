@@ -820,7 +820,7 @@ def find_maxima(fringes_spectrum):
     return sa.spectrum(np.array(X), np.array(Y), fringes_spectrum.x_type, fringes_spectrum.y_type)
 
 
-def plot(spectrum, color = "darkviolet", title = "Spectrum", what_to_plot = "abs", start = None, end = None):
+def plot(spectrum, color = "darkviolet", title = "Spectrum", what_to_plot = "abs", start = None, end = None, save=False):
     '''
     Fast spectrum plotting using matplotlib.pyplot library.
 
@@ -835,6 +835,8 @@ def plot(spectrum, color = "darkviolet", title = "Spectrum", what_to_plot = "abs
     start - starting point (in X-axis units) of a area to be shown on plot. If \"min\", then plot starts with lowest X-value in all spectra.
 
     end - ending point (in X-axis units) of a area to be shown on plot. If \"max\", then plot ends with highest X-value in all spectra.
+    
+    save = save plot or not
 
     what_to_plot - either \"abs\" or \"imag\" or \"real\".
     '''
@@ -918,7 +920,11 @@ def plot(spectrum, color = "darkviolet", title = "Spectrum", what_to_plot = "abs
     else:
         plt.text(1.05, 0.9, "Number of points: {}\nX-axis spacing: {} ".format(n_points, spacing) + unit + "\nPoints per 1 " + unit +": {}".format(p_per_unit) , transform = ax.transAxes)
 
-    plt.show()
+    if save:
+        plt.savefig(f'fig_{title}.pdf')
+    else:
+        plt.show()
+
 
 
 def compare_plots(spectra, title = "Spectra", legend = None, colors = None, start = None, end = None, abs = False):
