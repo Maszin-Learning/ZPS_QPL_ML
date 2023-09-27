@@ -1105,18 +1105,18 @@ def gaussian_pulse(bandwidth, centre, FWHM, x_type):
 
 def hermitian_pulse(bandwidth, centre, FWHM, x_type):
 
-    import spectral_analysis as sa
-    from math import floor
-
     if x_type not in ["freq", "wl", "time"]:
         raise Exception("x_type must be either \"freq\", \"nm\" or \"time\"")
 
+    import spectral_analysis as sa
+    from math import floor
+    
     X = np.linspace(bandwidth[0], bandwidth[1], 2000)
     sd = FWHM/2.355
     def gauss(x, mu, std):
         return 1/(std*np.sqrt(2*np.pi))*np.exp(-(x-mu)**2/(2*std**2))
     gauss = np.vectorize(gauss)
-    Y = (X - X[floor(len(X)/2)])*gauss(X, centre, sd)
+    Y = (X - X[np.searchsorted(X, centre)])*gauss(X, centre, sd)
     return sa.spectrum(X, Y, x_type, "intensity")
 
 
