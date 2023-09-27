@@ -1085,11 +1085,14 @@ def ratio(vis_value):
     return X[r]
 
 
-def gaussian_pulse(bandwidth, centre, FWHM):
+def gaussian_pulse(bandwidth, centre, FWHM, x_type):
     '''
     Creates spectrum with gaussian intensity. "bandwidth" is a tuple with start and the end of the entire spectrum. 
     "centre" and "FWHM" characterize the pulse itself.
     '''
+
+    if x_type not in ["freq", "wl", "time"]:
+        raise Exception("x_type must be either \"freq\", \"nm\" or \"time\"")
 
     import spectral_analysis as sa
     X = np.linspace(bandwidth[0], bandwidth[1], 2000)
@@ -1098,7 +1101,23 @@ def gaussian_pulse(bandwidth, centre, FWHM):
         return 1/(std*np.sqrt(2*np.pi))*np.exp(-(x-mu)**2/(2*std**2))
     gauss = np.vectorize(gauss)
     Y = gauss(X, centre, sd)
-    return sa.spectrum(X, Y, "freq", "intensity")
+    return sa.spectrum(X, Y, x_type, "intensity")
+
+def hermitian_pulse(bandwidth, centre, FWHM, x_type):
+
+    import spectral_analysis as sa
+    from math import floor
+
+    if x_type not in ["freq", "wl", "time"]:
+        raise Exception("x_type must be either \"freq\", \"nm\" or \"time\"")
+
+    X = np.linspace(bandwidth[0], bandwidth[1], 2000)
+    sd = FWHM/2.355
+    def gauss(x, mu, std):
+        return 1/(std*np.sqrt(2*np.pi))*np.exp(-(x-mu)**2/(2*std**2))
+    gauss = np.vectorize(gauss)
+    Y = (X - X[floor(len(X)/2)])*gauss(X, centre, sd)
+    return sa.spectrum(X, Y, x_type, "intensity")
 
 
 def chirp_phase(bandwidth, centre, fiber_length):
