@@ -7,18 +7,20 @@ from torchvision import datasets, transforms
 from torch.utils.data import Dataset, DataLoader
 from torchvision.utils import save_image
 from torchvision.utils import make_grid
-from torch.utils.tensorboard import SummaryWriter
+#from torch.utils.tensorboard import SummaryWriter
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import torchvision.utils as vutils
 from matplotlib.pyplot import figure
 
+import spectral_analysis as sa
 # DataLoader 
 import os
 from os import listdir
 from os.path import isfile, join
 
-
+device = torch.device('cpu')
+dtype = torch.float32
 
 # HyperParameters
 batch_size = 1024
@@ -26,88 +28,80 @@ learning_rate = 0.005
 betas=(0.5, 0.999) #beta1, beta2 for Adam Optimizer
 momentum = 0.9 # for SGD optimizer
 
-# Generator Model Class Definition with dropouts
-class Generator(nn.Module):
-    def __init__(self):
-        super(Generator, self).__init__()
-        self.main = nn.Sequential(
-            # Block 1:input is Z, going into a convolution
-            nn.ConvTranspose1d(100, 64 * 8, 4, 1, 0, bias=False),
-            #nn.BatchNorm2d(64 * 8),
-            nn.LeakyReLU(0.2, inplace=True),
-            nn.Dropout1d(0.5,inplace=True),
-            # Block 2: input is (64 * 8) x 4 x 4
-            nn.ConvTranspose1d(64 * 8, 64 * 4, 4, 2, 1, bias=False),
-            #nn.BatchNorm2d(64 * 4),
-            nn.LeakyReLU(0.2, inplace=True),
-            nn.Dropout1d(0.5,inplace=True),
-            # Block 3: input is (64 * 4) x 8 x 8
-            nn.ConvTranspose1d(64 * 4, 64 * 2, 4, 2, 1, bias=False),
-            #nn.BatchNorm2d(64 * 2),
-            nn.LeakyReLU(0.2, inplace=True),
-            nn.Dropout1d(0.5,inplace=True),
-            # Block 4: input is (64 * 2) x 16 x 16
-            nn.ConvTranspose1d(64 * 2, 64, 4, 2, 1, bias=False),
-            #nn.BatchNorm2d(64),
-            nn.LeakyReLU(0.2, inplace=True),
-            nn.Dropout1d(0.5,inplace=True),
-            # Block 5: input is (64) x 32 x 32
-            nn.ConvTranspose1d(64, 1, 4, 2, 1, bias=False),
-            nn.Tanh()
-            # Output: output is (3) x 64 x 64
-        )
 
-    def forward(self, input):
-        output = self.main(input)
-        return output
 
-# Discriminator Model Class Definition
+
 class Discriminator(nn.Module):
     def __init__(self):
-        super(Discriminator, self).__init__()
+        super().__init__()
         self.main = nn.Sequential(
-            # Block 1: input is (3) x 64 x 64
-            nn.Conv1d(3, 64, 4, 2, 1, bias=False),
+            # input 1824
+            nn.Conv1d(1, 64, kernel_size=4, stride=2, padding=1, bias=False),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Dropout1d(0.5,inplace=True),
-            # Block 2: input is (64) x 32 x 32
-            nn.Conv1d(64, 64 * 2, 4, 2, 1, bias=False),
-            #nn.BatchNorm2d(64 * 2),
+            # state size 912
+            nn.Conv1d(64, 128, kernel_size=4, stride=2, padding=1, bias=False),
+            nn.BatchNorm1d(128),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Dropout1d(0.5,inplace=True),
-            # Block 3: input is (64*2) x 16 x 16
-            nn.Conv1d(64 * 2, 64 * 4, 4, 2, 1, bias=False),
-            #nn.BatchNorm2d(64 * 4),
+            # state size 456
+            nn.Conv1d(128, 256, kernel_size=4,
+                      stride=2, padding=1, bias=False),
+            nn.BatchNorm1d(256),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Dropout1d(0.5,inplace=True),
-            # Block 4: input is (64*4) x 8 x 8
-            nn.Conv1d(64 * 4, 64 * 8, 4, 2, 1, bias=False),
-            #nn.BatchNorm2d(64 * 8),
+            # state size 228
+            nn.Conv1d(256, 512, kernel_size=4,
+                      stride=2, padding=1, bias=False),
+            nn.BatchNorm1d(512),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Dropout1d(0.5,inplace=True),
-            # Block 5: input is (64*8) x 4 x 4
-            nn.Conv1d(64 * 8, 1, 4, 1, 0, bias=False),
-            nn.Sigmoid(),
-            nn.Flatten()
-            # Output: 1
+            # state size 114
+            nn.Conv1d(512, 1, kernel_size=114, stride=1, padding=0, bias=False),
+            nn.Sigmoid()
         )
 
-    def forward(self, input):
-        output = self.main(input)
-        output  = output.reshape(output.shape[0])
-        return output
+    def forward(self, x, y=None):
+        x = self.main(x)
+        return x
+
+
+class Generator(nn.Module):
+    def __init__(self, nz):
+        super().__init__()
+        self.main = nn.Sequential(
+            nn.ConvTranspose1d(nz, 512, 114, 1, 0, bias=False),
+            nn.BatchNorm1d(512),
+            nn.ReLU(True),
+
+            nn.ConvTranspose1d(512, 256, 4, 2, 1, bias=False),
+            nn.BatchNorm1d(256),
+            nn.ReLU(True),
+
+            nn.ConvTranspose1d(256, 128, 4, 2, 1, bias=False),
+            nn.BatchNorm1d(128),
+            nn.ReLU(True),
+
+            nn.ConvTranspose1d(128, 64, 4, 2, 1, bias=False),
+            nn.BatchNorm1d(64),
+            nn.ReLU(True),
+
+            nn.ConvTranspose1d(64, 1, 4, 2, 1, bias=False),
+            nn.Tanh()
+        )
+
+    def forward(self, x):
+        x = self.main(x)
+        return x
 
     # custom weights initialization called on gen and disc model
+        
 def weights_init(m):
     classname = m.__class__.__name__
     if classname.find('Conv') != -1:
-        torch.nn.init.normal_(m.weight, 0.0, 0.02)
+        nn.init.normal_(m.weight.data, 0.0, 0.02)
     elif classname.find('BatchNorm') != -1:
-        torch.nn.init.normal_(m.weight, 1.0, 0.02)
-        torch.nn.init.zeros_(m.bias)
+        nn.init.normal_(m.weight.data, 1.0, 0.02)
+        nn.init.constant_(m.bias.data, 0)
         
 # set the device we will be using
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+#device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 torch.backends.cudnn.benchmark = True #let cudnn choose most efficient way of calculating convulsions
 
 generator = Generator().to(device)
@@ -154,6 +148,24 @@ PATHG = f'/notebooks/ML_logs/DGAN_G_{time}.pt'
 torch.autograd.set_detect_anomaly(True)
 
 
+
+#Data preparation
+pulse_1 = sa.gaussian_pulse((1550,1556), 1553, 1, x_type='freq')
+pulse_1.x_type = "wl"
+pulse_1.wl_to_freq()
+pulse_1.Y = pulse_1.Y*100
+signal_len=len(pulse_1)
+sa.plot(pulse_1, title = 'przed_1', save = True)
+
+pulse_2 = sa.hermitian_pulse((1550,1556), 1553, 1, x_type='freq')
+pulse_2.x_type = "wl"
+pulse_2.wl_to_freq()
+pulse_2.Y = pulse_2.Y*100
+
+pulse_2_Y_abs_tensor = torch.tensor(np.abs(pulse_2.Y), requires_grad=True, device=device, dtype=dtype).reshape(1,signal_len)
+
+train_list = [pulse_2_Y_abs_tensor]
+
 G_loss_best = 0
 D_total_loss_best = 0
 generator.train()
@@ -161,16 +173,16 @@ discriminator.train()
 num_epochs = 300
 for epoch in tqdm(range(1, num_epochs+1)):
     D_loss_list, G_loss_list = [], []
-    for index, (real_images, _) in enumerate(train_loader):
+    for index, real_images in enumerate(train_list):
         D_optimizer.zero_grad()
         real_images = real_images.to(device)
-        real_target = torch.ones(real_images.size(0), requires_grad=True).to(device)
-        fake_target = torch.zeros(real_images.size(0), requires_grad=True).to(device)
+        real_target = torch.ones(real_images.shape, requires_grad=True).to(device)
+        fake_target = torch.zeros(real_images.shape, requires_grad=True).to(device)
         output = discriminator(real_images)
         D_real_loss = discriminator_loss(output, real_target)
         D_real_loss.backward()
 
-        noise_vector = torch.randn(real_images.size(0), 100, 1, 1, device=device)
+        noise_vector = torch.randn(real_images.shape, 100, 1, 1, device=device)
         noise_vector = noise_vector.to(device)
         generated_image = generator(noise_vector)
         output = discriminator(generated_image.detach())
