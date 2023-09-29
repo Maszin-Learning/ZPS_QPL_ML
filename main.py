@@ -8,7 +8,7 @@ pulse_1.Y = pulse_1.Y*100
 signal_len=len(pulse_1)
 sa.plot(pulse_1, title = 'przed_1', save = True)
 
-pulse_2 = sa.hermitian_pulse((1545,1565), 1555, 3, x_type='freq')
+pulse_2 = sa.hermitian_pulse((1540,1560), 1550, 3, x_type='freq')
 pulse_2.x_type = "wl"
 pulse_2.wl_to_freq()
 pulse_2.Y = pulse_2.Y*100
@@ -81,11 +81,11 @@ class AutoEncoder(nn.Module):
 config = dict (
     # Hyper-parameters
     input_dim = 32, # and dim of noise vector
-    output_dim = signal_len,
+    output_dim = 50#signal_len,
     p = 5, #number of plots
     criterion = nn.MSELoss(), # loss function jest beznajdziejna
-    learning_rate = 1,
-    epoch_num = 100000,
+    learning_rate = 1e-6,
+    epoch_num = 10000,
     node_number = 500,
     architecture = "NN_1",
     dataset_id = "peds-0192",
@@ -146,6 +146,7 @@ for epoch in tqdm(range(config['epoch_num'])):
     pulse_1_torch_Y = pulse_1_torch_Y.reshape(1, signal_len)
     #print(pulse_1_torch_Y.shape)
     #print(torch.exp(1j*results).shape)
+    #### tutaj dodaj po (2000-50)/2 po obu stronach result
     pulse_1_torch_Y = torch.mul(pulse_1_torch_Y, torch.exp(1j*results))
     pulse_1_torch_Y = torch.fft.ifft(pulse_1_torch_Y)
     pusle_1_Y_abs_tensor = pulse_1_torch_Y.abs()
