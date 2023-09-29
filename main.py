@@ -1,14 +1,14 @@
 import spectral_analysis as sa
 import numpy as np
 
-pulse_1 = sa.gaussian_pulse((1540,1560), 1550, 3, x_type='freq')
+pulse_1 = sa.gaussian_pulse((1550,1556), 1553, 1, x_type='freq')
 pulse_1.x_type = "wl"
 pulse_1.wl_to_freq()
 pulse_1.Y = pulse_1.Y*100
 signal_len=len(pulse_1)
 sa.plot(pulse_1, title = 'przed_1', save = True)
 
-pulse_2 = sa.hermitian_pulse((1545,1565), 1555, 3, x_type='freq')
+pulse_2 = sa.hermitian_pulse((1550,1556), 1553, 1, x_type='freq')
 pulse_2.x_type = "wl"
 pulse_2.wl_to_freq()
 pulse_2.Y = pulse_2.Y*100
@@ -62,31 +62,52 @@ class AutoEncoder(nn.Module):
 
         self.linear_1 = nn.Linear(input_size,n)
         #self.linear_2 = nn.Linear(n,n)
-        self.linear_3 = nn.Linear(n,output_size)
+        self.linear_3 = nn.Linear(64,output_size)
         
         self.leakyrelu=nn.LeakyReLU(1, inplace=True)
         
         self.normal_1 = nn.LayerNorm(n)
         self.normal_3 = nn.LayerNorm(output_size)
-
+        
+        self.conv1d_1 = nn.Conv1d(
+            in_channels=1,
+            out_channels=16,
+            kernel_size=29,
+            stride=7,
+            padding=5,
+        )
+        self.conv1d_2 = nn.Conv1d(
+            in_channels=16,
+            out_channels=32,
+            kernel_size=11,
+            stride=3,
+            padding=5,
+        )
+   
     def forward(self,x):
+        
         x = self.leakyrelu(self.linear_1(x))
         x = self.normal_1(x)
+        
+        x = self.conv1d_1(x)
+        x = self.conv1d_2(x)
+        x = torch.flatten(x)
+        
         #x = self.leakyrelu(self.linear_2(x))
-        x = self.linear_3(x)
+        x = self.leakyrelu(self.linear_3(x))
         x = self.normal_3(x)
-        return self.leakyrelu(x)
+        return x
     
 #configuration of W&B
 config = dict (
     # Hyper-parameters
-    input_dim = 32, # and dim of noise vector
+    input_dim = 216, # and dim of noise vector
     output_dim = signal_len,
     p = 5, #number of plots
-    criterion = nn.MSELoss(), # loss function jest beznajdziejna
-    learning_rate = 1,
-    epoch_num = 100000,
-    node_number = 500,
+    criterion = nn.L1Loss(), # loss function jest beznajdziejna
+    learning_rate = 1e-9,
+    epoch_num = 10000,
+    node_number = 50,
     architecture = "NN_1",
     dataset_id = "peds-0192",
     infra = "Local_cpu",
@@ -157,7 +178,7 @@ for epoch in tqdm(range(config['epoch_num'])):
     loss_list.append(loss.data) # store loss
     
     # print loss
-    if epoch % 5000 == 0:
+    if epoch % 500 == 0:
         pulse_1.Y = pulse_1.Y*np.exp(1j*results.clone().detach().numpy().reshape(signal_len,))
         pulse_1.inv_fourier()   
         sa.plot(pulse_1, title=f'reconstructed_{epoch}' , save=True)
