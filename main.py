@@ -64,6 +64,7 @@ class AutoEncoder(nn.Module):
         #self.linear_2 = nn.Linear(n,n)
         self.linear_3 = nn.Linear(n,output_size)
         self.leakyrelu=nn.LeakyReLU(1, inplace=True)
+        self.normal_1 = nn.LayerNorm()
 
     def forward(self,x):
         x = self.leakyrelu(self.linear_1(x))
@@ -122,6 +123,7 @@ pulse_1.fourier()
 
 pulse_2_Y_real=pulse_2.Y.real
 pulse_2_Y_imag=pulse_2.X.imag
+pulse_2_Y_abs_tensor = torch.tensor(np.abs(pulse_2.Y), requires_grad=True, device=device_, dtype=dtype_).reshape(1,signal_len)
 pulse_2_conc_target = np.concatenate((pulse_2_Y_real, pulse_2_Y_imag), axis=None)
 pulse_2_conc_target_torch = torch.tensor(pulse_2_conc_target.reshape(1,signal_len*2), requires_grad=True, device=device_, dtype=dtype_)
 
@@ -140,8 +142,9 @@ for epoch in tqdm(range(config['epoch_num'])):
     #print(torch.exp(1j*results).shape)
     pulse_1_torch_Y = torch.mul(pulse_1_torch_Y, torch.exp(1j*results))
     pulse_1_torch_Y = torch.fft.ifft(pulse_1_torch_Y)
-    pulse_1_conc_result_torch= torch.concatenate((pulse_1_torch_Y.real, pulse_1_torch_Y.imag), axis=1)
-    loss = criterion(pulse_1_conc_result_torch, pulse_2_conc_target_torch) # Calculate Loss/criterion
+    pusle_1_Y_abs_tensor = pulse_1_torch_Y.abs()
+    #pulse_1_conc_result_torch= torch.concatenate((pulse_1_torch_Y.real, pulse_1_torch_Y.imag), axis=1)
+    loss = criterion(pusle_1_Y_abs_tensor, pulse_2_Y_abs_tensor) # Calculate Loss/criterion
     
     loss.backward() # backward propagation
     optimizer.step() # Updating parameters
