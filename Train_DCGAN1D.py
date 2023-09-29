@@ -9,10 +9,10 @@ from dcgan import Discriminator, Generator, weights_init
 from preprocessing import Dataset
 
 
-lr = 2e-4
+lr = 2e-6
 beta1 = 0.5
 epoch_num = 32
-batch_size = 8
+batch_size = 1
 nz = 100  # length of noise
 ngpu = 0
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -20,7 +20,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 def main():
     # load training data
-    trainset = Dataset('./data/brilliant_blue')
+    trainset = Dataset('./data/')
 
     trainloader = torch.utils.data.DataLoader(
         trainset, batch_size=batch_size, shuffle=True

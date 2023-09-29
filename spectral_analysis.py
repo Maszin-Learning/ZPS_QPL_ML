@@ -1095,7 +1095,7 @@ def gaussian_pulse(bandwidth, centre, FWHM, x_type):
         raise Exception("x_type must be either \"freq\", \"nm\" or \"time\"")
 
     import spectral_analysis as sa
-    X = np.linspace(bandwidth[0], bandwidth[1], 500)
+    X = np.linspace(bandwidth[0], bandwidth[1], 1824)
     sd = FWHM/2.355
     def gauss(x, mu, std):
         return 1/(std*np.sqrt(2*np.pi))*np.exp(-(x-mu)**2/(2*std**2))
@@ -1111,7 +1111,7 @@ def hermitian_pulse(bandwidth, centre, FWHM, x_type):
     if x_type not in ["freq", "wl", "time"]:
         raise Exception("x_type must be either \"freq\", \"nm\" or \"time\"")
 
-    X = np.linspace(bandwidth[0], bandwidth[1], 500)
+    X = np.linspace(bandwidth[0], bandwidth[1], 1824)
     sd = FWHM/2.355
     def gauss(x, mu, std):
         return 1/(std*np.sqrt(2*np.pi))*np.exp(-(x-mu)**2/(2*std**2))
