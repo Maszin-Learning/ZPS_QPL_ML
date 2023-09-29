@@ -59,17 +59,23 @@ class AutoEncoder(nn.Module):
     def __init__(self,input_size,n,output_size):
         # super function. It inherits from nn.Module and we can access everything in nn.Module
         super (AutoEncoder,self).__init__()
-        # Linear function.
+
         self.linear_1 = nn.Linear(input_size,n)
         #self.linear_2 = nn.Linear(n,n)
         self.linear_3 = nn.Linear(n,output_size)
+        
         self.leakyrelu=nn.LeakyReLU(1, inplace=True)
-        self.normal_1 = nn.LayerNorm()
+        
+        self.normal_1 = nn.LayerNorm(n)
+        self.normal_3 = nn.LayerNorm(output_size)
 
     def forward(self,x):
         x = self.leakyrelu(self.linear_1(x))
+        x = self.normal_1(x)
         #x = self.leakyrelu(self.linear_2(x))
-        return self.leakyrelu(self.linear_3(x))
+        x = self.linear_3(x)
+        x = self.normal_3(x)
+        return self.leakyrelu(x)
     
 #configuration of W&B
 config = dict (
@@ -77,10 +83,10 @@ config = dict (
     input_dim = 32, # and dim of noise vector
     output_dim = signal_len,
     p = 5, #number of plots
-    criterion = nn.L1Loss(), # loss function jest beznajdziejna
-    learning_rate = 1e-9,
-    epoch_num = 40000,
-    node_number = 50,
+    criterion = nn.MSELoss(), # loss function jest beznajdziejna
+    learning_rate = 1,
+    epoch_num = 100000,
+    node_number = 500,
     architecture = "NN_1",
     dataset_id = "peds-0192",
     infra = "Local_cpu",
@@ -151,7 +157,7 @@ for epoch in tqdm(range(config['epoch_num'])):
     loss_list.append(loss.data) # store loss
     
     # print loss
-    if epoch % 500 == 0:
+    if epoch % 5000 == 0:
         pulse_1.Y = pulse_1.Y*np.exp(1j*results.clone().detach().numpy().reshape(signal_len,))
         pulse_1.inv_fourier()   
         sa.plot(pulse_1, title=f'reconstructed_{epoch}' , save=True)
