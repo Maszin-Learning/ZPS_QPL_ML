@@ -39,7 +39,7 @@ device = torch.device("mps")
 
 def main():
     # load training data
-    trainset = Dataset('./data/')
+    trainset = Dataset('./data_gauss/')
 
     trainloader = torch.utils.data.DataLoader(
         trainset, batch_size=batch_size, shuffle=True
