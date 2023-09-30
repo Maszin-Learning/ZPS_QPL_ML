@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from dcgan import Discriminator, Generator, weights_init
 from preprocessing import Dataset
+import spectral_analysis as sa
 
 
 lr = 5e-4#5e-4
@@ -18,12 +19,14 @@ nz = 100  # length of noise
 ngpu = 0
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 device = torch.device("mps")
+dtype = torch.float32
 
+### GAUSS
 #lr = 5e-4#5e-4
 #beta1 = 0.3
-#beta2 = 0.970
-#epoch_num = 10000
-#batch_size = 128
+#beta2 = 0.80
+#epoch_num = 70
+#batch_size = 512
 #nz = 100  # length of noise
 ##ngpu = 0
 #device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -37,9 +40,67 @@ device = torch.device("mps")
 #nz = 100  # length of noise
 
 
+
+pulse_1 = sa.gaussian_pulse((1550,1560), 1555, 4, x_type='freq')
+pulse_1.x_type = "wl"
+pulse_1.wl_to_freq()
+pulse_1.Y = pulse_1.Y
+signal_len=len(pulse_1)
+print(signal_len)
+
+plt.plot(pulse_1.Y)
+plt.savefig('gauss_GAN.png')
+plt.close()
+
+pulse_2 = sa.hermitian_pulse((1550,1560), 1555, 4, x_type='freq')
+pulse_2.x_type = "wl"
+pulse_2.wl_to_freq()
+pulse_2.Y = pulse_2.Y
+
+plt.plot(pulse_2.Y)
+plt.savefig('hermit_GAN.png')
+plt.close()
+
+
+
+pulse_2_Y_real=pulse_2.Y.real
+pulse_2_Y_imag=pulse_2.X.imag
+pulse_2_Y_abs_tensor = torch.tensor(np.abs(pulse_2.Y), requires_grad=True, device=device, dtype=dtype).reshape(1,signal_len)
+
+
+pulse_1.fourier()
+
+
+
+
+    x = torch.tensor([pulse_1.Y.real, pulse_1.Y.imag], requires_grad=True, device=device_, dtype=dtype_)
+    x = x.reshape(signal_len, 2)
+    pulse_1_torch_Y = torch.view_as_complex(x)
+    pulse_1_torch_Y = pulse_1_torch_Y.reshape(1, signal_len)
+    #print(pulse_1_torch_Y.shape)
+    #print(torch.exp(1j*results).shape)
+    pulse_1_torch_Y = torch.mul(pulse_1_torch_Y, torch.exp(1j*results))
+    pulse_1_torch_Y = torch.fft.ifft(pulse_1_torch_Y)
+    pusle_1_Y_abs_tensor = pulse_1_torch_Y.abs()
+    #pulse_1_conc_result_torch= torch.concatenate((pulse_1_torch_Y.real, pulse_1_torch_Y.imag), axis=1)
+    loss = criterion(pusle_1_Y_abs_tensor, pulse_2_Y_abs_tensor) # Calculate Loss/criterion
+    
+    loss.backward() # backward propagation
+    optimizer.step() # Updating parameters
+    loss_list.append(loss.data) # store loss
+    
+    # print loss
+    if epoch % 500 == 0:
+        pulse_1.Y = pulse_1.Y*np.exp(1j*results.clone().detach().numpy().reshape(signal_len,))
+        pulse_1.inv_fourier()   
+        sa.plot(pulse_1, title=f'reconstructed_{epoch}' , save=True)
+        pulse_1.fourier()
+        print('epoch {}, loss {}'.format(epoch, loss.data))
+
+
 def main():
     # load training data
-    trainset = Dataset('./data_gauss/')
+    trainset = Dataset('./data_hermit/')
 
     trainloader = torch.utils.data.DataLoader(
         trainset, batch_size=batch_size, shuffle=True
