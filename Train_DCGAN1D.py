@@ -9,13 +9,32 @@ from dcgan import Discriminator, Generator, weights_init
 from preprocessing import Dataset
 
 
-lr = 2e-6
-beta1 = 0.5
-epoch_num = 32
-batch_size = 1
+lr = 5e-4#5e-4
+beta1 = 0.3
+beta2 = 0.80
+epoch_num = 70
+batch_size = 512
 nz = 100  # length of noise
 ngpu = 0
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = torch.device("mps")
+
+#lr = 5e-4#5e-4
+#beta1 = 0.3
+#beta2 = 0.970
+#epoch_num = 10000
+#batch_size = 128
+#nz = 100  # length of noise
+##ngpu = 0
+#device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+#device = torch.device("mps")
+
+#lr = 5e-4#5e-4
+#beta1 = 0.3
+#beta2 = 0.90
+#epoch_num = 10000
+#batch_size = 128
+#nz = 100  # length of noise
 
 
 def main():
@@ -42,8 +61,8 @@ def main():
     real_label = 1.
     fake_label = 0.
 
-    optimizerD = optim.Adam(netD.parameters(), lr=lr, betas=(beta1, 0.999))
-    optimizerG = optim.Adam(netG.parameters(), lr=lr, betas=(beta1, 0.999))
+    optimizerD = optim.Adam(netD.parameters(), lr=lr, betas=(beta1, beta2))
+    optimizerG = optim.Adam(netG.parameters(), lr=lr, betas=(beta1, beta2))
 
     for epoch in range(epoch_num):
         for step, (data, _) in enumerate(trainloader):
