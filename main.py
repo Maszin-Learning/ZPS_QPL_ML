@@ -1,29 +1,6 @@
+# modules
+
 import spectral_analysis as sa
-import numpy as np
-
-pulse_1 = sa.gaussian_pulse((1540,1560), 1550, 3, x_type='freq')
-pulse_1.x_type = "wl"
-pulse_1.wl_to_freq()
-pulse_1.Y = pulse_1.Y*100
-signal_len=len(pulse_1)
-sa.plot(pulse_1, title = 'przed_1', save = True)
-
-pulse_2 = sa.hermitian_pulse((1540,1560), 1550, 3, x_type='freq')
-pulse_2.x_type = "wl"
-pulse_2.wl_to_freq()
-pulse_2.Y = pulse_2.Y*100
-
-#sa.plot(pulse_1)
-
-#pulse_1.fourier()
-#sa.plot(pulse_1)
-#pulse_1.Y = pulse_1.Y*np.exp(1j*pulse_1.X)
-#pulse_1.inv_fourier()   
-#sa.plot(pulse_1, title='' , save=True)
-
-
-
-### OPTIMALIZATION
 import numpy as np
 import pandas as pd
 import torch
@@ -31,15 +8,38 @@ import torch.nn as nn
 import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm import tqdm
+
+# define initial and target pulse
+
+initial_pulse = sa.gaussian_pulse((190, 196), 193, 1, x_type ='freq')
+target_pulse = sa.hermitian_pulse((190, 196), 193, 1, x_type ='freq')
+
+target_pulse.Y *= np.sqrt((np.sum((initial_pulse.Y)**2))/np.sum((target_pulse.Y)**2))
+
+signal_len = len(initial_pulse)
+
+plt.plot(initial_pulse.X, initial_pulse.Y, color = "red")
+plt.grid()
+plt.title("Initial pulse")
+plt.xlabel("Frequency (THz)")
+plt.show()
+
+plt.plot(target_pulse.X, target_pulse.Y, color = "blue")
+plt.grid()
+plt.title("Target pulse")
+plt.xlabel("Frequency (THz)")
+plt.show()
+
+### CUDA & stuff
+
 #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 if torch.cuda.is_available():
     device_ = torch.device("cuda")
     print (f"Using {device_}")
-    #Checking GPU RAM allocated memory
-    print('allocated CUDA memory: ',torch.cuda.memory_allocated())
+    print('allocated CUDA memory: ',torch.cuda.memory_allocated())      # Checking GPU RAM allocated memory
     print('cached CUDA memory: ',torch.cuda.memory_cached())
-    torch.cuda.empty_cache() # clear CUDA memory
-    torch.backends.cudnn.benchmark = True #let cudnn chose the most efficient way of calculating Convolutions
+    torch.cuda.empty_cache()                                            # clear CUDA memory
+    torch.backends.cudnn.benchmark = True                               # let cuda chose the most efficient way of calculating Convolutions
     
 elif torch.backends.mps.is_available():
     print ("CUDA device not found.")
@@ -50,11 +50,13 @@ else:
     device_ = torch.device("cpu")
     print (f"Using {device_}")
 
-#define globaly used dtype and device
+# define globaly used datatype and device
+
 device_ = torch.device('cpu')
 dtype_ = torch.float32
 
-# create class
+# define neural network
+
 class AutoEncoder(nn.Module):
     def __init__(self,input_size,n,output_size):
         # super function. It inherits from nn.Module and we can access everything in nn.Module
@@ -77,101 +79,105 @@ class AutoEncoder(nn.Module):
         x = self.normal_3(x)
         return self.leakyrelu(x)
     
-#configuration of W&B
-config = dict (
-    # Hyper-parameters
-    input_dim = 32, # and dim of noise vector
-    output_dim = 50#signal_len,
-    p = 5, #number of plots
-    criterion = nn.MSELoss(), # loss function jest beznajdziejna
-    learning_rate = 1e-6,
-    epoch_num = 10000,
-    node_number = 500,
+# HyperParameters
+
+config = dict(
+    input_dim = 32,             # and dim of noise vector
+    output_dim = 50,            # signal_len,
+    p = 5,                      # number of plots
+    criterion = nn.MSELoss(),  
+    learning_rate = 5e-7,
+    epoch_num = 100000,
+    node_number = 100,
     architecture = "NN_1",
     dataset_id = "peds-0192",
     infra = "Local_cpu",
 )    
     
 # Initialize network
+
 model = AutoEncoder(input_size=config['input_dim'], n=config['node_number'], output_size=config['output_dim'])
 total_params = sum(k.numel() for k in model.parameters())
 print(f"Number of parameters: {total_params}")
 print(f'Number of nodes: {config["node_number"]}')
 model.to(device=device_, dtype=dtype_) # project model onto device and chosen dtype
-optimizer = torch.optim.Adam(model.parameters(), lr=config['learning_rate'], weight_decay=0.01, betas=(0.9, 0.999))
-# Optimization (find parameters that minimize error)
-# X = random phase input, shape = (2*signal input, 1)
-# Y = defined shape of function
+optimizer = torch.optim.Adam(model.parameters(), lr = config['learning_rate'], weight_decay = 0.01, betas = (0.9, 0.999))
 
-#X_real=pulse_1.X.real
-#X_imag=pulse_1.X.imag
-#X_pulse_conc= np.concatenate((X_real, X_imag), axis=None)
-#X = torch.tensor(X_pulse_conc.reshape(signal_len*2,1), requires_grad=True, device=device_).to(dtype=dtype_)
-X = torch.tensor(np.random.uniform(low=0,high=1,size=(1, config['input_dim'])), requires_grad=True, device=device_, dtype=dtype_)
+# random phase to start with something
 
-
-Y_real=pulse_2.Y.real
-Y_imag=pulse_2.Y.imag
-Y_pulse_conc= np.concatenate((Y_real, Y_imag), axis=None)
-Y = torch.tensor(Y_pulse_conc.reshape(signal_len*2,1), requires_grad=True, device=device_, dtype=dtype_)
+noise_phase = torch.tensor(np.random.uniform(low = 0, high = 1,
+                                    size = (1, config['input_dim'])), 
+                                    requires_grad=True, 
+                                    device = device_, 
+                                    dtype = dtype_)
 
 
+# is it necessary?
 
-    
-#calculation
 loss_list = []
 z_ = config['epoch_num']/config['p']
 
-parameters ={}
+parameters = {}
 criterion = config['criterion']
 
-pulse_1.fourier()
+# initial and target pulses
 
-pulse_2_Y_real=pulse_2.Y.real
-pulse_2_Y_imag=pulse_2.X.imag
-pulse_2_Y_abs_tensor = torch.tensor(np.abs(pulse_2.Y), requires_grad=True, device=device_, dtype=dtype_).reshape(1,signal_len)
-pulse_2_conc_target = np.concatenate((pulse_2_Y_real, pulse_2_Y_imag), axis=None)
-pulse_2_conc_target_torch = torch.tensor(pulse_2_conc_target.reshape(1,signal_len*2), requires_grad=True, device=device_, dtype=dtype_)
+initial_X = initial_pulse.X.copy()
+initial_Y = initial_pulse.Y.copy()
+initial_real = initial_Y.real
+initial_imag = initial_Y.imag
 
+target_real = target_pulse.Y.real
+target_imag = target_pulse.X.imag
+target_abs = torch.tensor(np.abs(target_pulse.Y), requires_grad=True, device=device_, dtype=dtype_).reshape(1, signal_len)
 
+# learning loop
 
 for epoch in tqdm(range(config['epoch_num'])):
     
-    optimizer.zero_grad() # zero gradients
-    results = model(X) # Forward to get output
-    #print(results.shape)
-    x = torch.tensor([pulse_1.Y.real, pulse_1.Y.imag], requires_grad=True, device=device_, dtype=dtype_)
-    x = x.reshape(signal_len, 2)
-    pulse_1_torch_Y = torch.view_as_complex(x)
-    pulse_1_torch_Y = pulse_1_torch_Y.reshape(1, signal_len)
-    #print(pulse_1_torch_Y.shape)
-    #print(torch.exp(1j*results).shape)
-    #### tutaj dodaj po (2000-50)/2 po obu stronach result
-    pulse_1_torch_Y = torch.mul(pulse_1_torch_Y, torch.exp(1j*results))
-    pulse_1_torch_Y = torch.fft.ifft(pulse_1_torch_Y)
-    pusle_1_Y_abs_tensor = pulse_1_torch_Y.abs()
-    #pulse_1_conc_result_torch= torch.concatenate((pulse_1_torch_Y.real, pulse_1_torch_Y.imag), axis=1)
-    loss = criterion(pusle_1_Y_abs_tensor, pulse_2_Y_abs_tensor) # Calculate Loss/criterion
-    
+    # net predictions
+
+    optimizer.zero_grad()           # zero gradients
+    results = model(noise_phase)    # Forward to get output
+    results = torch.reshape(results, [50, 1])
+    phase = torch.concat([torch.zeros([975, 1], requires_grad = True), 
+                          results, 
+                          torch.zeros([975, 1], requires_grad = True)])
+    # get intensity spectrum
+
+    initial_imag_and_real = torch.tensor([[initial_Y.real[i], initial_Y.imag[i]] for i in range(len(initial_pulse))], 
+                                         requires_grad = True, device = device_, dtype = dtype_)
+    complex_initial = torch.view_as_complex(initial_imag_and_real)
+    complex_initial = complex_initial.reshape(1, signal_len)
+    complex_initial = torch.fft.fft(complex_initial)
+
+    # create complex spectrum
+
+    phase = torch.fft.fftshift(phase)
+    phase = phase.reshape([1, 2000])
+    complex_initial = torch.mul(complex_initial, torch.exp(1j*phase))
+
+    # IFT
+
+    complex_initial = torch.fft.ifft(complex_initial)
+
+    # loss & optimizer step
+
+    reconstructed = complex_initial.abs()
+    loss = criterion(reconstructed, target_abs)
     loss.backward() # backward propagation
     optimizer.step() # Updating parameters
-    loss_list.append(loss.data) # store loss
+    #loss_list.append(loss.data) # store loss
     
     # print loss
-    if epoch % 5000 == 0:
-        pulse_1.Y = pulse_1.Y*np.exp(1j*results.clone().detach().numpy().reshape(signal_len,))
-        pulse_1.inv_fourier()   
-        sa.plot(pulse_1, title=f'reconstructed_{epoch}' , save=True)
-        pulse_1.fourier()
+
+    if epoch % 500 == 0:
+        if epoch % 500 == 0:
+            plt.close()
+            plt.plot(initial_pulse.X, np.reshape(reconstructed.clone().detach().numpy(), 2000), color = "green")
+            plt.plot(initial_pulse.X, np.reshape(target_abs.clone().detach().numpy(), 2000), color = "orange")
+            plt.grid()
+            plt.savefig("pics/reconstructed{}.jpg".format(epoch))
+            plt.close()
+        
         print('epoch {}, loss {}'.format(epoch, loss.data))
-
-#print(f'---Model calculated---\nloss: {loss_list[config['epoch_num'] - 1]}')
-
-
-
-
-
-pulse_1.Y = pulse_1.Y*np.exp(1j*results.detach().numpy().reshape(signal_len,))
-pulse_1.inv_fourier()   
-sa.plot(pulse_1, title='reconstructed' , save=True)
-sa.plot(pulse_2, title='target' , save=True)
