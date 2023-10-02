@@ -10,15 +10,15 @@ from preprocessing import Dataset
 import spectral_analysis as sa
 
 
-lr = 5e-4#5e-4
+lr = 8e-6#5e-4
 beta1 = 0.3
 beta2 = 0.80
 epoch_num = 70
-batch_size = 512
+batch_size = 216
 nz = 100  # length of noise
 ngpu = 0
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-device = torch.device("mps")
+device = torch.device("cpu")
 dtype = torch.float32
 
 ### GAUSS
@@ -68,40 +68,11 @@ pulse_2_Y_imag=pulse_2.X.imag
 pulse_2_Y_abs_tensor = torch.tensor(np.abs(pulse_2.Y), requires_grad=True, device=device, dtype=dtype).reshape(1,signal_len)
 
 
-pulse_1.fourier()
-
-
-
-
-    x = torch.tensor([pulse_1.Y.real, pulse_1.Y.imag], requires_grad=True, device=device_, dtype=dtype_)
-    x = x.reshape(signal_len, 2)
-    pulse_1_torch_Y = torch.view_as_complex(x)
-    pulse_1_torch_Y = pulse_1_torch_Y.reshape(1, signal_len)
-    #print(pulse_1_torch_Y.shape)
-    #print(torch.exp(1j*results).shape)
-    pulse_1_torch_Y = torch.mul(pulse_1_torch_Y, torch.exp(1j*results))
-    pulse_1_torch_Y = torch.fft.ifft(pulse_1_torch_Y)
-    pusle_1_Y_abs_tensor = pulse_1_torch_Y.abs()
-    #pulse_1_conc_result_torch= torch.concatenate((pulse_1_torch_Y.real, pulse_1_torch_Y.imag), axis=1)
-    loss = criterion(pusle_1_Y_abs_tensor, pulse_2_Y_abs_tensor) # Calculate Loss/criterion
-    
-    loss.backward() # backward propagation
-    optimizer.step() # Updating parameters
-    loss_list.append(loss.data) # store loss
-    
-    # print loss
-    if epoch % 500 == 0:
-        pulse_1.Y = pulse_1.Y*np.exp(1j*results.clone().detach().numpy().reshape(signal_len,))
-        pulse_1.inv_fourier()   
-        sa.plot(pulse_1, title=f'reconstructed_{epoch}' , save=True)
-        pulse_1.fourier()
-        print('epoch {}, loss {}'.format(epoch, loss.data))
-
-
-def main():
+def main(pulse_1_):
     # load training data
     trainset = Dataset('./data_hermit/')
-
+    pulse_1_tensor_Y=torch.tensor(pulse_1_.Y.copy(), requires_grad=True, device=device, dtype=dtype)
+    pulse_1_tensor_Y_F=torch.fft.fft(pulse_1_tensor_Y)
     trainloader = torch.utils.data.DataLoader(
         trainset, batch_size=batch_size, shuffle=True
     )
@@ -110,7 +81,7 @@ def main():
     netD = Discriminator().to(device)
     netD.apply(weights_init)
 
-    netG = Generator(nz).to(device)
+    netG = Generator(nz, pulse_1_tensor_Y_F).to(device)
     netG.apply(weights_init)
 
 
@@ -143,13 +114,17 @@ def main():
             # train netG
             noise = torch.randn(b_size, nz, 1, device=device)
             fake = netG(noise)
+            pulse_transformed = torch.mul(pulse_1_tensor_Y_F, torch.exp(1j*fake))
+            pulse_transformed_ifft = torch.fft.ifft(pulse_transformed)
+            pulse_abs = pulse_transformed_ifft.abs()
             label.fill_(fake_label)
-            output = netD(fake.detach()).view(-1)
+            output = netD(pulse_abs.detach()).view(-1)
             errD_fake = criterion(output, label)
             errD_fake.backward()
             D_G_z1 = output.mean().item()
             errD = errD_real + errD_fake
             optimizerD.step()
+            #optimizerD.zero_grad()
             netG.zero_grad()
 
             label.fill_(real_label)
@@ -158,6 +133,7 @@ def main():
             errG.backward()
             D_G_z2 = output.mean().item()
             optimizerG.step()
+            #optimizerG.zero_grad()
 
             print('[%d/%d][%d/%d]\tLoss_D: %.4f\tLoss_G: %.4f\tD(x): %.4f\tD(G(z)): %.4f / %.4f'
                   % (epoch, epoch_num, step, len(trainloader),
@@ -181,4 +157,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main(pulse_1)

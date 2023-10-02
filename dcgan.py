@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 import torchvision.datasets as dataset
 
@@ -43,7 +44,8 @@ class Discriminator(nn.Module):
 
 
 class Generator(nn.Module):
-    def __init__(self, nz):
+    def __init__(self, nz, pulse_Y):
+        self.pulse_Y_ = pulse_Y
         super().__init__()
         self.main = nn.Sequential(
             nn.ConvTranspose1d(nz, 512, 114, 1, 0, bias=False),
@@ -64,8 +66,11 @@ class Generator(nn.Module):
 
             nn.ConvTranspose1d(64, 1, 4, 2, 1, bias=False),
             nn.Tanh()
+            
+            
         )
 
     def forward(self, x):
         x = self.main(x)
+        
         return x
