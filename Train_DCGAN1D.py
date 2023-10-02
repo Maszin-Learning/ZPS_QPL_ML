@@ -10,11 +10,11 @@ from preprocessing import Dataset
 import spectral_analysis as sa
 
 
-lr = 8e-6#5e-4
-beta1 = 0.3
-beta2 = 0.80
+lr = 1e-5#5e-4
+beta1 = 0.9
+beta2 = 0.90
 epoch_num = 70
-batch_size = 216
+batch_size = 512
 nz = 100  # length of noise
 ngpu = 0
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -44,19 +44,23 @@ dtype = torch.float32
 pulse_1 = sa.gaussian_pulse((1550,1560), 1555, 4, x_type='freq')
 pulse_1.x_type = "wl"
 pulse_1.wl_to_freq()
-pulse_1.Y = pulse_1.Y
+
 signal_len=len(pulse_1)
 print(signal_len)
 
-plt.plot(pulse_1.Y)
-plt.savefig('gauss_GAN.png')
-plt.close()
+
 
 pulse_2 = sa.hermitian_pulse((1550,1560), 1555, 4, x_type='freq')
 pulse_2.x_type = "wl"
 pulse_2.wl_to_freq()
 pulse_2.Y = pulse_2.Y
 
+pulse_1.Y *=  np.sqrt(1/np.sum((pulse_1.Y)**2))
+pulse_1.Y *=  np.sqrt(1/np.sum((pulse_2.Y)**2))
+                      
+plt.plot(pulse_1.Y)
+plt.savefig('gauss_GAN.png')
+plt.close()
 plt.plot(pulse_2.Y)
 plt.savefig('hermit_GAN.png')
 plt.close()
