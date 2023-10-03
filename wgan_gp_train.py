@@ -65,6 +65,8 @@ def main():
         trainset, batch_size=batch_size, shuffle=True
     )
 
+    pulse_1_tensor_Y=torch.tensor(pulse_1_.Y.copy(), requires_grad=True, device=device, dtype=dtype)
+    pulse_1_tensor_Y_F=torch.fft.fft(pulse_1_tensor_Y)
     # init netD and netG
     netD = Discriminator().to(device)
     netD.apply(weights_init)
@@ -89,8 +91,11 @@ def main():
             netD.zero_grad()
 
             noise = torch.randn(b_size, nz, 1, device=device)
-            fake = netG(noise)
-
+            phase = netG(noise)
+            pulse_transformed = torch.mul(pulse_1_tensor_Y_F, torch.exp(1j*phase))
+            pulse_transformed_ifft = torch.fft.ifft(pulse_transformed)
+            fake = pulse_transformed_ifft.abs()
+            
             # gradient penalty
             eps = torch.Tensor(b_size, 1, 1).uniform_(0, 1).to(device)
             x_p = eps * real_cpu + (1 - eps) * fake
