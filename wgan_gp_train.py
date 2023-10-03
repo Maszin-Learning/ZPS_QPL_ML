@@ -61,7 +61,6 @@ def complex_comput(pulse_1, phase):
     pulse_transformed = torch.mul(pulse_1_tensor_Y_F, torch.exp(1j*phase))
     pulse_transformed_ifft = torch.fft.ifft(pulse_transformed)
     out = pulse_transformed_ifft.abs()
-    #out = torch.mul(pulse_1_tensor_Y_F.abs(), phase)
     return out
 
 
