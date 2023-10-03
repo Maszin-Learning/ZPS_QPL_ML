@@ -1,12 +1,13 @@
 *.pdf
 *.jpg
 *.png
-/img_dcgan
-/img_wgan
-/img_wgan_gp
+
 
 # exclude everything
 img_dcgan/*
-
+img_wgan/*
+img_wgan_gp/*
 # exception to the rule
-!img_dcgan/.gitkeep 
+!img_dcgan/.gitkeep
+!img_wgan/.gitkeep
+!img_wgan_gp/.gitkeep
