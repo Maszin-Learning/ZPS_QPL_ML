@@ -57,7 +57,7 @@ pulse_2_Y_abs_tensor = torch.tensor(np.abs(pulse_2.Y), requires_grad=True, devic
 
 
 
-def main():
+def main(pulse_1_):
     # load training data
     trainset = Dataset('./data_hermit/')
 
@@ -144,5 +144,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main(pulse_1)
 
