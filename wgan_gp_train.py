@@ -105,7 +105,7 @@ def main(pulse_1_):
             grad_penalty = p_coeff * torch.pow(grad_norm - 1, 2)
 
             loss_D = torch.mean(netD(fake) - netD(real_cpu))
-            loss_D.backward(create_graph=True, retain_graph=True)
+            loss_D.backward()
             optimizerD.step()
 
             for p in netD.parameters():
@@ -116,7 +116,10 @@ def main(pulse_1_):
                 noise = torch.randn(b_size, nz, 1, device=device)
 
                 netG.zero_grad()
-                fake = netG(noise)
+                phase = netG(noise)
+                pulse_transformed = torch.mul(pulse_1_tensor_Y_F, torch.exp(1j*phase))
+                pulse_transformed_ifft = torch.fft.ifft(pulse_transformed)
+                fake = pulse_transformed_ifft.abs()
                 loss_G = -torch.mean(netD(fake))
 
                 netD.zero_grad()
@@ -130,7 +133,10 @@ def main(pulse_1_):
 
         # save training process
         with torch.no_grad():
-            fake = netG(fixed_noise).detach().cpu()
+            phase = netG(fixed_noise).detach().cpu()
+            pulse_transformed = torch.mul(pulse_1_tensor_Y_F, torch.exp(1j*phase))
+            pulse_transformed_ifft = torch.fft.ifft(pulse_transformed)
+            fake = pulse_transformed_ifft.abs()
             f, a = plt.subplots(4, 4, figsize=(8, 8))
             for i in range(4):
                 for j in range(4):
