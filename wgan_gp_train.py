@@ -57,8 +57,8 @@ pulse_2_Y_abs_tensor = torch.tensor(np.abs(pulse_2.Y), requires_grad=True, devic
 
 def complex_comput(pulse_1, phase):
     pulse_1_tensor_Y=torch.tensor(pulse_1.Y.copy(), requires_grad=True, device=device, dtype=dtype)
-    pulse_1_tensor_Y_F=torch.fft.fft(pulse_1_tensor_Y)
-    pulse_transformed = torch.mul(pulse_1_tensor_Y_F, torch.exp(1j*phase))
+    pulse_1_tensor_Y_F=torch.fft.fft(pulse_1_tensor_Y).to(device)
+    pulse_transformed = torch.mul(pulse_1_tensor_Y_F, torch.exp(1j*phase).to(device))
     pulse_transformed_ifft = torch.fft.ifft(pulse_transformed)
     out = pulse_transformed_ifft.abs()
     return out
@@ -144,7 +144,7 @@ def main(pulse_1_):
             phase = netG(fixed_noise).detach().cpu()
             #fake = phase
             #COMPLEX_COMPUTE
-            fake = complex_comput(pulse_1, phase)
+            fake = complex_comput(pulse_1, phase).cpu()
             
             f, a = plt.subplots(4, 4, figsize=(8, 8))
             for i in range(4):
