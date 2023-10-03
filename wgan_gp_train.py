@@ -55,6 +55,14 @@ pulse_2_Y_real=pulse_2.Y.real
 pulse_2_Y_imag=pulse_2.X.imag
 pulse_2_Y_abs_tensor = torch.tensor(np.abs(pulse_2.Y), requires_grad=True, device=device, dtype=dtype).reshape(1,signal_len)
 
+def complex_comput(pulse_1, phase):
+    pulse_1_tensor_Y=torch.tensor(pulse_1.Y.copy(), requires_grad=True, device=device, dtype=dtype)
+    pulse_1_tensor_Y_F=torch.fft.fft(pulse_1_tensor_Y)
+    pulse_transformed = torch.mul(pulse_1_tensor_Y_F, torch.exp(1j*phase))
+    pulse_transformed_ifft = torch.fft.ifft(pulse_transformed)
+    out = pulse_transformed_ifft.abs()
+    #out = torch.mul(pulse_1_tensor_Y_F.abs(), phase)
+    return out
 
 
 def main(pulse_1_):
@@ -92,10 +100,10 @@ def main(pulse_1_):
 
             noise = torch.randn(b_size, nz, 1, device=device)
             phase = netG(noise)
-            
-            pulse_transformed = torch.mul(pulse_1_tensor_Y_F, torch.exp(1j*phase))
-            pulse_transformed_ifft = torch.fft.ifft(pulse_transformed)
-            fake = pulse_transformed_ifft.abs()
+        
+            #fake = phase
+            #COMPLEX_COMPUTE
+            fake = complex_comput(pulse_1, phase)
             
             # gradient penalty
             eps = torch.Tensor(b_size, 1, 1).uniform_(0, 1).to(device)
@@ -117,9 +125,10 @@ def main(pulse_1_):
 
                 netG.zero_grad()
                 phase = netG(noise)
-                pulse_transformed = torch.mul(pulse_1_tensor_Y_F, torch.exp(1j*phase))
-                pulse_transformed_ifft = torch.fft.ifft(pulse_transformed)
-                fake = pulse_transformed_ifft.abs()
+                
+                #fake = phase
+                #COMPLEX_COMPUTE
+                fake = complex_comput(pulse_1, phase)
                 loss_G = -torch.mean(netD(fake))
 
                 netD.zero_grad()
@@ -134,9 +143,10 @@ def main(pulse_1_):
         # save training process
         with torch.no_grad():
             phase = netG(fixed_noise).detach().cpu()
-            pulse_transformed = torch.mul(pulse_1_tensor_Y_F, torch.exp(1j*phase))
-            pulse_transformed_ifft = torch.fft.ifft(pulse_transformed)
-            fake = pulse_transformed_ifft.abs()
+            #fake = phase
+            #COMPLEX_COMPUTE
+            fake = complex_comput(pulse_1, phase)
+            
             f, a = plt.subplots(4, 4, figsize=(8, 8))
             for i in range(4):
                 for j in range(4):
