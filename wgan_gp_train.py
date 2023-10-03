@@ -16,9 +16,9 @@ beta1 = 0
 beta2 = 0.9
 p_coeff = 10
 n_critic = 5
-lr = 1e-4
-epoch_num = 64
-batch_size = 8
+lr = 1e-5
+epoch_num = 100
+batch_size = 64
 nz = 100  # length of noise
 ngpu = 0
 torch.backends.cudnn.benchmark = True #let cudnn chose the most efficient way of calculating Convolutions
@@ -44,6 +44,7 @@ pulse_2 = sa.hermitian_pulse((1550,1560), 1555, 4, x_type='freq')
 pulse_2.x_type = "wl"
 pulse_2.wl_to_freq()
 pulse_2.Y *=  np.sqrt(1/np.sum((pulse_2.Y)**2))
+pulse_2.Y += 0.04 
 
 plt.plot(pulse_2.Y)
 plt.savefig('hermit_GAN.png')
@@ -82,7 +83,7 @@ def main(pulse_1_):
     netG.apply(weights_init)
 
     # used for visualizing training process
-    fixed_noise = torch.randn(16, nz, 1, device=device)
+    fixed_noise = torch.randn(4, nz, 1, device=device)
 
     # optimizers
     # optimizerD = optim.Adam(netD.parameters(), lr=lr, betas=(beta1, beta2))
@@ -146,12 +147,12 @@ def main(pulse_1_):
             #COMPLEX_COMPUTE
             fake = complex_comput(pulse_1, phase).cpu()
             
-            f, a = plt.subplots(4, 4, figsize=(8, 8))
-            for i in range(4):
-                for j in range(4):
-                    a[i][j].plot(fake[i * 4 + j].view(-1))
-                    a[i][j].set_xticks(())
-                    a[i][j].set_yticks(())
+            f, a = plt.subplots(2, 2, figsize=(8, 8))
+            for i in range(2):
+                for j in range(2):
+                    a[i][j].plot(fake[i * 2 + j].view(-1))
+                    #a[i][j].set_xticks(())
+                    #a[i][j].set_yticks(())
             plt.savefig('./img_wgan_gp/wgan_gp_epoch_%d.png' % epoch)
             plt.close()
     # save model
