@@ -1,3 +1,6 @@
 *.pdf
 *.jpg
 *.png
+/img_dcgan
+/img_wgan
+/img_wgan_gp
