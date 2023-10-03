@@ -93,7 +93,7 @@ def main():
 
             # gradient penalty
             eps = torch.Tensor(b_size, 1, 1).uniform_(0, 1).to(device)
-            x_p = eps * data + (1 - eps) * fake
+            x_p = eps * real_cpu + (1 - eps) * fake
             grad = autograd.grad(netD(x_p).mean(), x_p, create_graph=True, retain_graph=True)[0].view(b_size, -1)
             grad_norm = torch.norm(grad, 2, 1)
             grad_penalty = p_coeff * torch.pow(grad_norm - 1, 2)
