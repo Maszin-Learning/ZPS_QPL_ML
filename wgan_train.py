@@ -116,7 +116,7 @@ def main():
                     a[i][j].plot(fake[i * 4 + j].view(-1))
                     a[i][j].set_xticks(())
                     a[i][j].set_yticks(())
-            plt.savefig('./img/wgan_epoch_%d.png' % epoch)
+            plt.savefig('./img_wgan/wgan_epoch_%d.png' % epoch)
             plt.close()
     # save model
     torch.save(netG, './nets/wgan_netG.pkl')

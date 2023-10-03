@@ -161,7 +161,7 @@ def main(pulse_1_):
                     a[i][j].plot(fake[i * 4 + j].view(-1))
                     a[i][j].set_xticks(())
                     a[i][j].set_yticks(())
-            plt.savefig('./img/dcgan_epoch_%d.png' % epoch)
+            plt.savefig('./img_dcgan/dcgan_epoch_%d.png' % epoch)
             plt.close()
     
     # save models
