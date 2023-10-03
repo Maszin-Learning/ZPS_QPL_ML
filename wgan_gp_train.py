@@ -73,8 +73,8 @@ def main(pulse_1_):
         trainset, batch_size=batch_size, shuffle=True
     )
 
-    pulse_1_tensor_Y=torch.tensor(pulse_1_.Y.copy(), requires_grad=True, device=device, dtype=dtype)
-    pulse_1_tensor_Y_F=torch.fft.fft(pulse_1_tensor_Y)
+    #pulse_1_tensor_Y=torch.tensor(pulse_1_.Y.copy(), requires_grad=True, device=device, dtype=dtype)
+    #pulse_1_tensor_Y_F=torch.fft.fft(pulse_1_tensor_Y)
     # init netD and netG
     netD = Discriminator().to(device)
     netD.apply(weights_init)
