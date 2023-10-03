@@ -8,17 +8,26 @@ import matplotlib.pyplot as plt
 from dcgan import Discriminator, Generator, weights_init
 from preprocessing import Dataset
 import spectral_analysis as sa
+import wandb
+import gc
+torch.cuda.empty_cache()
+gc.collect()
 
 
-lr = 1e-5#5e-4
+lr = 3e-6#5e-4
+div = 15 # dicsriminator lr divider
+tim = 
 beta1 = 0.9
-beta2 = 0.90
+beta2 = 0.95
 epoch_num = 70
 batch_size = 512
 nz = 100  # length of noise
 ngpu = 0
+
+torch.backends.cudnn.benchmark = True #let cudnn chose the most efficient way of calculating Convolutions
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-device = torch.device("cpu")
+torch.cuda.empty_cache()
+#device = torch.device("cpu")
 dtype = torch.float32
 
 ### GAUSS
@@ -44,23 +53,19 @@ dtype = torch.float32
 pulse_1 = sa.gaussian_pulse((1550,1560), 1555, 4, x_type='freq')
 pulse_1.x_type = "wl"
 pulse_1.wl_to_freq()
-
+pulse_1.Y *=  np.sqrt(1/np.sum((pulse_1.Y)**2))
 signal_len=len(pulse_1)
 print(signal_len)
 
-
+plt.plot(pulse_1.Y)
+plt.savefig('gauss_GAN.png')
+plt.close()
 
 pulse_2 = sa.hermitian_pulse((1550,1560), 1555, 4, x_type='freq')
 pulse_2.x_type = "wl"
 pulse_2.wl_to_freq()
-pulse_2.Y = pulse_2.Y
+pulse_2.Y *=  np.sqrt(1/np.sum((pulse_2.Y)**2))
 
-pulse_1.Y *=  np.sqrt(1/np.sum((pulse_1.Y)**2))
-pulse_1.Y *=  np.sqrt(1/np.sum((pulse_2.Y)**2))
-                      
-plt.plot(pulse_1.Y)
-plt.savefig('gauss_GAN.png')
-plt.close()
 plt.plot(pulse_2.Y)
 plt.savefig('hermit_GAN.png')
 plt.close()
@@ -97,7 +102,7 @@ def main(pulse_1_):
     real_label = 1.
     fake_label = 0.
 
-    optimizerD = optim.Adam(netD.parameters(), lr=lr, betas=(beta1, beta2))
+    optimizerD = optim.Adam(netD.parameters(), lr=lr/div, betas=(beta1, beta2))
     optimizerG = optim.Adam(netG.parameters(), lr=lr, betas=(beta1, beta2))
 
     for epoch in range(epoch_num):
@@ -105,6 +110,7 @@ def main(pulse_1_):
 
             real_cpu = data.to(device)
             b_size = real_cpu.size(0)
+
 
             # train netD
             label = torch.full((b_size,), real_label,
@@ -114,6 +120,7 @@ def main(pulse_1_):
             errD_real = criterion(output, label)
             errD_real.backward()
             D_x = output.mean().item()
+
 
             # train netG
             noise = torch.randn(b_size, nz, 1, device=device)
@@ -127,7 +134,8 @@ def main(pulse_1_):
             errD_fake.backward()
             D_G_z1 = output.mean().item()
             errD = errD_real + errD_fake
-            optimizerD.step()
+            if step*(epoch+1)%tim==0:
+                optimizerD.step()
             #optimizerD.zero_grad()
             netG.zero_grad()
 
@@ -136,12 +144,13 @@ def main(pulse_1_):
             errG = criterion(output, label)
             errG.backward()
             D_G_z2 = output.mean().item()
-            optimizerG.step()
+            if step%1==0:
+                optimizerG.step()
             #optimizerG.zero_grad()
 
-            print('[%d/%d][%d/%d]\tLoss_D: %.4f\tLoss_G: %.4f\tD(x): %.4f\tD(G(z)): %.4f / %.4f'
+            print('[%d/%d][%d/%d]\tLoss_D: %.4f\tLoss_G: %.4f\tD(x): %.4f\tD(G(z)): %.4f / %.4f, %.4f'
                   % (epoch, epoch_num, step, len(trainloader),
-                     errD.item(), errG.item(), D_x, D_G_z1, D_G_z2))
+                     errD.item(), errG.item(), D_x, D_G_z1, D_G_z2, D_G_z1/D_G_z2))
 
         # save training process
         with torch.no_grad():
