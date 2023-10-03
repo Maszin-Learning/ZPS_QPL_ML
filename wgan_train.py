@@ -7,6 +7,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from dcgan import Discriminator, Generator, weights_init
 from preprocessing import Dataset
+import spectral_analysis as sa
+import wandb
+import gc
 
 
 n_critic = 5
@@ -17,11 +20,40 @@ batch_size = 8
 nz = 100  # length of noise
 ngpu = 0
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+torch.backends.cudnn.benchmark = True #let cudnn chose the most efficient way of calculating Convolutions
+dtype = torch.float32
+
+
+pulse_1 = sa.gaussian_pulse((1550,1560), 1555, 4, x_type='freq')
+pulse_1.x_type = "wl"
+pulse_1.wl_to_freq()
+pulse_1.Y *=  np.sqrt(1/np.sum((pulse_1.Y)**2))
+signal_len=len(pulse_1)
+print(signal_len)
+
+plt.plot(pulse_1.Y)
+plt.savefig('gauss_GAN.png')
+plt.close()
+
+pulse_2 = sa.hermitian_pulse((1550,1560), 1555, 4, x_type='freq')
+pulse_2.x_type = "wl"
+pulse_2.wl_to_freq()
+pulse_2.Y *=  np.sqrt(1/np.sum((pulse_2.Y)**2))
+
+plt.plot(pulse_2.Y)
+plt.savefig('hermit_GAN.png')
+plt.close()
+
+
+
+pulse_2_Y_real=pulse_2.Y.real
+pulse_2_Y_imag=pulse_2.X.imag
+pulse_2_Y_abs_tensor = torch.tensor(np.abs(pulse_2.Y), requires_grad=True, device=device, dtype=dtype).reshape(1,signal_len)
 
 
 def main():
     # load training data
-    trainset = Dataset('./data/brilliant_blue')
+    trainset = Dataset('./data_hermit/')
 
     trainloader = torch.utils.data.DataLoader(
         trainset, batch_size=batch_size, shuffle=True

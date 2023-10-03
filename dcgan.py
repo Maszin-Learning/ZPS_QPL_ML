@@ -44,8 +44,8 @@ class Discriminator(nn.Module):
 
 
 class Generator(nn.Module):
-    def __init__(self, nz, pulse_Y):
-        self.pulse_Y_ = pulse_Y
+    def __init__(self, nz):
+
         super().__init__()
         self.main = nn.Sequential(
             nn.ConvTranspose1d(nz, 512, 114, 1, 0, bias=False),
