@@ -92,6 +92,7 @@ def main(pulse_1_):
 
             noise = torch.randn(b_size, nz, 1, device=device)
             phase = netG(noise)
+            
             pulse_transformed = torch.mul(pulse_1_tensor_Y_F, torch.exp(1j*phase))
             pulse_transformed_ifft = torch.fft.ifft(pulse_transformed)
             fake = pulse_transformed_ifft.abs()
@@ -104,7 +105,7 @@ def main(pulse_1_):
             grad_penalty = p_coeff * torch.pow(grad_norm - 1, 2)
 
             loss_D = torch.mean(netD(fake) - netD(real_cpu))
-            loss_D.backward()
+            loss_D.backward(create_graph=True, retain_graph=True)
             optimizerD.step()
 
             for p in netD.parameters():

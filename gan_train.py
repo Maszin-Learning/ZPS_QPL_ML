@@ -16,7 +16,7 @@ gc.collect()
 
 lr = 3e-6#5e-4
 div = 15 # dicsriminator lr divider
-tim = 
+tim = 10
 beta1 = 0.9
 beta2 = 0.95
 epoch_num = 70
@@ -90,7 +90,7 @@ def main(pulse_1_):
     netD = Discriminator().to(device)
     netD.apply(weights_init)
 
-    netG = Generator(nz, pulse_1_tensor_Y_F).to(device)
+    netG = Generator(nz).to(device)
     netG.apply(weights_init)
 
 
@@ -140,7 +140,7 @@ def main(pulse_1_):
             netG.zero_grad()
 
             label.fill_(real_label)
-            output = netD(fake).view(-1)
+            output = netD(pulse_abs).view(-1)
             errG = criterion(output, label)
             errG.backward()
             D_G_z2 = output.mean().item()
@@ -155,10 +155,13 @@ def main(pulse_1_):
         # save training process
         with torch.no_grad():
             fake = netG(fixed_noise).detach().cpu()
+            pulse_transformed = torch.mul(pulse_1_tensor_Y_F, torch.exp(1j*fake))
+            pulse_transformed_ifft = torch.fft.ifft(pulse_transformed)
+            pulse_abs = pulse_transformed_ifft.abs()
             f, a = plt.subplots(4, 4, figsize=(8, 8))
             for i in range(4):
                 for j in range(4):
-                    a[i][j].plot(fake[i * 4 + j].view(-1))
+                    a[i][j].plot(pulse_abs[i * 4 + j].view(-1))
                     a[i][j].set_xticks(())
                     a[i][j].set_yticks(())
             plt.savefig('./img_dcgan/dcgan_epoch_%d.png' % epoch)
