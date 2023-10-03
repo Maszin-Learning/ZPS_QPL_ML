@@ -4,3 +4,9 @@
 /img_dcgan
 /img_wgan
 /img_wgan_gp
+
+# exclude everything
+img_dcgan/*
+
+# exception to the rule
+!img_dcgan/.gitkeep 
