@@ -16,9 +16,9 @@ beta1 = 0
 beta2 = 0.9
 p_coeff = 10
 n_critic = 5
-lr = 1e-5
+lr = 1e-6
 epoch_num = 100
-batch_size = 64
+batch_size = 128
 nz = 100  # length of noise
 ngpu = 0
 torch.backends.cudnn.benchmark = True #let cudnn chose the most efficient way of calculating Convolutions
@@ -45,23 +45,26 @@ pulse_2.x_type = "wl"
 pulse_2.wl_to_freq()
 pulse_2.Y *=  np.sqrt(1/np.sum((pulse_2.Y)**2))
 pulse_2.Y += 0.04 
-
+"""
 plt.plot(pulse_2.Y)
 plt.savefig('hermit_GAN.png')
 plt.close()
 
-
+Z=torch.tensor(pulse_1.Y.copy(), requires_grad=True, device=device, dtype=dtype)
+Z_f=torch.fft.fft(Z)
+"""
 
 pulse_2_Y_real=pulse_2.Y.real
 pulse_2_Y_imag=pulse_2.X.imag
-pulse_2_Y_abs_tensor = torch.tensor(np.abs(pulse_2.Y), requires_grad=True, device=device, dtype=dtype).reshape(1,signal_len)
+pulse_2_Y_abs_tensor = torch.tensor(np.real(pulse_2.Y), requires_grad=True, device=device, dtype=dtype).reshape(1,signal_len)
 
 def complex_comput(pulse_1, phase):
+    phase = torch.fft.fftshift(phase)
     pulse_1_tensor_Y=torch.tensor(pulse_1.Y.copy(), requires_grad=True, device=device, dtype=dtype)
     pulse_1_tensor_Y_F=torch.fft.fft(pulse_1_tensor_Y).to(device)
     pulse_transformed = torch.mul(pulse_1_tensor_Y_F, torch.exp(1j*phase).to(device))
     pulse_transformed_ifft = torch.fft.ifft(pulse_transformed)
-    out = pulse_transformed_ifft.abs()
+    out = pulse_transformed_ifft.real
     return out
 
 
@@ -100,6 +103,7 @@ def main(pulse_1_):
 
             noise = torch.randn(b_size, nz, 1, device=device)
             phase = netG(noise)
+            
         
             #fake = phase
             #COMPLEX_COMPUTE
@@ -147,11 +151,11 @@ def main(pulse_1_):
             #COMPLEX_COMPUTE
             fake = complex_comput(pulse_1, phase).cpu()
             
-            f, a = plt.subplots(2, 2, figsize=(8, 8))
-            for i in range(2):
+            f, a = plt.subplots(4, 2, figsize=(8, 8))
+            for i in range(4):
                 for j in range(2):
-                    a[i][j].plot(fake[i * 2 + j].view(-1))
-                    #a[i][j].set_xticks(())
+                    a[i][0].plot(fake[i].view(-1))
+                    a[i][1].plot(phase[i].view(-1))
                     #a[i][j].set_yticks(())
             plt.savefig('./img_wgan_gp/wgan_gp_epoch_%d.png' % epoch)
             plt.close()
@@ -162,4 +166,3 @@ def main(pulse_1_):
 
 if __name__ == '__main__':
     main(pulse_1)
-
