@@ -44,19 +44,18 @@ pulse_2 = sa.hermitian_pulse((1550,1560), 1555, 4, x_type='freq')
 pulse_2.x_type = "wl"
 pulse_2.wl_to_freq()
 pulse_2.Y *=  np.sqrt(1/np.sum((pulse_2.Y)**2))
-pulse_2.Y += 0.04 
-"""
-plt.plot(pulse_2.Y)
+
+plt.plot(np.real(pulse_2.Y.copy()))
 plt.savefig('hermit_GAN.png')
 plt.close()
 
 Z=torch.tensor(pulse_1.Y.copy(), requires_grad=True, device=device, dtype=dtype)
 Z_f=torch.fft.fft(Z)
-"""
+
 
 pulse_2_Y_real=pulse_2.Y.real
 pulse_2_Y_imag=pulse_2.X.imag
-pulse_2_Y_abs_tensor = torch.tensor(np.real(pulse_2.Y), requires_grad=True, device=device, dtype=dtype).reshape(1,signal_len)
+pulse_2_Y_abs_tensor = torch.tensor(np.real(pulse_2.Y.copy()), requires_grad=True, device=device, dtype=dtype).reshape(1,signal_len)
 
 def complex_comput(pulse_1, phase):
     phase = torch.fft.fftshift(phase)

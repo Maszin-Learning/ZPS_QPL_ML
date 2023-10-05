@@ -1116,7 +1116,7 @@ def hermitian_pulse(bandwidth, centre, FWHM, x_type):
     def gauss(x, mu, std):
         return 1/(std*np.sqrt(2*np.pi))*np.exp(-(x-mu)**2/(2*std**2))
     gauss = np.vectorize(gauss)
-    Y = (X - X[floor(len(X)/2)])*gauss(X, centre, sd)
+    Y = (-X + X[floor(len(X)/2)])*gauss(X, centre, sd)
     return sa.spectrum(X, Y, x_type, "intensity")
 
 
