@@ -56,7 +56,9 @@ Z_f=torch.fft.fft(Z)
 pulse_2_Y_real=pulse_2.Y.real
 pulse_2_Y_imag=pulse_2.X.imag
 pulse_2_Y_abs_tensor = torch.tensor(np.abs(pulse_2.Y.copy()), requires_grad=True, device=device, dtype=dtype).reshape(1,signal_len)
-
+plt.plot(np.abs(pulse_2.Y.copy()))
+plt.savefig('hermit_gan_abs.png')
+plt.close()
 
 def complex_comput(pulse_1, phase):
     #phase = torch.fft.fftshift(phase)
