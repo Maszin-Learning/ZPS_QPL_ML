@@ -8,13 +8,30 @@ import torch.nn as nn
 import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm import tqdm
+from math import floor
+
+# HyperParameters
+
+config = dict(
+    num = 10000,
+    input_dim = 32,             # and dim of noise vector
+    output_dim = 200,            # signal_len,
+    p = 5,                      # number of plots
+    criterion = nn.MSELoss(),  
+    learning_rate = 1e-5,
+    epoch_num = 20000,
+    node_number = 120,
+    architecture = "NN_1",
+    dataset_id = "peds-0192",
+    infra = "Local_cpu",
+)    
 
 # define initial and target pulse
 
-initial_pulse = sa.gaussian_pulse((190, 196), 193, 1, x_type ='freq')
-target_pulse = sa.hermitian_pulse((190, 196), 193, 1, x_type ='freq')
+initial_pulse = sa.gaussian_pulse((190, 196), 193, 0.2, x_type ='freq', num = config["num"])
+target_pulse = sa.hermitian_pulse(2, (190, 196), 193, 0.2, x_type ='freq', num = config["num"])
 
-target_pulse.Y *= np.sqrt((np.sum((initial_pulse.Y)**2))/np.sum((target_pulse.Y)**2))
+target_pulse.Y *= 0.4*np.sqrt((np.sum((initial_pulse.Y)**2))/np.sum((target_pulse.Y)**2))
 
 signal_len = len(initial_pulse)
 
@@ -63,7 +80,7 @@ class AutoEncoder(nn.Module):
         super (AutoEncoder,self).__init__()
 
         self.linear_1 = nn.Linear(input_size,n)
-        #self.linear_2 = nn.Linear(n,n)
+        #self.linear_2 = nn.Linear(n,n)9
         self.linear_3 = nn.Linear(n,output_size)
         
         self.leakyrelu=nn.LeakyReLU(1, inplace=True)
@@ -79,21 +96,7 @@ class AutoEncoder(nn.Module):
         x = self.normal_3(x)
         return self.leakyrelu(x)
     
-# HyperParameters
 
-config = dict(
-    input_dim = 32,             # and dim of noise vector
-    output_dim = 50,            # signal_len,
-    p = 5,                      # number of plots
-    criterion = nn.MSELoss(),  
-    learning_rate = 5e-7,
-    epoch_num = 100000,
-    node_number = 100,
-    architecture = "NN_1",
-    dataset_id = "peds-0192",
-    infra = "Local_cpu",
-)    
-    
 # Initialize network
 
 model = AutoEncoder(input_size=config['input_dim'], n=config['node_number'], output_size=config['output_dim'])
@@ -129,7 +132,7 @@ initial_imag = initial_Y.imag
 
 target_real = target_pulse.Y.real
 target_imag = target_pulse.X.imag
-target_abs = torch.tensor(np.abs(target_pulse.Y), requires_grad=True, device=device_, dtype=dtype_).reshape(1, signal_len)
+target_abs = torch.tensor(np.real(target_pulse.Y), requires_grad=True, device=device_, dtype=dtype_).reshape(1, signal_len)
 
 # learning loop
 
@@ -139,10 +142,12 @@ for epoch in tqdm(range(config['epoch_num'])):
 
     optimizer.zero_grad()           # zero gradients
     results = model(noise_phase)    # Forward to get output
-    results = torch.reshape(results, [50, 1])
-    phase = torch.concat([torch.zeros([975, 1], requires_grad = True), 
+    results = torch.reshape(results, [200, 1])
+
+    size = (floor(config["num"]/2 - 100), 1)
+    phase = torch.concat([torch.zeros(size = size, requires_grad = True), 
                           results, 
-                          torch.zeros([975, 1], requires_grad = True)])
+                          torch.zeros(size = size, requires_grad = True)])
     # get intensity spectrum
 
     initial_imag_and_real = torch.tensor([[initial_Y.real[i], initial_Y.imag[i]] for i in range(len(initial_pulse))], 
@@ -154,7 +159,7 @@ for epoch in tqdm(range(config['epoch_num'])):
     # create complex spectrum
 
     phase = torch.fft.fftshift(phase)
-    phase = phase.reshape([1, 2000])
+    phase = phase.reshape([1, config["num"]])
     complex_initial = torch.mul(complex_initial, torch.exp(1j*phase))
 
     # IFT
@@ -163,7 +168,7 @@ for epoch in tqdm(range(config['epoch_num'])):
 
     # loss & optimizer step
 
-    reconstructed = complex_initial.abs()
+    reconstructed = complex_initial.real
     loss = criterion(reconstructed, target_abs)
     loss.backward() # backward propagation
     optimizer.step() # Updating parameters
@@ -174,8 +179,8 @@ for epoch in tqdm(range(config['epoch_num'])):
     if epoch % 500 == 0:
         if epoch % 500 == 0:
             plt.close()
-            plt.plot(initial_pulse.X, np.reshape(reconstructed.clone().detach().numpy(), 2000), color = "green")
-            plt.plot(initial_pulse.X, np.reshape(target_abs.clone().detach().numpy(), 2000), color = "orange")
+            plt.plot(initial_pulse.X[3000:7000], np.reshape(reconstructed.clone().detach().numpy(), config["num"])[3000:7000], color = "green")
+            plt.plot(initial_pulse.X[3000:7000], np.reshape(target_abs.clone().detach().numpy(), config["num"])[3000:7000], color = "orange")
             plt.grid()
             plt.savefig("pics/reconstructed{}.jpg".format(epoch))
             plt.close()
