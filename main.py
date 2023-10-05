@@ -15,7 +15,7 @@ from math import floor
 config = dict(
     num = 10000,
     input_dim = 32,             # and dim of noise vector
-    output_dim = 200,            # signal_len,
+    output_dim = 100,            # signal_len,
     p = 5,                      # number of plots
     criterion = nn.MSELoss(),  
     learning_rate = 1e-5,
@@ -28,23 +28,23 @@ config = dict(
 
 # define initial and target pulse
 
-initial_pulse = sa.gaussian_pulse((190, 196), 193, 0.2, x_type ='freq', num = config["num"])
-target_pulse = sa.hermitian_pulse(2, (190, 196), 193, 0.2, x_type ='freq', num = config["num"])
+initial_pulse = sa.hermitian_pulse(1, (190, 196), 193, 0.2, x_type ='freq', num = config["num"])
+target_pulse = sa.gaussian_pulse((190, 196), 193, 0.2, x_type ='freq', num = config["num"])
 
-target_pulse.Y *= 0.4*np.sqrt((np.sum((initial_pulse.Y)**2))/np.sum((target_pulse.Y)**2))
+target_pulse.Y *= np.sqrt((np.sum((initial_pulse.Y)**2))/np.sum((target_pulse.Y)**2))
 
 signal_len = len(initial_pulse)
 
-plt.plot(initial_pulse.X, initial_pulse.Y, color = "red")
-plt.grid()
-plt.title("Initial pulse")
-plt.xlabel("Frequency (THz)")
-plt.show()
+plot_from = 3000
+plot_to = 7000
 
-plt.plot(target_pulse.X, target_pulse.Y, color = "blue")
+plt.scatter(initial_pulse.X[plot_from:plot_to], np.abs(initial_pulse.Y[plot_from:plot_to]), color = "green", s = 1)
 plt.grid()
-plt.title("Target pulse")
+plt.title("Initial and target")
 plt.xlabel("Frequency (THz)")
+plt.scatter(target_pulse.X[plot_from:plot_to], np.abs(target_pulse.Y[plot_from:plot_to]), color = "orange", s = 1)
+plt.legend(["Initial pulse", "Target pulse"])
+plt.savefig("pics/Initial pulse.jpg")
 plt.show()
 
 ### CUDA & stuff
@@ -108,7 +108,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr = config['learning_rate'], w
 
 # random phase to start with something
 
-noise_phase = torch.tensor(np.random.uniform(low = 0, high = 1,
+noise_phase = torch.tensor(np.random.uniform(low = 0, high = 2*np.pi,
                                     size = (1, config['input_dim'])), 
                                     requires_grad=True, 
                                     device = device_, 
@@ -132,7 +132,7 @@ initial_imag = initial_Y.imag
 
 target_real = target_pulse.Y.real
 target_imag = target_pulse.X.imag
-target_abs = torch.tensor(np.real(target_pulse.Y), requires_grad=True, device=device_, dtype=dtype_).reshape(1, signal_len)
+target_abs = torch.tensor(np.abs(target_pulse.Y), requires_grad=True, device=device_, dtype=dtype_).reshape(1, signal_len)
 
 # learning loop
 
@@ -142,9 +142,8 @@ for epoch in tqdm(range(config['epoch_num'])):
 
     optimizer.zero_grad()           # zero gradients
     results = model(noise_phase)    # Forward to get output
-    results = torch.reshape(results, [200, 1])
-
-    size = (floor(config["num"]/2 - 100), 1)
+    results = torch.reshape(results, [config["output_dim"], 1])
+    size = (floor(config["num"]/2 - config["output_dim"]/2), 1)
     phase = torch.concat([torch.zeros(size = size, requires_grad = True), 
                           results, 
                           torch.zeros(size = size, requires_grad = True)])
@@ -154,21 +153,25 @@ for epoch in tqdm(range(config['epoch_num'])):
                                          requires_grad = True, device = device_, dtype = dtype_)
     complex_initial = torch.view_as_complex(initial_imag_and_real)
     complex_initial = complex_initial.reshape(1, signal_len)
+    complex_initial = torch.fft.fftshift(complex_initial)
     complex_initial = torch.fft.fft(complex_initial)
+    complex_initial = torch.fft.fftshift(complex_initial)
 
     # create complex spectrum
 
-    phase = torch.fft.fftshift(phase)
+    #phase = torch.fft.fftshift(phase)
     phase = phase.reshape([1, config["num"]])
     complex_initial = torch.mul(complex_initial, torch.exp(1j*phase))
 
     # IFT
 
+    complex_initial = torch.fft.ifftshift(complex_initial)
     complex_initial = torch.fft.ifft(complex_initial)
+    complex_initial = torch.fft.ifftshift(complex_initial)
 
     # loss & optimizer step
 
-    reconstructed = complex_initial.real
+    reconstructed = complex_initial.abs()
     loss = criterion(reconstructed, target_abs)
     loss.backward() # backward propagation
     optimizer.step() # Updating parameters
@@ -178,9 +181,10 @@ for epoch in tqdm(range(config['epoch_num'])):
 
     if epoch % 500 == 0:
         if epoch % 500 == 0:
+
             plt.close()
-            plt.plot(initial_pulse.X[3000:7000], np.reshape(reconstructed.clone().detach().numpy(), config["num"])[3000:7000], color = "green")
-            plt.plot(initial_pulse.X[3000:7000], np.reshape(target_abs.clone().detach().numpy(), config["num"])[3000:7000], color = "orange")
+            plt.scatter(initial_pulse.X[plot_from:plot_to], np.reshape(reconstructed.clone().detach().numpy(), config["num"])[plot_from:plot_to], color = "green", s =1)
+            plt.scatter(initial_pulse.X[plot_from:plot_to], np.reshape(target_abs.clone().detach().numpy(), config["num"])[plot_from:plot_to], color = "orange", s =1)
             plt.grid()
             plt.savefig("pics/reconstructed{}.jpg".format(epoch))
             plt.close()
