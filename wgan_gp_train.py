@@ -55,16 +55,19 @@ Z_f=torch.fft.fft(Z)
 
 pulse_2_Y_real=pulse_2.Y.real
 pulse_2_Y_imag=pulse_2.X.imag
-pulse_2_Y_abs_tensor = torch.tensor(np.real(pulse_2.Y.copy()), requires_grad=True, device=device, dtype=dtype).reshape(1,signal_len)
+pulse_2_Y_abs_tensor = torch.tensor(np.abs(pulse_2.Y.copy()), requires_grad=True, device=device, dtype=dtype).reshape(1,signal_len)
+
 
 def complex_comput(pulse_1, phase):
-    phase = torch.fft.fftshift(phase)
+    #phase = torch.fft.fftshift(phase)
     pulse_1_tensor_Y=torch.tensor(pulse_1.Y.copy(), requires_grad=True, device=device, dtype=dtype)
+    pulse_1_tensor_Y = torch.fft.fftshift(pulse_1_tensor_Y)
     pulse_1_tensor_Y_F=torch.fft.fft(pulse_1_tensor_Y).to(device)
     pulse_transformed = torch.mul(pulse_1_tensor_Y_F, torch.exp(1j*phase).to(device))
     pulse_transformed_ifft = torch.fft.ifft(pulse_transformed)
-    out = pulse_transformed_ifft.real
+    out = torch.abs(pulse_transformed_ifft)
     return out
+
 
 
 def main(pulse_1_):
