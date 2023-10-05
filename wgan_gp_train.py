@@ -59,7 +59,7 @@ pulse_2_Y_abs_tensor = torch.tensor(np.abs(pulse_2.Y.copy()), requires_grad=True
 plt.plot(np.abs(pulse_2.Y.copy()))
 plt.savefig('hermit_gan_abs.png')
 plt.close()
-
+#
 def complex_comput(pulse_1, phase):
     #phase = torch.fft.fftshift(phase)
     pulse_1_tensor_Y=torch.tensor(pulse_1.Y.copy(), requires_grad=True, device=device, dtype=dtype)
