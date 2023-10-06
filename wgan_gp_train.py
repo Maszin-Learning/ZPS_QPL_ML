@@ -16,9 +16,9 @@ beta1 = 0
 beta2 = 0.9
 p_coeff = 10
 n_critic = 5
-lr = 1e-5
-epoch_num = 100
-batch_size = 128
+lr = 5e-6
+epoch_num = 1000000
+batch_size = 1
 nz = 100  # length of noise
 ngpu = 0
 torch.backends.cudnn.benchmark = True #let cudnn chose the most efficient way of calculating Convolutions
@@ -29,21 +29,25 @@ dtype = torch.float32
 
 
 
-pulse_1 = sa.gaussian_pulse((1550,1560), 1555, 4, x_type='freq')
+pulse_1 = sa.gaussian_pulse((1540,1560), 1550, 1, x_type='freq')
 pulse_1.x_type = "wl"
 pulse_1.wl_to_freq()
-pulse_1.Y *=  np.sqrt(1/np.sum((pulse_1.Y)**2))
+pulse_1.Y *=  np.sqrt(1/np.sum(np.abs(pulse_1.Y)))
+#pulse_1.Y *=  np.sqrt((np.sum((Pulse_1.Y)**2)/np.sum((pulse_2.Y)**2)
 signal_len=len(pulse_1)
-print(signal_len)
 
-plt.plot(pulse_1.Y)
+
+plt.plot(pulse_1.Y.copy())
 plt.savefig('gauss_GAN.png')
 plt.close()
 
-pulse_2 = sa.hermitian_pulse((1550,1560), 1555, 4, x_type='freq')
+pulse_2 = sa.hermitian_pulse((1540,1560), 1550, 1, x_type='freq')
 pulse_2.x_type = "wl"
+#pulse_2.Y *=  np.sqrt(1/np.sum((pulse_2.Y)**2))
 pulse_2.wl_to_freq()
-pulse_2.Y *=  np.sqrt(1/np.sum((pulse_2.Y)**2))
+pulse_2.Y *=  np.sqrt(1/np.sum(np.abs(pulse_2.Y)))
+#pulse_2.Y *=  np.sqrt(np.sum((pulse_1.Y)**2)/np.sum((pulse_2.Y)**2))
+pulse_2.Y = np.abs(pulse_2.Y)
 
 plt.plot(np.real(pulse_2.Y.copy()))
 plt.savefig('hermit_GAN.png')
@@ -53,28 +57,29 @@ Z=torch.tensor(pulse_1.Y.copy(), requires_grad=True, device=device, dtype=dtype)
 Z_f=torch.fft.fft(Z)
 
 
-pulse_2_Y_real=pulse_2.Y.real
-pulse_2_Y_imag=pulse_2.X.imag
-pulse_2_Y_abs_tensor = torch.tensor(np.abs(pulse_2.Y.copy()), requires_grad=True, device=device, dtype=dtype).reshape(1,signal_len)
-plt.plot(np.abs(pulse_2.Y.copy()))
-plt.savefig('hermit_gan_abs.png')
-plt.close()
-#
-def complex_comput(pulse_1, phase):
-    #phase = torch.fft.fftshift(phase)
-    pulse_1_tensor_Y=torch.tensor(pulse_1.Y.copy(), requires_grad=True, device=device, dtype=dtype)
+#pulse_2_Y_real=pulse_2.Y.real
+#pulse_2_Y_imag=pulse_2.X.imag
+pulse_2_Y_abs_tensor = torch.tensor(pulse_2.Y.copy(), requires_grad=True, device=device, dtype=dtype).reshape(1,signal_len)
+
+def complex_comput(pulse_1_, phase):
+    #phase = torch.fft.fftshift(phase) 
+    pulse_1_tensor_Y=torch.tensor(pulse_1_.Y.copy(), requires_grad=True, device=device, dtype=dtype)
     pulse_1_tensor_Y = torch.fft.fftshift(pulse_1_tensor_Y)
     pulse_1_tensor_Y_F=torch.fft.fft(pulse_1_tensor_Y).to(device)
+    pulse_1_tensor_Y_F = torch.fft.fftshift(pulse_1_tensor_Y_F)
     pulse_transformed = torch.mul(pulse_1_tensor_Y_F, torch.exp(1j*phase).to(device))
-    pulse_transformed_ifft = torch.fft.ifft(pulse_transformed)
+    pulse_transformed = torch.fft.ifftshift(pulse_transformed)
+    pulse_transformed_ifft = torch.fft.ifftshift(torch.fft.ifft(pulse_transformed))
     out = torch.abs(pulse_transformed_ifft)
     return out
 
 
-
-def main(pulse_1_):
+def main(pulse_1_, pulse_2_):
+    plt.plot(pulse_1_.Y.copy())
+    plt.savefig('input.png')
+    plt.close()
     # load training data
-    trainset = Dataset('./data_hermit/')
+    trainset = Dataset('./data_gauss/')
 
     trainloader = torch.utils.data.DataLoader(
         trainset, batch_size=batch_size, shuffle=True
@@ -93,10 +98,10 @@ def main(pulse_1_):
     fixed_noise = torch.randn(4, nz, 1, device=device)
 
     # optimizers
-    # optimizerD = optim.Adam(netD.parameters(), lr=lr, betas=(beta1, beta2))
-    # optimizerG = optim.Adam(netG.parameters(), lr=lr, betas=(beta1, beta2))
-    optimizerD = optim.RMSprop(netD.parameters(), lr=lr)
-    optimizerG = optim.RMSprop(netG.parameters(), lr=lr)
+    optimizerD = optim.Adam(netD.parameters(), lr=lr, betas=(beta1, beta2))
+    optimizerG = optim.Adam(netG.parameters(), lr=lr, betas=(beta1, beta2))
+    #optimizerD = optim.RMSprop(netD.parameters(), lr=lr)
+    #optimizerG = optim.RMSprop(netG.parameters(), lr=lr)
 
     for epoch in range(epoch_num):
         for step, (data, _) in enumerate(trainloader):
@@ -111,7 +116,7 @@ def main(pulse_1_):
         
             #fake = phase
             #COMPLEX_COMPUTE
-            fake = complex_comput(pulse_1, phase)
+            fake = complex_comput(pulse_1_, phase)
             
             # gradient penalty
             eps = torch.Tensor(b_size, 1, 1).uniform_(0, 1).to(device)
@@ -136,7 +141,7 @@ def main(pulse_1_):
                 
                 #fake = phase
                 #COMPLEX_COMPUTE
-                fake = complex_comput(pulse_1, phase)
+                fake = complex_comput(pulse_1_, phase)
                 loss_G = -torch.mean(netD(fake))
 
                 netD.zero_grad()
@@ -149,24 +154,26 @@ def main(pulse_1_):
                       % (epoch, epoch_num, step, len(trainloader), loss_D.item(), loss_G.item()))
 
         # save training process
-        with torch.no_grad():
-            phase = netG(fixed_noise).detach().cpu()
-            #fake = phase
-            #COMPLEX_COMPUTE
-            fake = complex_comput(pulse_1, phase).cpu()
-            
-            f, a = plt.subplots(4, 2, figsize=(8, 8))
-            for i in range(4):
-                for j in range(2):
-                    a[i][0].plot(fake[i].view(-1))
-                    a[i][1].plot(phase[i].view(-1))
-                    #a[i][j].set_yticks(())
-            plt.savefig('./img_wgan_gp/wgan_gp_epoch_%d.png' % epoch)
-            plt.close()
+        if epoch % 1000 == 0:
+            with torch.no_grad():
+                phase = netG(fixed_noise).detach().cpu()
+                #fake = phase
+                #COMPLEX_COMPUTE
+                fake = complex_comput(pulse_1_, phase).cpu()
+
+                f, a = plt.subplots(4, 2, figsize=(6, 6))
+                for i in range(4):
+                    for j in range(2):
+                        a[i][0].plot(fake[i].view(-1))
+                        a[i][0].plot(pulse_2_.Y)
+                        a[i][1].plot(phase[i].view(-1))
+                        #a[i][j].set_yticks(())
+                plt.savefig('./img_wgan_gp/wgan_gp_epoch_%d.png' % epoch)
+                plt.close()
     # save model
     torch.save(netG, './nets/wgan_gp_netG.pkl')
     torch.save(netD, './nets/wgan_gp_netD.pkl')
 
 
 if __name__ == '__main__':
-    main(pulse_1)
+    main(pulse_2,pulse_1)
