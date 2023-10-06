@@ -18,21 +18,21 @@ class Discriminator(nn.Module):
         self.main = nn.Sequential(
             # input 1824
             nn.Conv1d(1, 64, kernel_size=4, stride=2, padding=1, bias=False),
-            nn.LeakyReLU(0.2, inplace=True),
+            nn.LeakyReLU(0.5, inplace=True),
             # state size 912
             nn.Conv1d(64, 128, kernel_size=4, stride=2, padding=1, bias=False),
-            nn.BatchNorm1d(128),
-            nn.LeakyReLU(0.2, inplace=True),
+            #nn.BatchNorm1d(128),
+            nn.LeakyReLU(0.5, inplace=True),
             # state size 456
             nn.Conv1d(128, 256, kernel_size=4,
                       stride=2, padding=1, bias=False),
-            nn.BatchNorm1d(256),
-            nn.LeakyReLU(0.2, inplace=True),
+            #nn.BatchNorm1d(256),
+            nn.LeakyReLU(0.5, inplace=True),
             # state size 228
             nn.Conv1d(256, 512, kernel_size=4,
                       stride=2, padding=1, bias=False),
-            nn.BatchNorm1d(512),
-            nn.LeakyReLU(0.2, inplace=True),
+            #nn.BatchNorm1d(512),
+            nn.LeakyReLU(0.5, inplace=True),
             # state size 114
             nn.Conv1d(512, 1, kernel_size=114, stride=1, padding=0, bias=False),
             nn.Sigmoid()
@@ -72,5 +72,6 @@ class Generator(nn.Module):
 
     def forward(self, x):
         x = self.main(x)
+        x = 2*torch.pi*x
         
         return x
