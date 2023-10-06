@@ -4,7 +4,7 @@ import torch.optim as optim
 import torchvision.transforms as transforms
 import numpy as np
 import matplotlib.pyplot as plt
-from dcgan_1d import Discriminator, Generator, weights_init
+from dcgan_1 import Discriminator, Generator, weights_init
 from preprocessing import Dataset
 import torch.autograd as autograd
 from preprocessing import Dataset
@@ -61,21 +61,21 @@ Z_f=torch.fft.fft(Z)
 #pulse_2_Y_imag=pulse_2.X.imag
 pulse_2_Y_abs_tensor = torch.tensor(pulse_2.Y.copy(), requires_grad=True, device=device, dtype=dtype).reshape(1,signal_len)
 
-def complex_comput(pulse_1_, phase):
-    #phase = torch.fft.fftshift(phase) 
-    pulse_1_tensor_Y=torch.tensor(pulse_1_.Y.copy(), requires_grad=True, device=device, dtype=dtype)
+def complex_comput(_input_, _phase_):
+    #_phase = torch.fft.fftshift(_phase) 
+    pulse_1_tensor_Y=torch.tensor(_input_.Y.copy(), requires_grad=True, device=device, dtype=dtype)
     pulse_1_tensor_Y = torch.fft.fftshift(pulse_1_tensor_Y)
     pulse_1_tensor_Y_F=torch.fft.fft(pulse_1_tensor_Y).to(device)
     pulse_1_tensor_Y_F = torch.fft.fftshift(pulse_1_tensor_Y_F)
-    pulse_transformed = torch.mul(pulse_1_tensor_Y_F, torch.exp(1j*phase).to(device))
+    pulse_transformed = torch.mul(pulse_1_tensor_Y_F, torch.exp(1j*_phase_).to(device))
     pulse_transformed = torch.fft.ifftshift(pulse_transformed)
     pulse_transformed_ifft = torch.fft.ifftshift(torch.fft.ifft(pulse_transformed))
     out = torch.abs(pulse_transformed_ifft)
     return out
 
 
-def main(pulse_1_, pulse_2_):
-    plt.plot(pulse_1_.Y.copy())
+def main(_input, pulse_2_):
+    plt.plot(_input.Y.copy())
     plt.savefig('input.png')
     plt.close()
     # load training data
@@ -85,7 +85,7 @@ def main(pulse_1_, pulse_2_):
         trainset, batch_size=batch_size, shuffle=True
     )
 
-    #pulse_1_tensor_Y=torch.tensor(pulse_1_.Y.copy(), requires_grad=True, device=device, dtype=dtype)
+    #pulse_1_tensor_Y=torch.tensor(_input.Y.copy(), requires_grad=True, device=device, dtype=dtype)
     #pulse_1_tensor_Y_F=torch.fft.fft(pulse_1_tensor_Y)
     # init netD and netG
     netD = Discriminator().to(device)
@@ -111,12 +111,12 @@ def main(pulse_1_, pulse_2_):
             netD.zero_grad()
 
             noise = torch.randn(b_size, nz, 1, device=device)
-            phase = netG(noise)
+            _phase = netG(noise)
             
         
-            #fake = phase
+            #fake = _phase
             #COMPLEX_COMPUTE
-            fake = complex_comput(pulse_1_, phase)
+            fake = complex_comput(_input, _phase)
             
             # gradient penalty
             eps = torch.Tensor(b_size, 1, 1).uniform_(0, 1).to(device)
@@ -137,11 +137,11 @@ def main(pulse_1_, pulse_2_):
                 noise = torch.randn(b_size, nz, 1, device=device)
 
                 netG.zero_grad()
-                phase = netG(noise)
+                _phase = netG(noise)
                 
-                #fake = phase
+                #fake = _phase
                 #COMPLEX_COMPUTE
-                fake = complex_comput(pulse_1_, phase)
+                fake = complex_comput(_input, _phase)
                 loss_G = -torch.mean(netD(fake))
 
                 netD.zero_grad()
@@ -156,17 +156,17 @@ def main(pulse_1_, pulse_2_):
         # save training process
         if epoch % 1000 == 0:
             with torch.no_grad():
-                phase = netG(fixed_noise).detach().cpu()
-                #fake = phase
+                _phase = netG(fixed_noise).detach().cpu()
+                #fake = _phase
                 #COMPLEX_COMPUTE
-                fake = complex_comput(pulse_1_, phase).cpu()
+                fake = complex_comput(_input, _phase).cpu()
 
                 f, a = plt.subplots(4, 2, figsize=(6, 6))
                 for i in range(4):
                     for j in range(2):
                         a[i][0].plot(fake[i].view(-1))
                         a[i][0].plot(pulse_2_.Y)
-                        a[i][1].plot(phase[i].view(-1))
+                        a[i][1].plot(_phase[i].view(-1))
                         #a[i][j].set_yticks(())
                 plt.savefig('./img_wgan_gp/wgan_gp_epoch_%d.png' % epoch)
                 plt.close()
