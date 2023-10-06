@@ -490,7 +490,7 @@ class spectrum:
         return x
     
 
-    def normalize(self, by = "highest", shift_to_zero = True, inplace = True):
+    def normalize(self, norm = "highest", shift_to_zero = True, inplace = True):
         '''
         Normalize spectrum by linearly changing values of intensity and eventually shifting spectrum to zero.
 
@@ -503,14 +503,14 @@ class spectrum:
         '''
         import numpy as np
 
-        if by not in ["highest", "intensity"]:
-            raise Exception("\"by\" parameter must be either \"highest\" or \"intensity\".")
+        if norm not in ["sup", "L1", "L2"]:
+            raise Exception("\"norm\" parameter must be either \"sup\", \"L1\" or \"L2\".")
 
         X_safe = self.X.copy()
         Y_safe = self.Y.copy()
         safe_spectrum = spectrum(X_safe, Y_safe, self.x_type, self.y_type)
 
-        if by == "highest":
+        if norm == "sup":
             max = np.max(np.abs(Y_safe))
             max_idx = np.argmax(np.abs(Y_safe))
             Y_safe /= max
@@ -519,11 +519,21 @@ class spectrum:
                 shift_idx = max_idx - zero_idx
                 X_safe = np.roll(X_safe, shift_idx)
 
-        if by == "intensity":
-            integral = np.sum(np.abs(Y_safe))
+        if norm == "L1":
+            integral = np.sum(np.abs(Y_safe))/(X_safe[-1]-X_safe[0])
             median = safe_spectrum.quantile(1/2)
             max_idx = np.searchsorted(np.abs(Y_safe), median)
             Y_safe /= integral
+            if shift_to_zero:
+                zero_idx = np.searchsorted(X_safe, 0)
+                shift_idx = max_idx - zero_idx
+                X_safe = np.roll(X_safe, shift_idx)
+
+        if norm == "L2":
+            integral = np.sum(Y_safe**2)/(X_safe[-1]-X_safe[0])
+            median = safe_spectrum.quantile(1/2)
+            max_idx = np.searchsorted(np.abs(Y_safe), median)
+            Y_safe /= np.sqrt(integral)
             if shift_to_zero:
                 zero_idx = np.searchsorted(X_safe, 0)
                 shift_idx = max_idx - zero_idx
@@ -1102,7 +1112,7 @@ def gaussian_pulse(bandwidth, centre, FWHM, x_type):
     gauss = np.vectorize(gauss)
     Y = gauss(X, centre, sd)
     return sa.spectrum(X, Y, x_type, "intensity")
-
+"""
 def hermitian_pulse(bandwidth, centre, FWHM, x_type):
 
     import spectral_analysis as sa
@@ -1118,6 +1128,40 @@ def hermitian_pulse(bandwidth, centre, FWHM, x_type):
     gauss = np.vectorize(gauss)
     Y = (-X + X[floor(len(X)/2)])*gauss(X, centre, sd)
     return sa.spectrum(X, Y, x_type, "intensity")
+"""
+
+def hermitian_pulse(pol_num, bandwidth, centre, FWHM, num = 1824, x_type = "freq"):
+    '''
+    Creates spectrum with \"pol-num\"-th Hermit-Gauss intensity mode. "bandwidth" is a tuple with start and the end of the entire spectrum. 
+    "centre" and "FWHM" characterize the pulse itself. The spectrum is composed of \"num\" = 1000 points on default.
+    '''
+
+    # exceptions
+
+    if x_type not in ["freq", "wl", "time"]:
+        raise Exception("x_type must be either \"freq\", \"nm\" or \"time\"")
+
+    # modules
+
+    #import spectral_analysis as sa
+    from scipy.special import hermite as hermite_gen
+
+    # and calculations
+
+    hermite_pol = hermite_gen(pol_num)
+    def gauss(x, mu, std):
+        return 1/(std*np.sqrt(2*np.pi))*np.exp(-(x-mu)**2/(2*std**2))
+    
+    X = np.linspace(bandwidth[0], bandwidth[1], num = num)
+    sd = FWHM/2.355
+    Y_gauss = gauss(X, centre, sd)
+    Y_hermite = hermite_pol(2*(X-centre)/FWHM)
+    Y_out = Y_hermite*Y_gauss
+
+    spectrum_out = spectrum(X, Y_out, "freq", "intensity")
+    spectrum_out.normalize(norm = "L2", shift_to_zero = False)
+
+    return spectrum_out
 
 
 def chirp_phase(bandwidth, centre, fiber_length):

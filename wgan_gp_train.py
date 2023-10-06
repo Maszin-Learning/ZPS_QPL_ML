@@ -18,7 +18,7 @@ p_coeff = 10
 n_critic = 5
 lr = 5e-6
 epoch_num = 1000000
-batch_size = 1
+batch_size = 64
 nz = 100  # length of noise
 ngpu = 0
 torch.backends.cudnn.benchmark = True #let cudnn chose the most efficient way of calculating Convolutions
@@ -32,7 +32,7 @@ dtype = torch.float32
 pulse_1 = sa.gaussian_pulse((1540,1560), 1550, 1, x_type='freq')
 pulse_1.x_type = "wl"
 pulse_1.wl_to_freq()
-pulse_1.Y *=  np.sqrt(1/np.sum(np.abs(pulse_1.Y)))
+pulse_1.Y *=  1/np.sum(np.abs(pulse_1.Y))
 #pulse_1.Y *=  np.sqrt((np.sum((Pulse_1.Y)**2)/np.sum((pulse_2.Y)**2)
 signal_len=len(pulse_1)
 
@@ -41,11 +41,11 @@ plt.plot(pulse_1.Y.copy())
 plt.savefig('gauss_GAN.png')
 plt.close()
 
-pulse_2 = sa.hermitian_pulse((1540,1560), 1550, 1, x_type='freq')
+pulse_2 = sa.hermitian_pulse(1, (1540,1560), 1550, 1, x_type='freq')
 pulse_2.x_type = "wl"
 #pulse_2.Y *=  np.sqrt(1/np.sum((pulse_2.Y)**2))
 pulse_2.wl_to_freq()
-pulse_2.Y *=  np.sqrt(1/np.sum(np.abs(pulse_2.Y)))
+pulse_2.Y *=  1/np.sum(np.abs(pulse_2.Y))
 #pulse_2.Y *=  np.sqrt(np.sum((pulse_1.Y)**2)/np.sum((pulse_2.Y)**2))
 pulse_2.Y = np.abs(pulse_2.Y)
 
@@ -154,7 +154,7 @@ def main(_input, pulse_2_):
                       % (epoch, epoch_num, step, len(trainloader), loss_D.item(), loss_G.item()))
 
         # save training process
-        if epoch % 1000 == 0:
+        if epoch % 2 == 0:
             with torch.no_grad():
                 _phase = netG(fixed_noise).detach().cpu()
                 #fake = _phase
