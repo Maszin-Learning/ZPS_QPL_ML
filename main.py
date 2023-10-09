@@ -34,10 +34,11 @@ initial_pulse = sa.hermitian_pulse(0, (190, 196), 193, 0.3, x_type ='freq', num 
 
 target_pulse = initial_pulse.copy()
 
-phase_strength = 0.5
+order_2 = 0.5
+order_3 = 0.1
 
 target_pulse.fourier()
-phase_init = phase_strength*target_pulse.X**2
+phase_init = order_2*target_pulse.X**2 + order_3*target_pulse.X**3
 phase_X = target_pulse.X.copy()
 target_pulse.Y *= np.exp(1j*phase_init)
 target_pulse.inv_fourier()
@@ -201,9 +202,22 @@ for epoch in tqdm(range(config['epoch_num'])):
             plt.subplot(1, 2, 1)
             plt.title("The intensity")
 
-            plt.scatter(initial_pulse.X[plot_from:plot_to], np.reshape(reconstructed.clone().detach().numpy(), config["num"])[plot_from:plot_to], color = "green", s = 1)
-            plt.plot(initial_pulse.X[plot_from:plot_to], initial_pulse.Y[plot_from:plot_to], linestyle = "dashed", color = "black", lw = 1)
-            plt.fill_between(initial_pulse.X[plot_from:plot_to], np.reshape(target_abs.clone().detach().numpy(), config["num"])[plot_from:plot_to], color = "darkviolet", alpha = 0.2)
+            plt.scatter(initial_pulse.X[plot_from:plot_to], 
+                        np.reshape(reconstructed.clone().detach().numpy(), config["num"])[plot_from:plot_to], 
+                        color = "green", 
+                        s = 1,
+                        zorder = 10)
+            plt.plot(initial_pulse.X[plot_from:plot_to], 
+                     initial_pulse.Y[plot_from:plot_to], 
+                     linestyle = "dashed", 
+                     color = "black", 
+                     lw = 1,
+                     zorder = 5)
+            plt.fill_between(initial_pulse.X[plot_from:plot_to], 
+                             np.reshape(target_abs.clone().detach().numpy(), config["num"])[plot_from:plot_to], 
+                             color = "darkviolet", 
+                             alpha = 0.2,
+                             zorder = 0)
             plt.xlabel("THz")
             plt.legend(["Reconstructed intensity", "Initial intensity", "Target intensity"], bbox_to_anchor = [0.95, -0.15])
             plt.grid()
@@ -220,17 +234,24 @@ for epoch in tqdm(range(config['epoch_num'])):
             phase_final -= round(phase_final[floor(config["num"]/2)])
             plt.scatter(phase_X[phase_start: phase_end], 
                         phase_final[phase_start: phase_end], 
-                        s = 1, color = "red")
+                        s = 1, 
+                        color = "red",
+                        zorder = 10)
             plt.plot(phase_X[phase_start: phase_end],
                         phase_init[phase_start: phase_end],
                         color = "black",
                         lw = 1,
-                        linestyle = "dashed")
+                        linestyle = "dashed",
+                        zorder = 5)
             ft_intensity /= np.max(ft_intensity[phase_start: phase_end])
             ft_intensity *= np.max(np.concatenate([phase_final[phase_start: phase_end], phase_init[phase_start: phase_end]]))
-            plt.fill_between(phase_X[phase_start: phase_end], np.abs(ft_intensity[phase_start: phase_end]), alpha = 0.2, color = "blue")
+            plt.fill_between(phase_X[phase_start: phase_end], 
+                             np.abs(ft_intensity[phase_start: phase_end]), 
+                             alpha = 0.2, 
+                             color = "orange",
+                             zorder = 0)
             plt.xlabel("Quasi-time (ps)")
-            plt.legend(["Initial phase", "Reconstructed phase", "FT intensity"], bbox_to_anchor = [0.95, -0.15])
+            plt.legend(["Reconstructed phase", "Initial phase", "FT intensity"], bbox_to_anchor = [0.95, -0.15])
             plt.grid()
             plt.savefig("pics/reconstructed{}.jpg".format(epoch), bbox_inches = "tight", dpi = 200)
             plt.close()
