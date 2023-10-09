@@ -15,10 +15,10 @@ from math import floor
 config = dict(
     num = 10000,
     input_dim = 32,             # and dim of noise vector
-    output_dim = 100,            # signal_len,
+    output_dim = 100,           # signal_len,
     p = 5,                      # number of plots
     criterion = nn.MSELoss(),  
-    learning_rate = 1e-5,
+    learning_rate = 3e-5,
     epoch_num = 20000,
     node_number = 120,
     architecture = "NN_1",
@@ -28,15 +28,25 @@ config = dict(
 
 # define initial and target pulse
 
-initial_pulse = sa.hermitian_pulse(1, (190, 196), 193, 0.2, x_type ='freq', num = config["num"])
-target_pulse = sa.gaussian_pulse((190, 196), 193, 0.2, x_type ='freq', num = config["num"])
+initial_pulse = sa.hermitian_pulse(0, (190, 196), 193, 0.3, x_type ='freq', num = config["num"])
+#target_pulse = sa.hermitian_pulse(0, (190, 196), 193.5, 0.5, x_type ='freq', num = config["num"])
+#target_pulse.Y *= np.sqrt((np.sum((initial_pulse.Y)**2))/np.sum((target_pulse.Y)**2))
 
-target_pulse.Y *= np.sqrt((np.sum((initial_pulse.Y)**2))/np.sum((target_pulse.Y)**2))
+target_pulse = initial_pulse.copy()
+
+phase_strength = 0.5
+
+target_pulse.fourier()
+phase_init = phase_strength*target_pulse.X**2
+phase_X = target_pulse.X.copy()
+target_pulse.Y *= np.exp(1j*phase_init)
+target_pulse.inv_fourier()
+target_pulse.shift(193)
 
 signal_len = len(initial_pulse)
 
-plot_from = 3000
-plot_to = 7000
+plot_from = 2000
+plot_to = 8000
 
 plt.scatter(initial_pulse.X[plot_from:plot_to], np.abs(initial_pulse.Y[plot_from:plot_to]), color = "green", s = 1)
 plt.grid()
@@ -44,7 +54,7 @@ plt.title("Initial and target")
 plt.xlabel("Frequency (THz)")
 plt.scatter(target_pulse.X[plot_from:plot_to], np.abs(target_pulse.Y[plot_from:plot_to]), color = "orange", s = 1)
 plt.legend(["Initial pulse", "Target pulse"])
-plt.savefig("pics/Initial pulse.jpg")
+plt.savefig("pics/Initial_pulse.jpg")
 plt.show()
 
 ### CUDA & stuff
@@ -157,6 +167,10 @@ for epoch in tqdm(range(config['epoch_num'])):
     complex_initial = torch.fft.fft(complex_initial)
     complex_initial = torch.fft.fftshift(complex_initial)
 
+    if epoch % 500 == 0:
+        ft_intensity = complex_initial.clone()
+        ft_intensity = np.reshape(ft_intensity.detach().numpy(), config["num"])
+
     # create complex spectrum
 
     #phase = torch.fft.fftshift(phase)
@@ -183,10 +197,42 @@ for epoch in tqdm(range(config['epoch_num'])):
         if epoch % 500 == 0:
 
             plt.close()
-            plt.scatter(initial_pulse.X[plot_from:plot_to], np.reshape(reconstructed.clone().detach().numpy(), config["num"])[plot_from:plot_to], color = "green", s =1)
-            plt.scatter(initial_pulse.X[plot_from:plot_to], np.reshape(target_abs.clone().detach().numpy(), config["num"])[plot_from:plot_to], color = "orange", s =1)
+
+            plt.subplot(1, 2, 1)
+            plt.title("The intensity")
+
+            plt.scatter(initial_pulse.X[plot_from:plot_to], np.reshape(reconstructed.clone().detach().numpy(), config["num"])[plot_from:plot_to], color = "green", s = 1)
+            plt.plot(initial_pulse.X[plot_from:plot_to], initial_pulse.Y[plot_from:plot_to], linestyle = "dashed", color = "black", lw = 1)
+            plt.fill_between(initial_pulse.X[plot_from:plot_to], np.reshape(target_abs.clone().detach().numpy(), config["num"])[plot_from:plot_to], color = "darkviolet", alpha = 0.2)
+            plt.xlabel("THz")
+            plt.legend(["Reconstructed intensity", "Initial intensity", "Target intensity"], bbox_to_anchor = [0.95, -0.15])
             plt.grid()
-            plt.savefig("pics/reconstructed{}.jpg".format(epoch))
+
+            plt.subplot(1, 2, 2)
+
+            plt.title("The phase")
+
+            phase_start = floor(config["num"]/2 - config["output_dim"]/2)
+            phase_end = floor(config["num"]/2 + config["output_dim"]/2)
+            phase_final = np.unwrap(phase.clone().detach().numpy().reshape(config["num"]))
+            #wrapped_level = round(phase_final[floor(config["num"]/2)]/(2*np.pi))
+            #phase_final -= wrapped_level*2*np.pi
+            phase_final -= round(phase_final[floor(config["num"]/2)])
+            plt.scatter(phase_X[phase_start: phase_end], 
+                        phase_final[phase_start: phase_end], 
+                        s = 1, color = "red")
+            plt.plot(phase_X[phase_start: phase_end],
+                        phase_init[phase_start: phase_end],
+                        color = "black",
+                        lw = 1,
+                        linestyle = "dashed")
+            ft_intensity /= np.max(ft_intensity[phase_start: phase_end])
+            ft_intensity *= np.max(np.concatenate([phase_final[phase_start: phase_end], phase_init[phase_start: phase_end]]))
+            plt.fill_between(phase_X[phase_start: phase_end], np.abs(ft_intensity[phase_start: phase_end]), alpha = 0.2, color = "blue")
+            plt.xlabel("Quasi-time (ps)")
+            plt.legend(["Initial phase", "Reconstructed phase", "FT intensity"], bbox_to_anchor = [0.95, -0.15])
+            plt.grid()
+            plt.savefig("pics/reconstructed{}.jpg".format(epoch), bbox_inches = "tight", dpi = 200)
             plt.close()
         
         print('epoch {}, loss {}'.format(epoch, loss.data))
