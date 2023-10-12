@@ -33,31 +33,33 @@ else:
 
 my_dtype = torch.float32
 
-# "target" pulse (to be reconstructed later on)
+# initial pulse (to be reconstructed later on)
 
-input_dim = 1000 # number of points in single pulse
+input_dim = 2000 # number of points in single pulse
 
-target_pulse = sa.hermitian_pulse(pol_num = 0,
+initial_pulse = sa.hermitian_pulse(pol_num = 0,
                                   bandwidth = [190, 196],
                                   centre = 193,
-                                  FWHM = 0.5,
+                                  FWHM = 0.25,
                                   num = input_dim)
 
-Y_target = target_pulse.Y.copy()
+Y_initial = initial_pulse.Y.copy()
 
 # we want to find what is the bandwidth of intensity after FT, to estimate output dimension of NN
 
-target_pulse_2 = target_pulse.copy()
-target_pulse_2.fourier()
-x_start = target_pulse_2.quantile(0.001)
-x_end = target_pulse_2.quantile(0.999)
-idx_start = np.searchsorted(target_pulse_2.X, x_start)
-idx_end = np.searchsorted(target_pulse_2.X, x_end)
+initial_pulse_2 = initial_pulse.copy()
+initial_pulse_2.fourier()
+x_start = initial_pulse_2.quantile(0.001)
+x_end = initial_pulse_2.quantile(0.999)
+idx_start = np.searchsorted(initial_pulse_2.X, x_start)
+idx_end = np.searchsorted(initial_pulse_2.X, x_end)
 output_dim = idx_end - idx_start    # number of points of non-zero FT-intensity
 if output_dim % 2 == 1:
     output_dim += 1
+print("output_dim = {}".format(output_dim))
+print("input_dim = {}".format(input_dim))
 
-# phase generator to evolve our target pulse to, well... input pulse
+# phase generator to evolve our initial pulse to input pulse
 
 def phase_gen(num, max_order = 10, max_value = None, chirp = None):
     X = np.linspace(-1, 1, num)
@@ -84,36 +86,54 @@ if you_dont_trust_me_that_these_phases_look_cool:
         plt.savefig("phase_{}.jpg".format(i + 1))
         plt.close()
 
-# now function to provide input to the network
+# real-valued numpy array to complex pytorch tensor
 
-def pulse_gen(max_phase_value = None, chirp = None):
+def np_to_complex_pt(tens):
 
-    intensity = Y_target.copy()
+    tens = torch.tensor([[tens[i], 0] for i in range(input_dim)], requires_grad = True, device = my_device, dtype = my_dtype)
+    tens = torch.view_as_complex(tens)
+    tens = tens.reshape(1, input_dim)
 
-    intensity = torch.tensor([[intensity[i], 0] for i in range(input_dim)], requires_grad = True, device = my_device, dtype = my_dtype)
-    intensity = torch.view_as_complex(intensity)
-    intensity = intensity.reshape(1, input_dim)
+    return tens
+
+# evolution by given phase operator
+
+def evolve(intensity, phase, abs = True):
 
     intensity = torch.fft.fftshift(intensity)
     intensity = torch.fft.fft(intensity)
     intensity = torch.fft.fftshift(intensity)
-
-    phase_signif = phase_gen(num = output_dim, 
-                            max_value = max_phase_value, 
-                            chirp = chirp)
-    phase_signif = torch.tensor(phase_signif, requires_grad = True, device = my_device, dtype = my_dtype)
-
-    phase = torch.concat([torch.zeros(size = [floor((input_dim-output_dim)/2)], requires_grad = True, device = my_device, dtype = my_dtype), 
-                          phase_signif,
+    
+    long_phase = torch.concat([torch.zeros(size = [floor((input_dim-output_dim)/2)], requires_grad = True, device = my_device, dtype = my_dtype), 
+                          phase,
                           torch.zeros(size = [floor((input_dim-output_dim)/2)], requires_grad = True, device = my_device, dtype = my_dtype)])
     
-    complex_intensity = torch.mul(intensity, torch.exp(1j*phase))
+    complex_intensity = torch.mul(intensity, torch.exp(1j*long_phase))
 
     complex_intensity = torch.fft.ifftshift(complex_intensity)
     complex_intensity = torch.fft.ifft(complex_intensity)
     complex_intensity = torch.fft.ifftshift(complex_intensity)
 
-    return complex_intensity.abs(), phase_signif
+    if abs:
+        return complex_intensity.abs()
+    else:
+        return complex_intensity
+    
+# now function to provide input to the network
+
+def pulse_gen(max_phase_value = None, chirp = None):
+
+    intensity = Y_initial.copy()
+    intensity = np_to_complex_pt(intensity)
+
+    phase_significant = phase_gen(num = output_dim, 
+                            max_value = max_phase_value, 
+                            chirp = chirp)
+    phase_significant = torch.tensor(phase_significant, requires_grad = True, device = my_device, dtype = my_dtype)
+
+    intensity = evolve(intensity, phase_significant)
+
+    return intensity.abs(), phase_significant
 
 # ok, let's define the NN
 
@@ -121,8 +141,8 @@ class network(nn.Module):
     def __init__(self, input_size, n, output_size):
         super(network, self).__init__()
 
-        self.linear_1 = nn.Linear(input_size,n)
-        #self.linear_2 = nn.Linear(n,n)9
+        self.linear_1 = nn.Linear(input_size, n)
+        self.linear_2 = nn.Linear(n, n)
         self.linear_3 = nn.Linear(n,output_size)
         
         self.leakyrelu = nn.LeakyReLU(0.1, inplace=True)
@@ -130,10 +150,13 @@ class network(nn.Module):
         self.normal_1 = nn.LayerNorm(n)
         self.normal_3 = nn.LayerNorm(output_size)
 
+        self.dropout = nn.Dropout(0.25)
+
     def forward(self,x):
         x = self.leakyrelu(self.linear_1(x))
         x = self.normal_1(x)
-        #x = self.leakyrelu(self.linear_2(x))
+        x = self.leakyrelu(self.linear_2(x))
+        x = self.dropout(x)
         x = self.linear_3(x)
         x = self.normal_3(x)
         return self.leakyrelu(x)
@@ -141,10 +164,10 @@ class network(nn.Module):
 # create NN
 
 model = network(input_size = input_dim, 
-                n = 100, 
+                n = 200, 
                 output_size = output_dim)
 model.to(device = my_device, dtype = my_dtype)
-learning_rate = 1e-3
+learning_rate = 1e-4
 optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate)
 criterion = torch.nn.MSELoss()
 
@@ -162,7 +185,7 @@ for iter in tqdm(range(iteration_num)):
 
     # generate the pulse for this iteration
 
-    pulse, phase = pulse_gen()
+    pulse, phase = pulse_gen(max_phase_value = 10)
 
     # predict phase that will transform gauss into this pulse
 
@@ -171,32 +194,13 @@ for iter in tqdm(range(iteration_num)):
 
     # transform gauss into something using this phase
 
-    initial_intensity = torch.tensor(Y_target.copy(), requires_grad = True,device = my_device, dtype = my_dtype)
-    target_intensity = initial_intensity.clone()
+    initial_intensity = np_to_complex_pt(Y_initial.copy())
 
-    initial_intensity = torch.fft.fftshift(initial_intensity)
-    initial_intensity = torch.fft.fft(initial_intensity)
-    initial_intensity = torch.fft.fftshift(initial_intensity)
-
-    phase_2 = torch.concat([torch.zeros(size = [floor((input_dim-output_dim)/2)], 
-                                        requires_grad = True, 
-                                        device = my_device, 
-                                        dtype = my_dtype), 
-                        predicted_phase,
-                        torch.zeros(size = [floor((input_dim-output_dim)/2)], 
-                                    requires_grad = True, 
-                                    device = my_device, 
-                                    dtype = my_dtype)])
-    
-    complex_intensity = torch.mul(initial_intensity, torch.exp(1j*phase_2))
-
-    complex_intensity = torch.fft.ifftshift(complex_intensity)
-    complex_intensity = torch.fft.ifft(complex_intensity)
-    complex_intensity = torch.fft.ifftshift(complex_intensity)
+    reconstructed_intensity = evolve(initial_intensity, predicted_phase)
 
     # a bit of calculus
     
-    loss = criterion(complex_intensity.abs(), target_intensity.abs())
+    loss = criterion(reconstructed_intensity.abs(), pulse) # pulse intensity
     loss.backward()
     optimizer.step()
     optimizer.zero_grad()
@@ -212,12 +216,15 @@ for iter in tqdm(range(iteration_num)):
         else:
             print("Iteration np. {}. Loss {}.".format(iter, np.mean(np.array(loss_list[iter-stat_time: iter]))))
 
-        plot_from = 200
-        plot_to = 800
+        plot_from = floor(input_dim*0.4)
+        plot_to = floor(input_dim*0.6)
 
         # generate test chirp pulse
 
-        chirp_pulse, chirp_phase = pulse_gen(chirp = 1)
+        chirp_pulse, chirp_phase = pulse_gen(chirp = 10)
+
+        #chirp_pulse = pulse
+        #chirp_phase = phase
 
         # compute phase that should evolve gauss to this pulse
 
@@ -226,45 +233,26 @@ for iter in tqdm(range(iteration_num)):
 
         # evolve
 
-        initial_intensity = torch.tensor(Y_target.copy(), requires_grad = True,device = my_device, dtype = my_dtype)
+        initial_intensity = np_to_complex_pt(Y_initial.copy())
 
-        initial_intensity = torch.fft.fftshift(initial_intensity)
-        initial_intensity = torch.fft.fft(initial_intensity)
-        initial_intensity = torch.fft.fftshift(initial_intensity)
-
-        phase_3 = torch.concat([torch.zeros(size = [floor((input_dim-output_dim)/2)], 
-                                            requires_grad = True, 
-                                            device = my_device, 
-                                            dtype = my_dtype), 
-                            chirp_phase_pred,
-                            torch.zeros(size = [floor((input_dim-output_dim)/2)], 
-                                        requires_grad = True, 
-                                        device = my_device, 
-                                        dtype = my_dtype)])
-        
-        complex_intensity = torch.mul(initial_intensity, torch.exp(1j*phase_3))
-
-        complex_intensity = torch.fft.ifftshift(complex_intensity)
-        complex_intensity = torch.fft.ifft(complex_intensity)
-        complex_intensity = torch.fft.ifftshift(complex_intensity)
-
-        reconstructed = complex_intensity.abs() 
+        test_intensity = evolve(initial_intensity, chirp_phase_pred)
+        reconstructed = test_intensity.abs() 
 
         plt.subplot(1, 2, 1)
         plt.title("The intensity")
 
-        plt.scatter(target_pulse.X[plot_from:plot_to], 
+        plt.scatter(initial_pulse.X[plot_from:plot_to], 
                     np.reshape(reconstructed.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to], 
                     color = "green", 
                     s = 1,
                     zorder = 10)
-        plt.plot(target_pulse.X[plot_from:plot_to], 
-                    target_pulse.Y[plot_from:plot_to], 
+        plt.plot(initial_pulse.X[plot_from:plot_to], 
+                    initial_pulse.Y[plot_from:plot_to], 
                     linestyle = "dashed", 
                     color = "black", 
                     lw = 1,
                     zorder = 5)
-        plt.fill_between(target_pulse.X[plot_from:plot_to], 
+        plt.fill_between(initial_pulse.X[plot_from:plot_to], 
                             np.reshape(chirp_pulse.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to], 
                             color = "darkviolet", 
                             alpha = 0.2,
@@ -276,18 +264,15 @@ for iter in tqdm(range(iteration_num)):
         plt.subplot(1, 2, 2)
 
         plt.title("The phase")
-        
-        phase_start = floor((input_dim - 1*output_dim)/2)
-        phase_end = floor((input_dim + 1*output_dim)/2)
 
-        phase_final = np.unwrap(phase_3.clone().cpu().detach().numpy().reshape(input_dim))
-        phase_final -= round(phase_final[floor(input_dim/2)])
-        plt.scatter(range(phase_end - phase_start), 
-                    phase_final[phase_start: phase_end], 
+        phase_final = np.unwrap(chirp_phase_pred.clone().cpu().detach().numpy().reshape(output_dim))
+        phase_final -= round(phase_final[floor(output_dim/2)])
+        plt.scatter(range(output_dim), 
+                    phase_final, 
                     s = 1, 
                     color = "red",
                     zorder = 10)
-        plt.plot(range(phase_end - phase_start),
+        plt.plot(range(output_dim),
                     chirp_phase.clone().cpu().detach().numpy(),
                     color = "black",
                     lw = 1,
