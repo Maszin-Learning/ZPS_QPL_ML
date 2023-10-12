@@ -13,9 +13,9 @@ from math import floor
 # HyperParameters
 
 config = dict(
-    num = 10000,
+    num = 5000,
     input_dim = 32,             # and dim of noise vector
-    output_dim = 100,           # signal_len,
+    output_dim = 70,           # signal_len,
     p = 5,                      # number of plots
     criterion = nn.MSELoss(),  
     learning_rate = 3e-5,
@@ -34,8 +34,8 @@ initial_pulse = sa.hermitian_pulse(0, (190, 196), 193, 0.3, x_type ='freq', num 
 
 target_pulse = initial_pulse.copy()
 
-order_2 = 0.5
-order_3 = 0.1
+order_2 = 0.25
+order_3 = 0.04
 
 target_pulse.fourier()
 phase_init = order_2*target_pulse.X**2 + order_3*target_pulse.X**3
@@ -46,8 +46,8 @@ target_pulse.shift(193)
 
 signal_len = len(initial_pulse)
 
-plot_from = 2000
-plot_to = 8000
+plot_from = 1000
+plot_to = 4000
 
 plt.scatter(initial_pulse.X[plot_from:plot_to], np.abs(initial_pulse.Y[plot_from:plot_to]), color = "green", s = 1)
 plt.grid()
