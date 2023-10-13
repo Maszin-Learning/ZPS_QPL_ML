@@ -45,6 +45,17 @@ initial_pulse = sa.hermitian_pulse(pol_num = 0,
 
 Y_initial = initial_pulse.Y.copy()
 
+# hermit pulse
+
+hermitian_pulse = sa.hermitian_pulse(pol_num = 1,
+                                  bandwidth = [190, 196],
+                                  centre = 193,
+                                  FWHM = 1,
+                                  num = input_dim)
+
+hermitian_pulse.Y /= np.sum((hermitian_pulse.Y)*np.conjugate(hermitian_pulse.Y))
+hermitian_pulse.Y *= np.sum((initial_pulse.Y)*np.conjugate(initial_pulse.Y))
+
 # we want to find what is the bandwidth of intensity after FT, to estimate output dimension of NN
 
 initial_pulse_2 = initial_pulse.copy()
@@ -154,11 +165,11 @@ class network(nn.Module):
 
     def forward(self,x):
         x = self.leakyrelu(self.linear_1(x))
-        x = self.normal_1(x)
-        x = self.leakyrelu(self.linear_2(x))
+        #x = self.normal_1(x)
+        #x = self.leakyrelu(self.linear_2(x))
         x = self.dropout(x)
         x = self.linear_3(x)
-        x = self.normal_3(x)
+        #x = self.normal_3(x)
         return self.leakyrelu(x)
     
 # create NN
@@ -177,7 +188,7 @@ test_pulse, test_phase = pulse_gen(chirp = 1)
 
 # training loop
 
-iteration_num = 10000
+iteration_num = 20000
 
 loss_list = []
 
@@ -216,19 +227,22 @@ for iter in tqdm(range(iteration_num)):
         else:
             print("Iteration np. {}. Loss {}.".format(iter, np.mean(np.array(loss_list[iter-stat_time: iter]))))
 
-        plot_from = floor(input_dim*0.4)
-        plot_to = floor(input_dim*0.6)
+        plot_from = floor(input_dim*1/6)
+        plot_to = floor(input_dim*5/6)
 
         # generate test chirp pulse
 
-        chirp_pulse, chirp_phase = pulse_gen(chirp = 10)
+        chirp_pulse, chirp_phase = pulse_gen(chirp = 20)
+
+        hermitian_Y = hermitian_pulse.Y.copy()
+        chirp_pulse = np_to_complex_pt(hermitian_Y)
 
         #chirp_pulse = pulse
         #chirp_phase = phase
 
         # compute phase that should evolve gauss to this pulse
 
-        chirp_phase_pred = model(chirp_pulse)
+        chirp_phase_pred = model(chirp_pulse.abs())
         chirp_phase_pred = chirp_phase_pred.reshape([output_dim])
 
         # evolve
@@ -242,18 +256,18 @@ for iter in tqdm(range(iteration_num)):
         plt.title("The intensity")
 
         plt.scatter(initial_pulse.X[plot_from:plot_to], 
-                    np.reshape(reconstructed.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to], 
+                   np.abs(np.reshape(reconstructed.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to]), 
                     color = "green", 
                     s = 1,
                     zorder = 10)
         plt.plot(initial_pulse.X[plot_from:plot_to], 
-                    initial_pulse.Y[plot_from:plot_to], 
+                    np.abs(initial_pulse.Y[plot_from:plot_to]), 
                     linestyle = "dashed", 
                     color = "black", 
                     lw = 1,
                     zorder = 5)
         plt.fill_between(initial_pulse.X[plot_from:plot_to], 
-                            np.reshape(chirp_pulse.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to], 
+                            np.abs(np.reshape(chirp_pulse.clone().cpu().detach().numpy(), input_dim))[plot_from:plot_to], 
                             color = "darkviolet", 
                             alpha = 0.2,
                             zorder = 0)
@@ -272,13 +286,14 @@ for iter in tqdm(range(iteration_num)):
                     s = 1, 
                     color = "red",
                     zorder = 10)
+        '''
         plt.plot(range(output_dim),
                     chirp_phase.clone().cpu().detach().numpy(),
                     color = "black",
                     lw = 1,
                     linestyle = "dashed",
                     zorder = 5)
-        '''
+        
         ft_intensity /= np.max(ft_intensity[phase_start: phase_end])
         ft_intensity *= np.max(np.concatenate([phase_final[phase_start: phase_end], phase_init[phase_start: phase_end]]))
         plt.fill_between(phase_X[phase_start: phase_end], 
