@@ -34,8 +34,8 @@ initial_pulse = sa.hermitian_pulse(0, (190, 196), 193, 0.3, x_type ='freq', num 
 
 target_pulse = initial_pulse.copy()
 
-order_2 = 0.25
-order_3 = 0.04
+order_2 = 0.4
+order_3 = 0.06
 
 target_pulse.fourier()
 phase_init = order_2*target_pulse.X**2 + order_3*target_pulse.X**3
@@ -62,8 +62,8 @@ plt.show()
 
 #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 if torch.cuda.is_available():
-    device_ = torch.device("cuda")
-    print (f"Using {device_}")
+    my_device = torch.device("cuda")
+    print (f"Using {my_device}")
     print('allocated CUDA memory: ',torch.cuda.memory_allocated())      # Checking GPU RAM allocated memory
     print('cached CUDA memory: ',torch.cuda.memory_cached())
     torch.cuda.empty_cache()                                            # clear CUDA memory
@@ -71,17 +71,16 @@ if torch.cuda.is_available():
     
 elif torch.backends.mps.is_available():
     print ("CUDA device not found.")
-    device_ = torch.device("mps")
-    print (f"Using {device_}")
+    my_device = torch.device("mps")
+    print (f"Using {my_device}")
 else:
     print ("MPS device not found.")
-    device_ = torch.device("cpu")
-    print (f"Using {device_}")
+    my_device = torch.device("cpu")
+    print (f"Using {my_device}")
 
-# define globaly used datatype and device
+# define globally used datatype
 
-device_ = torch.device('cpu')
-dtype_ = torch.float32
+my_dtype = torch.float32
 
 # define neural network
 
@@ -114,7 +113,7 @@ model = AutoEncoder(input_size=config['input_dim'], n=config['node_number'], out
 total_params = sum(k.numel() for k in model.parameters())
 print(f"Number of parameters: {total_params}")
 print(f'Number of nodes: {config["node_number"]}')
-model.to(device=device_, dtype=dtype_) # project model onto device and chosen dtype
+model.to(device=my_device, dtype=my_dtype) # project model onto device and chosen dtype
 optimizer = torch.optim.Adam(model.parameters(), lr = config['learning_rate'], weight_decay = 0.01, betas = (0.9, 0.999))
 
 # random phase to start with something
@@ -122,8 +121,8 @@ optimizer = torch.optim.Adam(model.parameters(), lr = config['learning_rate'], w
 noise_phase = torch.tensor(np.random.uniform(low = 0, high = 2*np.pi,
                                     size = (1, config['input_dim'])), 
                                     requires_grad=True, 
-                                    device = device_, 
-                                    dtype = dtype_)
+                                    device = my_device, 
+                                    dtype = my_dtype)
 
 
 # is it necessary?
@@ -143,7 +142,7 @@ initial_imag = initial_Y.imag
 
 target_real = target_pulse.Y.real
 target_imag = target_pulse.X.imag
-target_abs = torch.tensor(np.abs(target_pulse.Y), requires_grad=True, device=device_, dtype=dtype_).reshape(1, signal_len)
+target_abs = torch.tensor(np.abs(target_pulse.Y), requires_grad=True, device=my_device, dtype=my_dtype).reshape(1, signal_len)
 
 # learning loop
 
@@ -155,13 +154,13 @@ for epoch in tqdm(range(config['epoch_num'])):
     results = model(noise_phase)    # Forward to get output
     results = torch.reshape(results, [config["output_dim"], 1])
     size = (floor(config["num"]/2 - config["output_dim"]/2), 1)
-    phase = torch.concat([torch.zeros(size = size, requires_grad = True), 
+    phase = torch.concat([torch.zeros(size = size, requires_grad = True, device = my_device, dtype = my_dtype), 
                           results, 
-                          torch.zeros(size = size, requires_grad = True)])
+                          torch.zeros(size = size, requires_grad = True, device = my_device, dtype = my_dtype)])
     # get intensity spectrum
 
     initial_imag_and_real = torch.tensor([[initial_Y.real[i], initial_Y.imag[i]] for i in range(len(initial_pulse))], 
-                                         requires_grad = True, device = device_, dtype = dtype_)
+                                         requires_grad = True, device = my_device, dtype = my_dtype)
     complex_initial = torch.view_as_complex(initial_imag_and_real)
     complex_initial = complex_initial.reshape(1, signal_len)
     complex_initial = torch.fft.fftshift(complex_initial)
@@ -170,7 +169,7 @@ for epoch in tqdm(range(config['epoch_num'])):
 
     if epoch % 500 == 0:
         ft_intensity = complex_initial.clone()
-        ft_intensity = np.reshape(ft_intensity.detach().numpy(), config["num"])
+        ft_intensity = np.reshape(ft_intensity.detach().cpu().numpy(), config["num"])
 
     # create complex spectrum
 
@@ -203,7 +202,7 @@ for epoch in tqdm(range(config['epoch_num'])):
             plt.title("The intensity")
 
             plt.scatter(initial_pulse.X[plot_from:plot_to], 
-                        np.reshape(reconstructed.clone().detach().numpy(), config["num"])[plot_from:plot_to], 
+                        np.reshape(reconstructed.clone().detach().cpu().numpy(), config["num"])[plot_from:plot_to], 
                         color = "green", 
                         s = 1,
                         zorder = 10)
@@ -214,7 +213,7 @@ for epoch in tqdm(range(config['epoch_num'])):
                      lw = 1,
                      zorder = 5)
             plt.fill_between(initial_pulse.X[plot_from:plot_to], 
-                             np.reshape(target_abs.clone().detach().numpy(), config["num"])[plot_from:plot_to], 
+                             np.reshape(target_abs.clone().detach().cpu().numpy(), config["num"])[plot_from:plot_to], 
                              color = "darkviolet", 
                              alpha = 0.2,
                              zorder = 0)
@@ -228,7 +227,7 @@ for epoch in tqdm(range(config['epoch_num'])):
 
             phase_start = floor(config["num"]/2 - config["output_dim"]/2)
             phase_end = floor(config["num"]/2 + config["output_dim"]/2)
-            phase_final = np.unwrap(phase.clone().detach().numpy().reshape(config["num"]))
+            phase_final = np.unwrap(phase.clone().detach().cpu().numpy().reshape(config["num"]))
             #wrapped_level = round(phase_final[floor(config["num"]/2)]/(2*np.pi))
             #phase_final -= wrapped_level*2*np.pi
             phase_final -= round(phase_final[floor(config["num"]/2)])
