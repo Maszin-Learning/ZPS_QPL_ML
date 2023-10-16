@@ -86,7 +86,7 @@ def phase_gen(num, max_order = 10, max_value = None, chirp = None):
         else:
             return Y/np.max(np.abs(Y))*max_value
 
-you_dont_trust_me_that_these_phases_look_cool = False
+you_dont_trust_me_that_these_phases_look_cool = True
 
 if you_dont_trust_me_that_these_phases_look_cool:
     for i in range(10):
@@ -196,7 +196,7 @@ for iter in tqdm(range(iteration_num)):
 
     # generate the pulse for this iteration
 
-    pulse, phase = pulse_gen(max_phase_value = 10)
+    pulse, phase = pulse_gen(max_phase_value = 7)
 
     # predict phase that will transform gauss into this pulse
 
