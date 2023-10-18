@@ -37,26 +37,19 @@ my_dtype = torch.float32
 
 input_dim = 2000 # number of points in single pulse
 
+bandwidth = [190, 196]
+centre = [193]
+FWHM = 0.25
+
 initial_pulse = sa.hermitian_pulse(pol_num = 0,
-                                  bandwidth = [190, 196],
-                                  centre = 193,
-                                  FWHM = 0.25,
+                                  bandwidth = bandwidth,
+                                  centre = centre,
+                                  FWHM = FWHM,
                                   num = input_dim)
 
 Y_initial = initial_pulse.Y.copy()
 
 FT_pulse = initial_pulse.fourier(inplace = False)
-
-# hermit pulse
-
-hermitian_pulse = sa.hermitian_pulse(pol_num = 1,
-                                  bandwidth = [190, 196],
-                                  centre = 193,
-                                  FWHM = 1,
-                                  num = input_dim)
-
-hermitian_pulse.Y /= np.sum((hermitian_pulse.Y)*np.conjugate(hermitian_pulse.Y))
-hermitian_pulse.Y *= np.sum((initial_pulse.Y)*np.conjugate(initial_pulse.Y))
 
 # we want to find what is the bandwidth of intensity after FT, to estimate output dimension of NN
 
@@ -69,24 +62,34 @@ idx_end = np.searchsorted(initial_pulse_2.X, x_end)
 output_dim = idx_end - reconstructed_phase    # number of points of non-zero FT-intensity
 if output_dim % 2 == 1:
     output_dim += 1
-print("output_dim = {}".format(output_dim))
-print("input_dim = {}".format(input_dim))
+
+print("input_dim (spectrum length) = {}".format(input_dim))  
+print("output_dim (phase length) = {}".format(output_dim))
 
 # phase generator to evolve our initial pulse to input pulse
 
-def phase_gen(num, max_order = 10, max_value = None, chirp = None):
-    X = np.linspace(-1, 1, num)
-    Y = np.zeros(num)
-    for order in range(max_order):
-        coef = np.random.uniform(low = -1, high = 1)
-        Y += coef*X**order
-    if chirp != None:
-        return chirp*X**2
+def phase_gen(num, max_order = 10, max_value = None):
+
+    if np.random.uniform(low = 0, high = 1) < 0.0:      # slowly varying phase
+        X = np.linspace(-1, 1, num)
+        Y = np.zeros(num)
+        
+        for order in range(max_order):
+            coef = np.random.uniform(low = -1, high = 1)
+            Y += coef*X**order
+    else:                                               # rapidly varying phase  UPDATE: It causes convergence
+        Y = np.zeros(num)
+        for order in range(4):
+            coef = np.random.uniform(low = -1, high = 1)
+            Y += coef*sa.hermitian_pulse(pol_num = order,
+                bandwidth = [-1, 1],
+                centre = 0,
+                FWHM = 0.5,
+                num = num).Y
+    if max_value == None:
+        return Y
     else:
-        if max_value == None:
-            return Y
-        else:
-            return Y/np.max(np.abs(Y))*max_value
+        return Y/np.max(np.abs(Y))*max_value
 
 you_dont_trust_me_that_these_phases_look_cool = True
 
@@ -103,9 +106,9 @@ if you_dont_trust_me_that_these_phases_look_cool:
 
 def np_to_complex_pt(tens):
 
-    tens = torch.tensor([[tens[i], 0] for i in range(input_dim)], requires_grad = True, device = my_device, dtype = my_dtype)
+    tens = torch.tensor([[tens[i], 0] for i in range(len(tens))], requires_grad = True, device = my_device, dtype = my_dtype)
     tens = torch.view_as_complex(tens)
-    tens = tens.reshape(1, input_dim)
+    tens = tens.reshape(1, tens.numel())
 
     return tens
 
@@ -134,19 +137,46 @@ def evolve(intensity, phase, abs = True):
     
 # now function to provide input to the network
 
-def pulse_gen(max_phase_value = None, chirp = None):
+def pulse_gen(max_phase_value = None):
 
     intensity = Y_initial.copy()
     intensity = np_to_complex_pt(intensity)
 
     phase_significant = phase_gen(num = output_dim, 
-                            max_value = max_phase_value, 
-                            chirp = chirp)
+                            max_value = np.random.uniform(low = 0, high = max_phase_value))
     phase_significant = torch.tensor(phase_significant, requires_grad = True, device = my_device, dtype = my_dtype)
 
     intensity = evolve(intensity, phase_significant)
 
     return intensity.abs(), phase_significant
+
+# test pulse
+
+test_pulse_type = "hermite"
+
+if test_pulse_type == "hermite":
+    test_pulse = sa.hermitian_pulse(pol_num = 1,
+                                    bandwidth = bandwidth,
+                                    centre = 193,
+                                    FWHM = 1,
+                                    num = input_dim)
+
+    test_pulse.Y /= np.sum(test_pulse.Y*np.conjugate(test_pulse.Y))
+    test_pulse.Y *= np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y))
+    
+    test_pulse = np_to_complex_pt(test_pulse.Y)
+    test_phase = None
+
+elif test_pulse_type == "chirp":
+    test_pulse = initial_pulse.copy()
+    chirp = 20
+    test_phase = np_to_complex_pt(chirp*np.linspace(-1, 1, output_dim)**2)
+    test_phase = test_phase.reshape([output_dim])
+    test_pulse = evolve(np_to_complex_pt(test_pulse.Y), test_phase)
+
+elif test_pulse_type == "random_evolution":
+    max_phase = 20
+    test_pulse, test_phase = pulse_gen(max_phase)
 
 # ok, let's define the NN
 
@@ -156,37 +186,30 @@ class network(nn.Module):
 
         self.linear_1 = nn.Linear(input_size, n)
         self.linear_2 = nn.Linear(n, n)
-        self.linear_3 = nn.Linear(n,output_size)
+        self.linear_3 = nn.Linear(n, output_size)
         
-        self.leakyrelu = nn.LeakyReLU(0.1, inplace=True)
+        self.leakyrelu = nn.LeakyReLU(0.1, inplace = True)
         
         self.normal_1 = nn.LayerNorm(n)
         self.normal_3 = nn.LayerNorm(output_size)
-
+        self.tanh = nn.Tanh()
         self.dropout = nn.Dropout(0.25)
 
     def forward(self,x):
         x = self.leakyrelu(self.linear_1(x))
-        #x = self.normal_1(x)
-        #x = self.leakyrelu(self.linear_2(x))
         x = self.dropout(x)
         x = self.linear_3(x)
-        #x = self.normal_3(x)
-        return self.leakyrelu(x)
+        return x
     
 # create NN
 
 model = network(input_size = input_dim, 
-                n = 200, 
+                n = 100, 
                 output_size = output_dim)
 model.to(device = my_device, dtype = my_dtype)
 learning_rate = 1e-4
 optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate)
 criterion = torch.nn.MSELoss()
-
-# test pulse (just chirp)
-
-test_pulse, test_phase = pulse_gen(chirp = 1)
 
 # training loop
 
@@ -198,7 +221,7 @@ for iter in tqdm(range(iteration_num)):
 
     # generate the pulse for this iteration
 
-    pulse, phase = pulse_gen(max_phase_value = 7)
+    pulse, phase = pulse_gen(max_phase_value = 25)
 
     # predict phase that will transform gauss into this pulse
 
@@ -208,7 +231,6 @@ for iter in tqdm(range(iteration_num)):
     # transform gauss into something using this phase
 
     initial_intensity = np_to_complex_pt(Y_initial.copy())
-
     reconstructed_intensity = evolve(initial_intensity, predicted_phase)
 
     # a bit of calculus
@@ -234,24 +256,14 @@ for iter in tqdm(range(iteration_num)):
 
         # generate test chirp pulse
 
-        chirp_pulse, chirp_phase = pulse_gen(chirp = 10)
-
-        #hermitian_Y = hermitian_pulse.Y.copy()
-        #chirp_pulse = np_to_complex_pt(hermitian_Y)
-
-        #chirp_pulse = pulse
-        #chirp_phase = phase
-
-        # compute phase that should evolve gauss to this pulse
-
-        chirp_phase_pred = model(chirp_pulse.abs())
-        chirp_phase_pred = chirp_phase_pred.reshape([output_dim])
+        test_phase_pred = model(test_pulse.abs())
+        test_phase_pred = test_phase_pred.reshape([output_dim])
 
         # evolve
 
         initial_intensity = np_to_complex_pt(Y_initial.copy())
 
-        test_intensity = evolve(initial_intensity, chirp_phase_pred)
+        test_intensity = evolve(initial_intensity, test_phase_pred)
         reconstructed = test_intensity.abs() 
 
         plt.subplot(1, 2, 1)
@@ -269,7 +281,7 @@ for iter in tqdm(range(iteration_num)):
                     lw = 1,
                     zorder = 5)
         plt.fill_between(initial_pulse.X[plot_from:plot_to], 
-                            np.abs(np.reshape(chirp_pulse.clone().cpu().detach().numpy(), input_dim))[plot_from:plot_to], 
+                            np.abs(np.reshape(test_pulse.clone().cpu().detach().numpy(), input_dim))[plot_from:plot_to], 
                             color = "darkviolet", 
                             alpha = 0.2,
                             zorder = 0)
@@ -281,8 +293,8 @@ for iter in tqdm(range(iteration_num)):
 
         plt.title("The phase")
 
-        reconstructed_phase = np.unwrap(chirp_phase_pred.clone().cpu().detach().numpy().reshape(output_dim))
-        reconstructed_phase -= round(reconstructed_phase[floor(output_dim/2)])
+        reconstructed_phase = np.unwrap(test_phase_pred.clone().cpu().detach().numpy().reshape(output_dim))
+        reconstructed_phase -= reconstructed_phase[floor(output_dim/2)]
 
         idx_start = floor(input_dim/2 - output_dim/2)
         idx_end = floor(input_dim/2 + output_dim/2)
@@ -292,16 +304,23 @@ for iter in tqdm(range(iteration_num)):
                     s = 1, 
                     color = "red",
                     zorder = 10)
-        
-        plt.plot(FT_pulse.X[idx_start: idx_end],
-                    chirp_phase.clone().cpu().detach().numpy(),
-                    color = "black",
-                    lw = 1,
-                    linestyle = "dashed",
-                    zorder = 5)
+
+        if test_phase != None:
+            test_phase_np = test_phase.clone().cpu().detach().numpy()
+            test_phase_np -= test_phase_np[floor(output_dim/2)]
+            plt.plot(FT_pulse.X[idx_start: idx_end],
+                        np.real(test_phase_np),
+                        color = "black",
+                        lw = 1,
+                        linestyle = "dashed",
+                        zorder = 5)
 
         FT_pulse.Y /= np.max(FT_pulse.Y[idx_start: idx_end])
-        FT_pulse.Y *= np.max(np.concatenate([np.abs(reconstructed_phase), np.abs(chirp_phase.clone().detach().cpu().numpy())]))
+        if test_phase != None:
+            FT_pulse.Y *= np.max(np.concatenate([np.abs(reconstructed_phase), np.abs(test_phase.clone().detach().cpu().numpy())]))
+        else:
+            FT_pulse.Y *= np.max(np.abs(reconstructed_phase))
+
         plt.fill_between(FT_pulse.X[idx_start: idx_end], 
                             np.abs(FT_pulse.Y[idx_start: idx_end]), 
                             alpha = 0.2, 
@@ -309,7 +328,10 @@ for iter in tqdm(range(iteration_num)):
                             zorder = 0)
         
         plt.xlabel("Quasi-time (ps)")
-        plt.legend(["Reconstructed phase", "Initial phase", "FT intensity"], bbox_to_anchor = [0.95, -0.15])
+        if test_phase != None:
+            plt.legend(["Reconstructed phase", "Initial phase", "FT intensity"], bbox_to_anchor = [0.95, -0.15])
+        else:
+            plt.legend(["Reconstructed phase", "FT intensity"], bbox_to_anchor = [0.95, -0.15])
         plt.grid()
         plt.savefig("pics/reconstructed{}.jpg".format(iter), bbox_inches = "tight", dpi = 200)
         plt.close()
