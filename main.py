@@ -45,6 +45,8 @@ initial_pulse = sa.hermitian_pulse(pol_num = 0,
 
 Y_initial = initial_pulse.Y.copy()
 
+FT_pulse = initial_pulse.fourier(inplace = False)
+
 # hermit pulse
 
 hermitian_pulse = sa.hermitian_pulse(pol_num = 1,
@@ -62,9 +64,9 @@ initial_pulse_2 = initial_pulse.copy()
 initial_pulse_2.fourier()
 x_start = initial_pulse_2.quantile(0.001)
 x_end = initial_pulse_2.quantile(0.999)
-idx_start = np.searchsorted(initial_pulse_2.X, x_start)
+reconstructed_phase = np.searchsorted(initial_pulse_2.X, x_start)
 idx_end = np.searchsorted(initial_pulse_2.X, x_end)
-output_dim = idx_end - idx_start    # number of points of non-zero FT-intensity
+output_dim = idx_end - reconstructed_phase    # number of points of non-zero FT-intensity
 if output_dim % 2 == 1:
     output_dim += 1
 print("output_dim = {}".format(output_dim))
@@ -232,10 +234,10 @@ for iter in tqdm(range(iteration_num)):
 
         # generate test chirp pulse
 
-        chirp_pulse, chirp_phase = pulse_gen(chirp = 20)
+        chirp_pulse, chirp_phase = pulse_gen(chirp = 10)
 
-        hermitian_Y = hermitian_pulse.Y.copy()
-        chirp_pulse = np_to_complex_pt(hermitian_Y)
+        #hermitian_Y = hermitian_pulse.Y.copy()
+        #chirp_pulse = np_to_complex_pt(hermitian_Y)
 
         #chirp_pulse = pulse
         #chirp_phase = phase
@@ -279,29 +281,33 @@ for iter in tqdm(range(iteration_num)):
 
         plt.title("The phase")
 
-        phase_final = np.unwrap(chirp_phase_pred.clone().cpu().detach().numpy().reshape(output_dim))
-        phase_final -= round(phase_final[floor(output_dim/2)])
-        plt.scatter(range(output_dim), 
-                    phase_final, 
+        reconstructed_phase = np.unwrap(chirp_phase_pred.clone().cpu().detach().numpy().reshape(output_dim))
+        reconstructed_phase -= round(reconstructed_phase[floor(output_dim/2)])
+
+        idx_start = floor(input_dim/2 - output_dim/2)
+        idx_end = floor(input_dim/2 + output_dim/2)
+
+        plt.scatter(FT_pulse.X[idx_start: idx_end], 
+                    reconstructed_phase, 
                     s = 1, 
                     color = "red",
                     zorder = 10)
-        '''
-        plt.plot(range(output_dim),
+        
+        plt.plot(FT_pulse.X[idx_start: idx_end],
                     chirp_phase.clone().cpu().detach().numpy(),
                     color = "black",
                     lw = 1,
                     linestyle = "dashed",
                     zorder = 5)
-        
-        ft_intensity /= np.max(ft_intensity[phase_start: phase_end])
-        ft_intensity *= np.max(np.concatenate([phase_final[phase_start: phase_end], phase_init[phase_start: phase_end]]))
-        plt.fill_between(phase_X[phase_start: phase_end], 
-                            np.abs(ft_intensity[phase_start: phase_end]), 
+
+        FT_pulse.Y /= np.max(FT_pulse.Y[idx_start: idx_end])
+        FT_pulse.Y *= np.max(np.concatenate([np.abs(reconstructed_phase), np.abs(chirp_phase.clone().detach().cpu().numpy())]))
+        plt.fill_between(FT_pulse.X[idx_start: idx_end], 
+                            np.abs(FT_pulse.Y[idx_start: idx_end]), 
                             alpha = 0.2, 
                             color = "orange",
                             zorder = 0)
-        '''
+        
         plt.xlabel("Quasi-time (ps)")
         plt.legend(["Reconstructed phase", "Initial phase", "FT intensity"], bbox_to_anchor = [0.95, -0.15])
         plt.grid()
