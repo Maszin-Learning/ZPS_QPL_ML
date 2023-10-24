@@ -3,7 +3,7 @@ import numpy as np
 import spectral_analysis as sa
 
 class Generator():
-    def __init__(self, num, max_order=10, max_value=None, sin=None):
+    def __init__(self, num, max_order=10, max_value=None):
         self.num = num
         self.max_order = max_order
         self.max_value = max_value
