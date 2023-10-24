@@ -8,7 +8,7 @@ class Generator():
         self.max_order = max_order
         self.max_value = max_value
         
-        self.phase_gen()
+        
         
     def phase_gen(self):
         if np.random.choice(1) == 1:      # slowly varying phase

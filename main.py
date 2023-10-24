@@ -31,7 +31,7 @@ else:
     print (f"Using {my_device}")
 
 # data type
-
+my_device = torch.device('cpu')
 my_dtype = torch.float32
 
 # initial pulse (to be reconstructed later on)
@@ -68,14 +68,14 @@ print("input_dim (spectrum length) = {}".format(input_dim))
 print("output_dim (phase length) = {}".format(output_dim))
 
 
-print(Gen(100,10))
+phase_generator_1 = Gen(100,10)
 
 
 you_dont_trust_me_that_these_phases_look_cool = True
 
 if you_dont_trust_me_that_these_phases_look_cool:
     for i in range(10):
-        phase = Gen(100, 10)
+        phase = phase_generator_1.phase_gen()
         plt.plot(np.linspace(0, 1, 100), phase, color = "deeppink")
         plt.grid()
         plt.title("Test phase")
@@ -121,13 +121,15 @@ def pulse_gen(max_phase_value = None):
 
     intensity = Y_initial.copy()
     intensity = np_to_complex_pt(intensity)
-
-    phase_significant = Gen(num = output_dim, 
+    phase_generator_2 = Gen(num = output_dim, 
                             max_value = np.random.uniform(low = 0, high = max_phase_value))
+    phase_significant = phase_generator_2.phase_gen()
     phase_significant = torch.tensor(phase_significant, requires_grad = True, device = my_device, dtype = my_dtype)
-
+    
     intensity = evolve(intensity, phase_significant)
 
+    del phase_generator_2
+    
     return intensity.abs(), phase_significant
 
 # test pulse
