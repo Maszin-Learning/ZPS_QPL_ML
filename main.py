@@ -12,6 +12,7 @@ from math import floor
 from dataset_generator import Generator as Gen
 from utilities import evolve, np_to_complex_pt
 from test import test
+from dataset import Dataset
 
 # cuda 
 
