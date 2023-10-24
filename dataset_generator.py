@@ -17,9 +17,11 @@ class Generator():
             
             for order in range(self.max_order):
                 coef = np.random.uniform(low = -1, high = 1)
-                if np.random.choice(100) == 1:
+                r = np.random.choice(100)
+                if r == 1:
                     Y += np.tan(X)*coef*X**order
-                    print('yes')
+                if r == 2:
+                    Y += np.sin(X)*coef*X**order
                 else:
                     Y += coef*X**order
         else:                                               # rapidly varying phase  UPDATE: It causes convergence
