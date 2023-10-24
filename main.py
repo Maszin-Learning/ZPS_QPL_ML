@@ -70,7 +70,7 @@ print("output_dim (phase length) = {}".format(output_dim))
 
 def phase_gen(num, max_order = 10, max_value = None):
 
-    if np.random.uniform(low = 0, high = 1) < 0.0:      # slowly varying phase
+    if np.random.uniform(low = 0, high = 1) < 1.0:      # slowly varying phase
         X = np.linspace(-1, 1, num)
         Y = np.zeros(num)
         
