@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm import tqdm
 from math import floor
+from dataset_generator import Generator as Gen
 
 # cuda 
 
@@ -66,36 +67,15 @@ if output_dim % 2 == 1:
 print("input_dim (spectrum length) = {}".format(input_dim))  
 print("output_dim (phase length) = {}".format(output_dim))
 
-# phase generator to evolve our initial pulse to input pulse
 
-def phase_gen(num, max_order = 10, max_value = None):
+print(Gen(100,10))
 
-    if np.random.uniform(low = 0, high = 1) < 1.0:      # slowly varying phase
-        X = np.linspace(-1, 1, num)
-        Y = np.zeros(num)
-        
-        for order in range(max_order):
-            coef = np.random.uniform(low = -1, high = 1)
-            Y += coef*X**order
-    else:                                               # rapidly varying phase  UPDATE: It causes convergence
-        Y = np.zeros(num)
-        for order in range(4):
-            coef = np.random.uniform(low = -1, high = 1)
-            Y += coef*sa.hermitian_pulse(pol_num = order,
-                bandwidth = [-1, 1],
-                centre = 0,
-                FWHM = 0.5,
-                num = num).Y
-    if max_value == None:
-        return Y
-    else:
-        return Y/np.max(np.abs(Y))*max_value
 
 you_dont_trust_me_that_these_phases_look_cool = True
 
 if you_dont_trust_me_that_these_phases_look_cool:
     for i in range(10):
-        phase = phase_gen(100, 10)
+        phase = Gen(100, 10)
         plt.plot(np.linspace(0, 1, 100), phase, color = "deeppink")
         plt.grid()
         plt.title("Test phase")
@@ -142,7 +122,7 @@ def pulse_gen(max_phase_value = None):
     intensity = Y_initial.copy()
     intensity = np_to_complex_pt(intensity)
 
-    phase_significant = phase_gen(num = output_dim, 
+    phase_significant = Gen(num = output_dim, 
                             max_value = np.random.uniform(low = 0, high = max_phase_value))
     phase_significant = torch.tensor(phase_significant, requires_grad = True, device = my_device, dtype = my_dtype)
 
