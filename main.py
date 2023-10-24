@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm import tqdm
 from math import floor
+from dataset_generator import Generator as Gen
 from utilities import evolve, np_to_complex_pt
 from test import test
 
@@ -32,7 +33,7 @@ else:
     print (f"Using {my_device}")
 
 # data type
-
+my_device = torch.device('cpu')
 my_dtype = torch.float32
 
 # initial pulse (to be reconstructed later on)
@@ -68,54 +69,41 @@ if output_dim % 2 == 1:
 print("input_dim (spectrum length) = {}".format(input_dim))  
 print("output_dim (phase length) = {}".format(output_dim))
 
-# phase generator to evolve our initial pulse to input pulse
 
-def phase_gen(num, max_order = 10, max_value = None, phase_type = "regular"):
-    '''
-    phase_type = \"regular\" or \"hermitian\"
-    '''
-    if phase_type == "regular":      # slowly varying phase
-        X = np.linspace(-1, 1, num)
-        Y = np.zeros(num)
-        
-        for order in range(max_order):
-            coef = np.random.uniform(low = -1, high = 1)
-            Y += coef*X**order
-    elif phase_type == "hermitian":                                               # rapidly varying phase  UPDATE: It causes convergence
-        Y = np.zeros(num)
-        for order in range(4):
-            coef = np.random.uniform(low = -1, high = 1)
-            Y += coef*sa.hermitian_pulse(pol_num = order,
-                bandwidth = [-1, 1],
-                centre = 0,
-                FWHM = 0.5,
-                num = num).Y    
-    else:
-        raise Exception("Undefined phase_type")
-    if max_value == None:
-        return Y
-    else:
-        return Y/np.max(np.abs(Y))*max_value
+phase_generator_1 = Gen(100,10)
+
 
 you_dont_trust_me_that_these_phases_look_cool = True
+
+if you_dont_trust_me_that_these_phases_look_cool:
+    for i in range(10):
+        phase = phase_generator_1.phase_gen()
+        plt.plot(np.linspace(0, 1, 100), phase, color = "deeppink")
+        plt.grid()
+        plt.title("Test phase")
+        plt.savefig("phase_{}.jpg".format(i + 1))
+        plt.close()
+
 
     
 # now function to provide input to the network
 
 def pulse_gen(max_phase_value = None, phase_type = "regular"):
 
-    from utilities import evolve, np_to_complex_pt
 
     intensity = Y_initial.copy()
     intensity = np_to_complex_pt(intensity)
+    
+    phase_generator_2 = Gen(num = output_dim, 
+                            max_value = np.random.uniform(low = 0, high = max_phase_value))
+    phase_significant = phase_generator_2.phase_gen()
 
-    phase_significant = phase_gen(num = output_dim, 
-                            max_value = max_phase_value,
-                            phase_type = phase_type)
     phase_significant = torch.tensor(phase_significant, requires_grad = True, device = my_device, dtype = my_dtype)
-
+    
     intensity = evolve(intensity, phase_significant)
 
+    del phase_generator_2
+    
     return intensity.abs(), phase_significant
 
 # test pulse
