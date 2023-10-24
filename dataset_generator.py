@@ -3,7 +3,7 @@ import numpy as np
 import spectral_analysis as sa
 
 class Generator():
-    def __init__(self, num, max_order, max_value=None):
+    def __init__(self, num, max_order=10, max_value=None, sin=None):
         self.num = num
         self.max_order = max_order
         self.max_value = max_value
@@ -17,7 +17,11 @@ class Generator():
             
             for order in range(self.max_order):
                 coef = np.random.uniform(low = -1, high = 1)
-                Y += coef*X**order
+                if np.random.choice(100) == 1:
+                    Y += np.tan(X)*coef*X**order
+                    print('yes')
+                else:
+                    Y += coef*X**order
         else:                                               # rapidly varying phase  UPDATE: It causes convergence
             Y = np.zeros(self.num)
             for order in range(4):
