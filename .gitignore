@@ -1,2 +1,8 @@
 *.pdf
 *.jpg
+*.jpg
+
+# exclude everything
+pics/*
+# exception to the rule
+!pisc/.gitkeep
