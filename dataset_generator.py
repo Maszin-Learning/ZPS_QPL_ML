@@ -11,7 +11,7 @@ class Generator():
         
         
     def phase_gen(self):
-        if np.random.choice(1) == 1:      # slowly varying phase
+        if np.random.choice(5) == 1:      # slowly varying phase
             X = np.linspace(-1, 1, self.num)
             Y = np.zeros(self.num)
             
