@@ -1,4 +1,4 @@
-def test(model, test_pulse, initial_pulse_Y, initial_pulse_X, test_phase = None):
+def test(model, test_pulse, initial_pulse_Y, initial_pulse_X, device, dtype, test_phase = None, iter_num = 0):
     '''
     You may provide test phase IF you know it. Otherwise leave it to be None.
     '''
@@ -22,9 +22,9 @@ def test(model, test_pulse, initial_pulse_Y, initial_pulse_X, test_phase = None)
 
     # evolve
 
-    initial_intensity = np_to_complex_pt(initial_pulse_Y.copy())
+    initial_intensity = np_to_complex_pt(initial_pulse_Y.copy(), device = device, dtype = dtype)
 
-    test_intensity = evolve(initial_intensity, test_phase_pred)
+    test_intensity = evolve(initial_intensity, test_phase_pred, device = device, dtype = dtype)
     reconstructed = test_intensity.abs() 
 
     plt.subplot(1, 2, 1)
@@ -99,5 +99,5 @@ def test(model, test_pulse, initial_pulse_Y, initial_pulse_X, test_phase = None)
     else:
         plt.legend(["Reconstructed phase", "FT intensity"], bbox_to_anchor = [0.95, -0.15])
     plt.grid()
-    plt.savefig("pics/reconstructed{}.jpg".format(iter), bbox_inches = "tight", dpi = 200)
+    plt.savefig("pics/reconstructed{}.jpg".format(iter_num), bbox_inches = "tight", dpi = 200)
     plt.close()

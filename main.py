@@ -92,7 +92,7 @@ def pulse_gen(max_phase_value = None, phase_type = "regular"):
 
 
     intensity = Y_initial.copy()
-    intensity = np_to_complex_pt(intensity)
+    intensity = np_to_complex_pt(intensity, device = my_device, dtype = my_dtype)
     
     phase_generator_2 = Gen(num = output_dim, 
                             max_value = np.random.uniform(low = 0, high = max_phase_value))
@@ -100,7 +100,7 @@ def pulse_gen(max_phase_value = None, phase_type = "regular"):
 
     phase_significant = torch.tensor(phase_significant, requires_grad = True, device = my_device, dtype = my_dtype)
     
-    intensity = evolve(intensity, phase_significant)
+    intensity = evolve(intensity, phase_significant, device = my_device, dtype = my_dtype)
 
     del phase_generator_2
     
@@ -120,15 +120,15 @@ if test_pulse_type == "hermite":
     test_pulse.Y /= np.sum(test_pulse.Y*np.conjugate(test_pulse.Y))
     test_pulse.Y *= np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y))
     
-    test_pulse = np_to_complex_pt(test_pulse.Y)
+    test_pulse = np_to_complex_pt(test_pulse.Y, device = my_device, dtype = my_dtype)
     test_phase = None
 
 elif test_pulse_type == "chirp":
     test_pulse = initial_pulse.copy()
     chirp = 20
-    test_phase = np_to_complex_pt(chirp*np.linspace(-1, 1, output_dim)**2)
+    test_phase = np_to_complex_pt(chirp*np.linspace(-1, 1, output_dim)**2, device = my_device, dtype = my_dtype)
     test_phase = test_phase.reshape([output_dim])
-    test_pulse = evolve(np_to_complex_pt(test_pulse.Y), test_phase)
+    test_pulse = evolve(np_to_complex_pt(test_pulse.Y, device = my_device, dtype = my_dtype), test_phase, device = my_device, dtype = my_dtype)
 
 elif test_pulse_type == "random_evolution":
     max_phase = 20
@@ -188,8 +188,8 @@ for iter in tqdm(range(iteration_num)):
 
     # transform gauss into something using this phase
 
-    initial_intensity = np_to_complex_pt(Y_initial.copy())
-    reconstructed_intensity = evolve(initial_intensity, predicted_phase)
+    initial_intensity = np_to_complex_pt(Y_initial.copy(), device = my_device, dtype = my_dtype)
+    reconstructed_intensity = evolve(initial_intensity, predicted_phase, device = my_device, dtype = my_dtype)
 
     # a bit of calculus
     
@@ -212,4 +212,7 @@ for iter in tqdm(range(iteration_num)):
             test(model = model,
                  test_pulse = test_pulse,
                  initial_pulse_Y = initial_pulse.Y.copy(),
-                 initial_pulse_X = initial_pulse.X.copy())
+                 initial_pulse_X = initial_pulse.X.copy(),
+                 device = my_device, 
+                 dtype = my_dtype,
+                 iter_num = iter)
