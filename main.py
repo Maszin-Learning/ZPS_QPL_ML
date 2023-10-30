@@ -10,9 +10,10 @@ import seaborn as sns
 from tqdm import tqdm
 from math import floor
 from dataset_generator import Generator as Gen
-from utilities import evolve, np_to_complex_pt
+from utilities import evolve, np_to_complex_pt, plot_phases
 from test import test
 from dataset import Dataset
+from test import create_test_pulse
 
 # cuda 
 
@@ -34,6 +35,7 @@ else:
     print (f"Using {my_device}")
 
 # data type
+
 my_device = torch.device('cpu')
 my_dtype = torch.float32
 
@@ -70,27 +72,11 @@ if output_dim % 2 == 1:
 print("input_dim (spectrum length) = {}".format(input_dim))  
 print("output_dim (phase length) = {}".format(output_dim))
 
-
 phase_generator_1 = Gen(100,10)
 
-
-you_dont_trust_me_that_these_phases_look_cool = True
-
-if you_dont_trust_me_that_these_phases_look_cool:
-    for i in range(10):
-        phase = phase_generator_1.phase_gen()
-        plt.plot(np.linspace(0, 1, 100), phase, color = "deeppink")
-        plt.grid()
-        plt.title("Test phase")
-        plt.savefig("phase_{}.jpg".format(i + 1))
-        plt.close()
-
-
-    
 # now function to provide input to the network
 
 def pulse_gen(max_phase_value = None, phase_type = "regular"):
-
 
     intensity = Y_initial.copy()
     intensity = np_to_complex_pt(intensity, device = my_device, dtype = my_dtype)
@@ -109,31 +95,7 @@ def pulse_gen(max_phase_value = None, phase_type = "regular"):
 
 # test pulse
 
-test_pulse_type = "hermite"
-
-if test_pulse_type == "hermite":
-    test_pulse = sa.hermitian_pulse(pol_num = 1,
-                                    bandwidth = bandwidth,
-                                    centre = 193,
-                                    FWHM = 1,
-                                    num = input_dim)
-
-    test_pulse.Y /= np.sum(test_pulse.Y*np.conjugate(test_pulse.Y))
-    test_pulse.Y *= np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y))
-    
-    test_pulse = np_to_complex_pt(test_pulse.Y, device = my_device, dtype = my_dtype)
-    test_phase = None
-
-elif test_pulse_type == "chirp":
-    test_pulse = initial_pulse.copy()
-    chirp = 20
-    test_phase = np_to_complex_pt(chirp*np.linspace(-1, 1, output_dim)**2, device = my_device, dtype = my_dtype)
-    test_phase = test_phase.reshape([output_dim])
-    test_pulse = evolve(np_to_complex_pt(test_pulse.Y, device = my_device, dtype = my_dtype), test_phase, device = my_device, dtype = my_dtype)
-
-elif test_pulse_type == "random_evolution":
-    max_phase = 20
-    test_pulse, test_phase = pulse_gen(max_phase)
+test_pulse, test_phase = create_test_pulse("random_evolution", initial_pulse, output_dim, my_device, my_dtype)
 
 # ok, let's define the NN
 
@@ -212,6 +174,7 @@ for iter in tqdm(range(iteration_num)):
 
             test(model = model,
                  test_pulse = test_pulse,
+                 test_phase = test_phase,
                  initial_pulse_Y = initial_pulse.Y.copy(),
                  initial_pulse_X = initial_pulse.X.copy(),
                  device = my_device, 

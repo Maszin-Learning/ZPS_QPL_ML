@@ -8,6 +8,7 @@ def test(model, test_pulse, initial_pulse_Y, initial_pulse_X, device, dtype, tes
     from utilities import evolve
     import matplotlib.pyplot as plt
     from math import floor
+    import os
 
     input_dim = model.input
     output_dim = model.output
@@ -99,5 +100,51 @@ def test(model, test_pulse, initial_pulse_Y, initial_pulse_X, device, dtype, tes
     else:
         plt.legend(["Reconstructed phase", "FT intensity"], bbox_to_anchor = [0.95, -0.15])
     plt.grid()
-    plt.savefig("pics/reconstructed{}.jpg".format(iter_num), bbox_inches = "tight", dpi = 200)
+
+    if not os.path.isdir("pics"):
+        os.mkdir("pics")
+
+    if iter_num < 10000:
+        plt.savefig("pics/reconstructed_0{}.jpg".format(iter_num), bbox_inches = "tight", dpi = 200)
+    else:
+        plt.savefig("pics/reconstructed_{}.jpg".format(iter_num), bbox_inches = "tight", dpi = 200)
+        
     plt.close()
+
+def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
+    '''
+    pulse_type for now must be either \"hermite\", \"chirp\" or \"random_evolution\".
+    A tuple (test_pulse, test_phase) is returned where test_phase is the phase used to evolve the gaussian
+    to the test_pulse. If the pulse wasn't obtained by such evolution, then it is equal to None.
+    '''
+
+    import numpy as np
+    import spectral_analysis as sa
+    from utilities import np_to_complex_pt, evolve
+    from main import pulse_gen
+
+    if pulse_type == "hermite":
+        test_pulse = sa.hermitian_pulse(pol_num = 1,
+                                        bandwidth = (initial_pulse.X[0], initial_pulse.X[-1]),
+                                        centre = 193,
+                                        FWHM = 1,
+                                        num = len(initial_pulse))
+
+        test_pulse.Y /= np.sum(test_pulse.Y*np.conjugate(test_pulse.Y))
+        test_pulse.Y *= np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y))
+        
+        test_pulse = np_to_complex_pt(test_pulse.Y, device = device, dtype = dtype)
+        test_phase = None
+
+    elif pulse_type == "chirp":
+        test_pulse = initial_pulse.copy()
+        chirp = 20
+        test_phase = np_to_complex_pt(chirp*np.linspace(-1, 1, phase_len)**2, device = device, dtype = dtype)
+        test_phase = test_phase.reshape([phase_len])
+        test_pulse = evolve(np_to_complex_pt(test_pulse.Y, device = device, dtype = dtype), test_phase, device = device, dtype = dtype)
+
+    elif pulse_type == "random_evolution":
+        max_phase = 20
+        test_pulse, test_phase = pulse_gen(max_phase)
+
+    return test_pulse, test_phase
