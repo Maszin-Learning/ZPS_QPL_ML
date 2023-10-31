@@ -9,7 +9,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm import tqdm
 from math import floor
-from dataset_generator import Generator as Gen
 from utilities import evolve, np_to_complex_pt, plot_phases
 from test import test
 from dataset import Dataset
@@ -72,30 +71,9 @@ if output_dim % 2 == 1:
 print("input_dim (spectrum length) = {}".format(input_dim))  
 print("output_dim (phase length) = {}".format(output_dim))
 
-phase_generator_1 = Gen(100,10)
-
-# now function to provide input to the network
-
-def pulse_gen(max_phase_value = None, phase_type = "regular"):
-
-    intensity = Y_initial.copy()
-    intensity = np_to_complex_pt(intensity, device = my_device, dtype = my_dtype)
-    
-    phase_generator_2 = Gen(num = output_dim, 
-                            max_value = np.random.uniform(low = 0, high = max_phase_value))
-    phase_significant = phase_generator_2.phase_gen()
-
-    phase_significant = torch.tensor(phase_significant, requires_grad = True, device = my_device, dtype = my_dtype)
-    
-    intensity = evolve(intensity, phase_significant, device = my_device, dtype = my_dtype)
-
-    del phase_generator_2
-    
-    return intensity.abs(), phase_significant
-
 # test pulse
 
-test_pulse, test_phase = create_test_pulse("random_evolution", initial_pulse, output_dim, my_device, my_dtype)
+test_pulse, test_phase = create_test_pulse("hermite", initial_pulse, output_dim, my_device, my_dtype)
 
 # ok, let's define the NN
 
@@ -142,7 +120,12 @@ for iter in tqdm(range(iteration_num)):
 
     # generate the pulse for this iteration
 
-    pulse, phase = pulse_gen(max_phase_value = 25)
+    pulse, phase = Dataset(initial_intensity = Y_initial,
+                            phase_len = output_dim, 
+                            device = my_device, 
+                            dtype = my_dtype, 
+                            max_order = 10, 
+                            max_value = None)[iter]
 
     # predict phase that will transform gauss into this pulse
 

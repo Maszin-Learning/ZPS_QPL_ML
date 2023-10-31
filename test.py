@@ -121,7 +121,6 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
     import numpy as np
     import spectral_analysis as sa
     from utilities import np_to_complex_pt, evolve
-    from main import pulse_gen
 
     if pulse_type == "hermite":
         test_pulse = sa.hermitian_pulse(pol_num = 1,
