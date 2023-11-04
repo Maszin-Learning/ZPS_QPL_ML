@@ -36,7 +36,7 @@ else:
 
 # data type
 
-my_device = torch.device('mps')
+my_device = torch.device('cpu')
 my_dtype = torch.float32
 
 # initial pulse (to be reconstructed later on)
@@ -153,16 +153,16 @@ for epoch in tqdm(range(iteration_num)):
 
         loss_list.append(loss.clone().cpu().detach().numpy())
 
-        if epoch % stat_time == 0:
-            #if epoch == 0:
-                #print("Iteration np. {}. Loss {}.".format(epoch, loss.clone().cpu().detach().numpy()))
-            print("Iteration np. {}. Loss {}.".format(epoch, np.mean(np.array(loss_list[epoch-stat_time: epoch]))))
+    if epoch % stat_time == 0:
+        #if epoch == 0:
+            #print("Iteration np. {}. Loss {}.".format(epoch, loss.clone().cpu().detach().numpy()))
+        print("Iteration np. {}. Loss {}.".format(epoch, np.mean(np.array(loss_list[epoch-stat_time: epoch]))))
 
-            test(model = model,
-                    test_pulse = test_pulse,
-                    test_phase = test_phase,
-                    initial_pulse_Y = initial_pulse.Y.copy(),
-                    initial_pulse_X = initial_pulse.X.copy(),
-                    device = my_device, 
-                    dtype = my_dtype,
-                    iter_num =epoch)
+        test(model = model,
+                test_pulse = test_pulse,
+                test_phase = test_phase,
+                initial_pulse_Y = initial_pulse.Y.copy(),
+                initial_pulse_X = initial_pulse.X.copy(),
+                device = my_device, 
+                dtype = my_dtype,
+                iter_num =epoch)
