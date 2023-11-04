@@ -12,6 +12,7 @@ from math import floor
 from utilities import evolve, np_to_complex_pt, plot_phases
 from test import test
 from dataset import Dataset
+from torch.utils.data import DataLoader #Dataloader module
 from test import create_test_pulse
 
 # cuda 
@@ -112,54 +113,61 @@ criterion = torch.nn.MSELoss()
 
 # training loop
 
-iteration_num = 20000
+iteration_num = 20
+_batch_size = 16
 
 loss_list = []
 
+# create dataset and wrap it into dataloader
+dataset_train = Dataset(initial_intensity = Y_initial,
+                        phase_len = output_dim, 
+                        device = my_device, 
+                        dtype = my_dtype, 
+                        max_order = 10, 
+                        max_value = None)
+
+dataloader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size=_batch_size, num_workers=0)
+
 for iter in tqdm(range(iteration_num)):
+    for pulse, phase in dataloader_train:
+        pulse.to(my_device)
+        phase.to(my_device)
+        # predict phase that will transform gauss into this pulse
 
-    # generate the pulse for this iteration
+        predicted_phase = model(pulse)
+        predicted_phase = predicted_phase
+        print(predicted_phase.shape)
+        
 
-    pulse, phase = Dataset(initial_intensity = Y_initial,
-                            phase_len = output_dim, 
-                            device = my_device, 
-                            dtype = my_dtype, 
-                            max_order = 10, 
-                            max_value = None)[iter]
+        # transform gauss into something using this phase
 
-    # predict phase that will transform gauss into this pulse
+        initial_intensity = np_to_complex_pt(Y_initial.copy(), device = my_device, dtype = my_dtype)
+        print(initial_intensity.shape)
+        reconstructed_intensity = evolve(initial_intensity, predicted_phase, device = my_device, dtype = my_dtype)
 
-    predicted_phase = model(pulse)
-    predicted_phase = predicted_phase.reshape([output_dim])
+        # a bit of calculus
 
-    # transform gauss into something using this phase
+        loss = criterion(reconstructed_intensity.abs(), pulse) # pulse intensity
+        loss.backward()
+        optimizer.step()
+        optimizer.zero_grad()
 
-    initial_intensity = np_to_complex_pt(Y_initial.copy(), device = my_device, dtype = my_dtype)
-    reconstructed_intensity = evolve(initial_intensity, predicted_phase, device = my_device, dtype = my_dtype)
+        # stats
 
-    # a bit of calculus
-    
-    loss = criterion(reconstructed_intensity.abs(), pulse) # pulse intensity
-    loss.backward()
-    optimizer.step()
-    optimizer.zero_grad()
+        loss_list.append(loss.clone().cpu().detach().numpy())
 
-    # stats
+        stat_time = 500
+        if iter % stat_time == 0:
+            if iter == 0:
+                print("Iteration np. {}. Loss {}.".format(iter, loss.clone().cpu().detach().numpy()))
+            else:
+                print("Iteration np. {}. Loss {}.".format(iter, np.mean(np.array(loss_list[iter-stat_time: iter]))))
 
-    loss_list.append(loss.clone().cpu().detach().numpy())
-
-    stat_time = 500
-    if iter % stat_time == 0:
-        if iter == 0:
-            print("Iteration np. {}. Loss {}.".format(iter, loss.clone().cpu().detach().numpy()))
-        else:
-            print("Iteration np. {}. Loss {}.".format(iter, np.mean(np.array(loss_list[iter-stat_time: iter]))))
-
-            test(model = model,
-                 test_pulse = test_pulse,
-                 test_phase = test_phase,
-                 initial_pulse_Y = initial_pulse.Y.copy(),
-                 initial_pulse_X = initial_pulse.X.copy(),
-                 device = my_device, 
-                 dtype = my_dtype,
-                 iter_num = iter)
+                test(model = model,
+                        test_pulse = test_pulse,
+                        test_phase = test_phase,
+                        initial_pulse_Y = initial_pulse.Y.copy(),
+                        initial_pulse_X = initial_pulse.X.copy(),
+                        device = my_device, 
+                        dtype = my_dtype,
+                        iter_num = iter)
