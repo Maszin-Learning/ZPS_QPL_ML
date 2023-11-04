@@ -36,7 +36,7 @@ else:
 
 # data type
 
-my_device = torch.device('cpu')
+my_device = torch.device('mps')
 my_dtype = torch.float32
 
 # initial pulse (to be reconstructed later on)
@@ -74,7 +74,7 @@ print("output_dim (phase length) = {}".format(output_dim))
 
 # test pulse
 
-#test_pulse, test_phase = create_test_pulse("hermite", initial_pulse, output_dim, my_device, my_dtype)
+test_pulse, test_phase = create_test_pulse("hermite", initial_pulse, output_dim, my_device, my_dtype)
 
 # ok, let's define the NN
 
@@ -113,9 +113,9 @@ criterion = torch.nn.MSELoss()
 
 # training loop
 
-iteration_num = 1
+iteration_num = 20
 _batch_size = 16
-
+stat_time = 5
 loss_list = []
 
 # create dataset and wrap it into dataloader
@@ -128,7 +128,7 @@ dataset_train = Dataset(initial_intensity = Y_initial,
 
 dataloader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size=_batch_size, num_workers=0)
 
-for iter in tqdm(range(iteration_num)):
+for epoch in tqdm(range(iteration_num)):
     for pulse, _ in dataloader_train:
         pulse.to(my_device)
         # predict phase that will transform gauss into this pulse
@@ -152,20 +152,17 @@ for iter in tqdm(range(iteration_num)):
         # stats
 
         loss_list.append(loss.clone().cpu().detach().numpy())
-        """
-        stat_time = 500
-        if iter % stat_time == 0:
-            if iter == 0:
-                print("Iteration np. {}. Loss {}.".format(iter, loss.clone().cpu().detach().numpy()))
-            else:
-                print("Iteration np. {}. Loss {}.".format(iter, np.mean(np.array(loss_list[iter-stat_time: iter]))))
 
-                test(model = model,
-                        test_pulse = test_pulse,
-                        test_phase = test_phase,
-                        initial_pulse_Y = initial_pulse.Y.copy(),
-                        initial_pulse_X = initial_pulse.X.copy(),
-                        device = my_device, 
-                        dtype = my_dtype,
-                        iter_num = iter)
-        """
+        if epoch % stat_time == 0:
+            #if epoch == 0:
+                #print("Iteration np. {}. Loss {}.".format(epoch, loss.clone().cpu().detach().numpy()))
+            print("Iteration np. {}. Loss {}.".format(epoch, np.mean(np.array(loss_list[epoch-stat_time: epoch]))))
+
+            test(model = model,
+                    test_pulse = test_pulse,
+                    test_phase = test_phase,
+                    initial_pulse_Y = initial_pulse.Y.copy(),
+                    initial_pulse_X = initial_pulse.X.copy(),
+                    device = my_device, 
+                    dtype = my_dtype,
+                    iter_num =epoch)
