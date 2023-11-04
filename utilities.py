@@ -5,10 +5,11 @@ from math import floor
 import matplotlib.pyplot as plt
 import os
     
-def evolve(intensity, phase, device, dtype, abs = True,):
+def evolve(intensity, phase, device, dtype, abs = True):
 
-    input_dim = intensity.numel()
-    output_dim = phase.numel()/16
+    print(intensity.shape, phase.shape)
+    input_dim = intensity.shape[1]
+    output_dim = phase.shape[0]
 
     intensity = torch.fft.fftshift(intensity)
     intensity = torch.fft.fft(intensity)
@@ -20,7 +21,7 @@ def evolve(intensity, phase, device, dtype, abs = True,):
 
     long_phase = torch.concat([torch.zeros(size = zeroes_shape, requires_grad = True, device = device, dtype = dtype), 
                           phase,
-                          torch.zeros(size = zeroes_shape, requires_grad = True, device = device, dtype = dtype)])
+                          torch.zeros(size = zeroes_shape, requires_grad = True, device = device, dtype = dtype)], dim=0)
     
     complex_intensity = torch.mul(intensity, torch.exp(1j*long_phase))
 
