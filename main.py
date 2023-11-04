@@ -136,13 +136,11 @@ for iter in tqdm(range(iteration_num)):
 
         predicted_phase = model(pulse)
         predicted_phase = predicted_phase
-        print(predicted_phase.shape)
-        
+        #print(predicted_phase.shape)
 
         # transform gauss into something using this phase
 
         initial_intensity = np_to_complex_pt(Y_initial.copy(), device = my_device, dtype = my_dtype)
-        print(initial_intensity.shape)
         reconstructed_intensity = evolve(initial_intensity, predicted_phase, device = my_device, dtype = my_dtype)
 
         # a bit of calculus

@@ -5,13 +5,13 @@ def evolve(intensity, phase, device, dtype, abs = True,):
     from math import floor
 
     input_dim = intensity.numel()
-    output_dim = phase.numel()
+    output_dim = phase.numel()/16
 
     intensity = torch.fft.fftshift(intensity)
     intensity = torch.fft.fft(intensity)
     intensity = torch.fft.fftshift(intensity)
     
-    zeroes_shape = torch.tensor(phase.shape)
+    zeroes_shape = np.array(phase.shape)
     zeroes_shape[-1] = floor((input_dim-output_dim)/2)
     zeroes_shape = tuple(zeroes_shape)
 
