@@ -1,6 +1,7 @@
 def evolve(intensity, phase, device, dtype, abs = True,):
 
     import torch
+    import numpy as np
     from math import floor
 
     input_dim = intensity.numel()
@@ -10,9 +11,13 @@ def evolve(intensity, phase, device, dtype, abs = True,):
     intensity = torch.fft.fft(intensity)
     intensity = torch.fft.fftshift(intensity)
     
-    long_phase = torch.concat([torch.zeros(size = [floor((input_dim-output_dim)/2)], requires_grad = True, device = device, dtype = dtype), 
+    zeroes_shape = torch.tensor(phase.shape)
+    zeroes_shape[-1] = floor((input_dim-output_dim)/2)
+    zeroes_shape = tuple(zeroes_shape)
+
+    long_phase = torch.concat([torch.zeros(size = zeroes_shape, requires_grad = True, device = device, dtype = dtype), 
                           phase,
-                          torch.zeros(size = [floor((input_dim-output_dim)/2)], requires_grad = True, device = device, dtype = dtype)])
+                          torch.zeros(size = zeroes_shape, requires_grad = True, device = device, dtype = dtype)])
     
     complex_intensity = torch.mul(intensity, torch.exp(1j*long_phase))
 
