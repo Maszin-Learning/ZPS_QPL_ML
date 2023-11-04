@@ -7,9 +7,8 @@ import os
     
 def evolve(intensity, phase, device, dtype, abs = True):
 
-    print(intensity.shape, phase.shape)
-    input_dim = intensity.shape[1]
-    output_dim = phase.shape[0]
+    input_dim = intensity.shape[-1]
+    output_dim = phase.shape[-1]
 
     intensity = torch.fft.fftshift(intensity)
     intensity = torch.fft.fft(intensity)
@@ -18,10 +17,9 @@ def evolve(intensity, phase, device, dtype, abs = True):
     zeroes_shape = np.array(phase.shape)
     zeroes_shape[-1] = floor((input_dim-output_dim)/2)
     zeroes_shape = tuple(zeroes_shape)
-
     long_phase = torch.concat([torch.zeros(size = zeroes_shape, requires_grad = True, device = device, dtype = dtype), 
                           phase,
-                          torch.zeros(size = zeroes_shape, requires_grad = True, device = device, dtype = dtype)], dim=0)
+                          torch.zeros(size = zeroes_shape, requires_grad = True, device = device, dtype = dtype)], dim=phase.ndim-1)
     
     complex_intensity = torch.mul(intensity, torch.exp(1j*long_phase))
 
