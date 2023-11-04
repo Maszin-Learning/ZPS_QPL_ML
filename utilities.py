@@ -1,8 +1,11 @@
-def evolve(intensity, phase, device, dtype, abs = True,):
 
-    import torch
-    import numpy as np
-    from math import floor
+import torch
+import numpy as np
+from math import floor
+import matplotlib.pyplot as plt
+import os
+    
+def evolve(intensity, phase, device, dtype, abs = True,):
 
     input_dim = intensity.numel()
     output_dim = phase.numel()/16
@@ -32,9 +35,6 @@ def evolve(intensity, phase, device, dtype, abs = True,):
     
     
 def plot_phases(phase_generator, num, phase_type = "regular"):
-    import numpy as np
-    import matplotlib.pyplot as plt
-    import os
 
     if not os.path.isdir("example_phases"):
         os.mkdir("example_phases")
@@ -52,7 +52,7 @@ def np_to_complex_pt(array, device, dtype):
     '''
     # real-valued numpy array to complex pytorch tensor
     '''
-    import torch
+
 
     array = torch.tensor([[array[i], 0] for i in range(len(array))], requires_grad = True, device = device, dtype = dtype)
     array = torch.view_as_complex(array)
