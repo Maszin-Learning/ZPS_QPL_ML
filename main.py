@@ -146,7 +146,7 @@ dataloader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size
 for epoch in tqdm(range(iteration_num)):
 
     for pulse, _ in dataloader_train:
-
+        pulse.to(my_device)
         # predict phase that will transform gauss into this pulse
 
         predicted_phase = model(pulse)
