@@ -150,7 +150,6 @@ for epoch in tqdm(range(iteration_num)):
         # predict phase that will transform gauss into this pulse
 
         predicted_phase = model(pulse)
-        predicted_phase = predicted_phase
 
         # transform gauss into something using this phase
 
