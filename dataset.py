@@ -2,6 +2,7 @@ from dataset_generator import Generator
 from torch.utils.data import Dataset
 import os
 import numpy as np
+import torch
 
     
 class Dataset_train(Dataset):
@@ -29,12 +30,12 @@ class Dataset_train(Dataset):
 
     def __getitem__(self, index):
         intensity = np.loadtxt(self.files_names_intensity[index],
-                 delimiter="", dtype=np.float32)
+                 delimiter=" ", dtype=np.float32)
         phase = np.loadtxt(self.files_names_phase[index],
-                 delimiter="", dtype=np.float32)
+                 delimiter=" ", dtype=np.float32)
         
         if self.transform:
-            intensity = self.transform(intensity)
-            phase = self.transform(phase)
+            intensity = torch.tensor(intensity, requires_grad=True)
+            phase = torch.tensor(phase, requires_grad=True)
 
         return (intensity, phase)

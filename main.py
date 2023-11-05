@@ -135,8 +135,8 @@ the_generator = Generator(data_num = 10,
 the_generator.generate_and_save()
 
 
-_transform = transforms.Compose([transforms.ToTensor()])
-dataset_train = Dataset_train(root='', transform=_transform)
+
+dataset_train = Dataset_train(root='', transform=True)
 
 
 #print("Training set created. It contains {} examples grouped into {}-element long batches.\n".format(_batch_size*batch_num, _batch_size))
