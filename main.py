@@ -118,7 +118,7 @@ criterion = torch.nn.MSELoss()
 
 iteration_num = 20
 _batch_size = 32
-data_num = 500
+p = 5
 loss_list = []
 
 # create dataset and wrap it into dataloader
@@ -168,7 +168,7 @@ for epoch in tqdm(range(iteration_num)):
 
         loss_list.append(loss.clone().cpu().detach().numpy())
 
-    if True:
+    if epoch%p==0:
         #if epoch == 0:
             #print("Iteration np. {}. Loss {}.".format(epoch, loss.clone().cpu().detach().numpy()))
         print("Epoch no. {}. Loss {}.".format(epoch, np.mean(np.array(loss_list[epoch*len(dataloader_train): (epoch+1)*len(dataloader_train)]))))
