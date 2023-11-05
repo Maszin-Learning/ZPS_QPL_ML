@@ -17,7 +17,10 @@ class Generator():
         self.dtype = dtype
 
 
-    def generate_and_save():
+    def generate_and_save(self):
+
+        if not os.path.isdir("data"):
+            os.mkdir("data")
         
         if not os.path.isdir("data/train_intensity"):
             os.mkdir("data/train_intensity")
@@ -77,12 +80,10 @@ class Generator():
         '''
 
         intensity = self.initial_intensity.copy()
-        intensity = np_to_complex_pt(intensity, device = self.device, dtype = self.dtype)
+        intensity = np.array([complex(intensity[i], 0) for i in range(len(intensity))])
         
         phase_significant = self.phase_gen()
-
-        phase_significant = torch.tensor(phase_significant, requires_grad = True, device = self.device, dtype = self.dtype)
         
-        intensity = evolve(intensity, phase_significant, device = self.device, dtype = self.dtype)
+        intensity = evolve(intensity, phase_significant, dtype = self.dtype)
         
-        return intensity.abs(), phase_significant
+        return np.abs(intensity), phase_significant

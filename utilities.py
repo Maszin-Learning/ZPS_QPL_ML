@@ -5,30 +5,30 @@ from math import floor
 import matplotlib.pyplot as plt
 import os
     
-def evolve(intensity, phase, device, dtype, abs = True):
+def evolve(intensity, phase, dtype, abs = True):
 
     input_dim = intensity.shape[-1]
     output_dim = phase.shape[-1]
 
-    intensity = torch.fft.fftshift(intensity)
-    intensity = torch.fft.fft(intensity)
-    intensity = torch.fft.fftshift(intensity)
+    intensity = np.fft.fftshift(intensity)
+    intensity = np.fft.fft(intensity)
+    intensity = np.fft.fftshift(intensity)
     
     zeroes_shape = np.array(phase.shape)
     zeroes_shape[-1] = floor((input_dim-output_dim)/2)
     zeroes_shape = tuple(zeroes_shape)
-    long_phase = torch.concat([torch.zeros(size = zeroes_shape, requires_grad = True, device = device, dtype = dtype), 
+    long_phase = np.concatenate([np.zeros(shape = zeroes_shape, dtype = dtype), 
                           phase,
-                          torch.zeros(size = zeroes_shape, requires_grad = True, device = device, dtype = dtype)], dim=phase.ndim-1)
+                          np.zeros(shape = zeroes_shape, dtype = dtype)], axis=phase.ndim-1)
     
-    complex_intensity = torch.mul(intensity, torch.exp(1j*long_phase))
+    complex_intensity = intensity*np.exp(1j*long_phase)
 
-    complex_intensity = torch.fft.ifftshift(complex_intensity)
-    complex_intensity = torch.fft.ifft(complex_intensity)
-    complex_intensity = torch.fft.ifftshift(complex_intensity)
+    complex_intensity = np.fft.ifftshift(complex_intensity)
+    complex_intensity = np.fft.ifft(complex_intensity)
+    complex_intensity = np.fft.ifftshift(complex_intensity)
 
     if abs:
-        return complex_intensity.abs()
+        return np.abs(complex_intensity)
     else:
         return complex_intensity
     
