@@ -6,12 +6,13 @@ import torch
 
     
 class Dataset_train(Dataset):
-    def __init__(self, root ,transform):
+    def __init__(self, root ,transform, device):
         self.labels = []
         self.dirName_1 = os.path.join('data','train_intensity') # path to training data with intensity of spectrum
         self.dirName_2 = os.path.join('data','train_phase') # path to training data with pahse used to transformate gause of spectrum
         self.files_names_intensity = []
         self.files_names_phase = []
+        self._device = device
         
         self.transform = transform
         self.load_signals()
@@ -35,7 +36,7 @@ class Dataset_train(Dataset):
                  delimiter=" ", dtype=np.float32)
         
         if self.transform:
-            intensity = torch.tensor(intensity, requires_grad=True)
-            phase = torch.tensor(phase, requires_grad=True)
+            intensity = torch.tensor(intensity, requires_grad=True, device=self._device)
+            phase = torch.tensor(phase, requires_grad=True, device=self._device)
 
         return (intensity, phase)

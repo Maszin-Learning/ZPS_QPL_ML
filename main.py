@@ -136,7 +136,7 @@ the_generator.generate_and_save()
 
 
 
-dataset_train = Dataset_train(root='', transform=True)
+dataset_train = Dataset_train(root='', transform=True, device = my_device)
 
 
 #print("Training set created. It contains {} examples grouped into {}-element long batches.\n".format(_batch_size*batch_num, _batch_size))
