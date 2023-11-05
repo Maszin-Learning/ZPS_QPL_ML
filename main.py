@@ -115,15 +115,14 @@ criterion = torch.nn.MSELoss()
 
 iteration_num = 20
 _batch_size = 32
-batch_num = 500
+data_num = 500
 loss_list = []
 
 # create dataset and wrap it into dataloader
 
 print("\nCreating training set...")
 
-dataset_train = Dataset(batch_num = batch_num,
-                        batch_size = _batch_size,
+dataset_train = Dataset(data_num = data_num,
                         initial_intensity = Y_initial,
                         phase_len = output_dim, 
                         device = my_device, 
@@ -136,16 +135,6 @@ print("Training set created. It contains {} examples grouped into {}-element lon
 dataloader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size=_batch_size, num_workers=0)
 
 for epoch in tqdm(range(iteration_num)):
-
-    dataset_train = Dataset(batch_num = batch_num,
-                        batch_size = _batch_size,
-                        initial_intensity = Y_initial,
-                        phase_len = output_dim, 
-                        device = my_device, 
-                        dtype = my_dtype, 
-                        max_order = 10, 
-                        max_value = None)
-    dataloader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size=_batch_size, num_workers=0)
 
     for pulse, _ in dataloader_train:
 
