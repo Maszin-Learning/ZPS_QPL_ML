@@ -5,13 +5,17 @@ from utilities import np_to_complex_pt, evolve
 
 class Generator():
 
-    def __init__(self, spectrum_len, phase_len, device, dtype, max_order=10, max_value=10):
-        self.num = spectrum_len
+    def __init__(self, batch_num, batch_size, initial_intensity, phase_len, device, dtype, max_order=10, max_value=10):
+        self.batch_num = batch_num
+        self.batch_size = batch_size
+        self.initial_intensity = initial_intensity
+        self.num = len(initial_intensity)
         self.phase_num = phase_len
         self.max_order = max_order
         self.max_value = max_value
         self.device = device
         self.dtype = dtype  
+        self.data = [self.pulse_gen() for i in range(batch_size*batch_num)]
         
     def phase_gen(self):
         if np.random.choice(5) == 1:      # slowly varying phase
@@ -54,9 +58,9 @@ class Generator():
         else:
             return Y/np.max(np.abs(Y))*self.max_value
         
-    def pulse_gen(self, initial_intensity):
+    def pulse_gen(self):
 
-        intensity = initial_intensity.copy()
+        intensity = self.initial_intensity.copy()
         intensity = np_to_complex_pt(intensity, device = self.device, dtype = self.dtype)
         
         phase_significant = self.phase_gen()

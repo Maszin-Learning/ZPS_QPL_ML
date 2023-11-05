@@ -69,7 +69,7 @@ output_dim = idx_end - reconstructed_phase    # number of points of non-zero FT-
 if output_dim % 2 == 1:
     output_dim += 1
 
-print("input_dim (spectrum length) = {}".format(input_dim))  
+print("\ninput_dim (spectrum length) = {}".format(input_dim))  
 print("output_dim (phase length) = {}".format(output_dim))
 
 # test pulse
@@ -114,28 +114,45 @@ criterion = torch.nn.MSELoss()
 # training loop
 
 iteration_num = 20
-_batch_size = 16
-stat_time = 5
+_batch_size = 32
+batch_num = 500
 loss_list = []
 
 # create dataset and wrap it into dataloader
-dataset_train = Dataset(initial_intensity = Y_initial,
+
+print("\nCreating training set...")
+
+dataset_train = Dataset(batch_num = batch_num,
+                        batch_size = _batch_size,
+                        initial_intensity = Y_initial,
                         phase_len = output_dim, 
                         device = my_device, 
                         dtype = my_dtype, 
                         max_order = 10, 
                         max_value = None)
 
+print("Training set created. It contains {} examples grouped into {}-element long batches.\n".format(_batch_size*batch_num, _batch_size))
+
 dataloader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size=_batch_size, num_workers=0)
 
 for epoch in tqdm(range(iteration_num)):
+
+    dataset_train = Dataset(batch_num = batch_num,
+                        batch_size = _batch_size,
+                        initial_intensity = Y_initial,
+                        phase_len = output_dim, 
+                        device = my_device, 
+                        dtype = my_dtype, 
+                        max_order = 10, 
+                        max_value = None)
+    dataloader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size=_batch_size, num_workers=0)
+
     for pulse, _ in dataloader_train:
-        pulse.to(my_device)
+
         # predict phase that will transform gauss into this pulse
 
         predicted_phase = model(pulse)
         predicted_phase = predicted_phase
-        #print(predicted_phase.shape)
 
         # transform gauss into something using this phase
 
@@ -153,10 +170,10 @@ for epoch in tqdm(range(iteration_num)):
 
         loss_list.append(loss.clone().cpu().detach().numpy())
 
-    if epoch % stat_time == 0:
+    if True:
         #if epoch == 0:
             #print("Iteration np. {}. Loss {}.".format(epoch, loss.clone().cpu().detach().numpy()))
-        print("Iteration np. {}. Loss {}.".format(epoch, np.mean(np.array(loss_list[epoch-stat_time: epoch]))))
+        print("Epoch no. {}. Loss {}.".format(epoch, np.mean(np.array(loss_list[epoch*len(dataloader_train): (epoch+1)*len(dataloader_train)]))))
 
         test(model = model,
                 test_pulse = test_pulse,
