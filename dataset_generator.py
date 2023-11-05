@@ -3,6 +3,7 @@ import numpy as np
 import spectral_analysis as sa
 from utilities import np_to_complex_pt, evolve_pt, evolve_np
 import os
+from tqdm import tqdm
 
 class Generator():
 
@@ -27,7 +28,7 @@ class Generator():
         if not os.path.isdir("data/train_phase"):
             os.mkdir("data/train_phase")
 
-        for example_num in range(self.data_num):
+        for example_num in tqdm(range(self.data_num)):
             intensity, phase = self.pulse_gen()
             np.savetxt("data/train_intensity/" + str(example_num) + ".csv", intensity)
             np.savetxt("data/train_phase/" + str(example_num) + ".csv", phase)

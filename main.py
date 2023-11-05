@@ -125,7 +125,7 @@ loss_list = []
 
 print("\nCreating training set...")
 
-the_generator = Generator(data_num = 10,
+the_generator = Generator(data_num = 10000,
                           initial_intensity = Y_initial,
                           phase_len = output_dim,
                           device = my_device,
