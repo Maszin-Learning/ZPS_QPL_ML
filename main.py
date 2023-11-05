@@ -117,7 +117,7 @@ criterion = torch.nn.MSELoss()
 # training loop
 
 iteration_num = 20
-_batch_size = 32
+_batch_size = 320
 p = 5
 loss_list = []
 
@@ -125,7 +125,7 @@ loss_list = []
 
 print("\nCreating training set...")
 
-the_generator = Generator(data_num = 10000,
+the_generator = Generator(data_num = 100000,
                           initial_intensity = Y_initial,
                           phase_len = output_dim,
                           device = my_device,
