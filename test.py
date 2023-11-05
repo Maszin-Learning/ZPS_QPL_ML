@@ -1,14 +1,14 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from math import floor
+import os
+import spectral_analysis as sa
+from utilities import np_to_complex_pt, evolve_np, evolve_pt
+
 def test(model, test_pulse, initial_pulse_Y, initial_pulse_X, device, dtype, test_phase = None, iter_num = 0):
     '''
     You may provide test phase IF you know it. Otherwise leave it to be None.
     '''
-    
-    import numpy as np
-    from utilities import np_to_complex_pt
-    from utilities import evolve
-    import matplotlib.pyplot as plt
-    from math import floor
-    import os
 
     input_dim = model.input
     output_dim = model.output
@@ -25,7 +25,7 @@ def test(model, test_pulse, initial_pulse_Y, initial_pulse_X, device, dtype, tes
 
     initial_intensity = np_to_complex_pt(initial_pulse_Y.copy(), device = device, dtype = dtype)
 
-    test_intensity = evolve(initial_intensity, test_phase_pred, device = device, dtype = dtype)
+    test_intensity = evolve_pt(initial_intensity, test_phase_pred, device = device, dtype = dtype)
     reconstructed = test_intensity.abs() 
 
     plt.subplot(1, 2, 1)
@@ -118,9 +118,7 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
     to the test_pulse. If the pulse wasn't obtained by such evolution, then it is equal to None.
     '''
 
-    import numpy as np
-    import spectral_analysis as sa
-    from utilities import np_to_complex_pt, evolve
+
 
     if pulse_type == "hermite":
         test_pulse = sa.hermitian_pulse(pol_num = 1,
@@ -140,7 +138,7 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
         chirp = 20
         test_phase = np_to_complex_pt(chirp*np.linspace(-1, 1, phase_len)**2, device = device, dtype = dtype)
         test_phase = test_phase.reshape([phase_len])
-        test_pulse = evolve(np_to_complex_pt(test_pulse.Y, device = device, dtype = dtype), test_phase, device = device, dtype = dtype)
+        test_pulse = evolve_np(np_to_complex_pt(test_pulse.Y, device = device, dtype = dtype), test_phase, device = device, dtype = dtype)
 
     elif pulse_type == "random_evolution":
         max_phase = 20

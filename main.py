@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm import tqdm
 from math import floor
-from utilities import evolve, np_to_complex_pt, plot_phases
+from utilities import evolve_pt, np_to_complex_pt, plot_phases, evolve_np
 from test import test
 from dataset import Dataset
 from torch.utils.data import DataLoader #Dataloader module
@@ -155,7 +155,7 @@ for epoch in tqdm(range(iteration_num)):
         # transform gauss into something using this phase
 
         initial_intensity = np_to_complex_pt(Y_initial.copy(), device = my_device, dtype = my_dtype)
-        reconstructed_intensity = evolve(initial_intensity, predicted_phase, device = my_device, dtype = my_dtype)
+        reconstructed_intensity = evolve_pt(initial_intensity, predicted_phase, device = my_device, dtype = my_dtype)
 
         # a bit of calculus
 

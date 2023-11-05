@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 import spectral_analysis as sa
-from utilities import np_to_complex_pt, evolve
+from utilities import np_to_complex_pt, evolve_pt, evolve_np
 import os
 
 class Generator():
@@ -84,6 +84,6 @@ class Generator():
         
         phase_significant = self.phase_gen()
         
-        intensity = evolve(intensity, phase_significant, dtype = self.dtype)
+        intensity = evolve_np(intensity, phase_significant, dtype = self.dtype)
         
         return np.abs(intensity), phase_significant
