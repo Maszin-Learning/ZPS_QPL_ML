@@ -18,8 +18,39 @@ import torchvision.transforms as transforms  # Transformations and augmentations
 from dataset import Dataset_train
 from dataset_generator import Generator
 
-# cuda 
 
+#hyperparameters
+
+learning_rate = 1e-4
+epoch_num = 100
+_batch_size = 5000
+p = 2
+
+
+
+#WANDB config
+import wandb
+import random
+
+# start a new wandb run to track this script
+wandb.init(
+    # set the wandb project where this run will be logged
+    project="platypus",
+    
+    # track hyperparameters and run metadata
+    config={
+    "learning_rate": learning_rate,
+    "architecture": "1",
+    "dataset": "defalut",
+    "epochs": epoch_num,
+    "batch_size": _batch_size,
+    "plot_freq": p,
+    }
+)
+#wandb.init(mode="disabled") #for offline work
+
+
+# cuda 
 if torch.cuda.is_available():
     my_device = torch.device("cuda")
     print (f"Using {my_device}")
@@ -110,15 +141,11 @@ model = network(input_size = input_dim,
                 n = 100, 
                 output_size = output_dim)
 model.to(device = my_device, dtype = my_dtype)
-learning_rate = 1e-4
+
 optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate)
 criterion = torch.nn.MSELoss()
 
-# training loop
 
-iteration_num = 100
-_batch_size = 5000
-p = 2
 loss_list = []
 
 # create dataset and wrap it into dataloader
@@ -143,7 +170,9 @@ dataset_train = Dataset_train(root='', transform=True, device = my_device)
 
 dataloader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size=_batch_size, num_workers=0)
 
-for epoch in tqdm(range(iteration_num)):
+
+wandb.watch(model, criterion, log="all", log_freq=400)
+for epoch in tqdm(range(epoch_num)):
 
     for pulse, _ in dataloader_train:
         #pulse = pulse.to(my_device)
@@ -162,10 +191,11 @@ for epoch in tqdm(range(iteration_num)):
         loss.backward()
         optimizer.step()
         optimizer.zero_grad()
-
+        _loss = loss.clone().cpu().detach().numpy()
+        wandb.log({"loss": _loss})
         # stats
 
-        loss_list.append(loss.clone().cpu().detach().numpy())
+        loss_list.append(_loss)
 
     if epoch%p==0:
         #if epoch == 0:
