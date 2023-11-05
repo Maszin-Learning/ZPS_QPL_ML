@@ -6,5 +6,5 @@
 pics/*
 data/*
 # exception to the rule
-!pisc/.gitkeep
+!pics/.gitkeep
 !data/.gitkeep
