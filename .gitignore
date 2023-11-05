@@ -4,5 +4,7 @@
 
 # exclude everything
 pics/*
+data/*
 # exception to the rule
 !pisc/.gitkeep
+!data/.gitkeep
