@@ -116,16 +116,16 @@ criterion = torch.nn.MSELoss()
 
 # training loop
 
-iteration_num = 20
-_batch_size = 320
-p = 5
+iteration_num = 100
+_batch_size = 5000
+p = 2
 loss_list = []
 
 # create dataset and wrap it into dataloader
 
 print("\nCreating training set...")
 
-the_generator = Generator(data_num = 10000,
+the_generator = Generator(data_num = 20000,
                           initial_intensity = Y_initial,
                           phase_len = output_dim,
                           device = my_device,
@@ -146,7 +146,7 @@ dataloader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size
 for epoch in tqdm(range(iteration_num)):
 
     for pulse, _ in dataloader_train:
-        pulse.to(my_device)
+        #pulse = pulse.to(my_device)
         # predict phase that will transform gauss into this pulse
 
         predicted_phase = model(pulse)
