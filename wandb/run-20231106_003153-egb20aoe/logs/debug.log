@@ -1,0 +1,26 @@
+2023-11-06 00:31:53,019 INFO    MainThread:45459 [wandb_setup.py:_flush():68] Configure stats pid to 45459
+2023-11-06 00:31:53,020 INFO    MainThread:45459 [wandb_setup.py:_flush():68] Loading settings from /Users/michalchrzanowski/.config/wandb/settings
+2023-11-06 00:31:53,020 INFO    MainThread:45459 [wandb_setup.py:_flush():68] Loading settings from /Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/wandb/settings
+2023-11-06 00:31:53,020 INFO    MainThread:45459 [wandb_setup.py:_flush():68] Loading settings from environment variables: {'_require_service': 'True'}
+2023-11-06 00:31:53,020 INFO    MainThread:45459 [wandb_setup.py:_flush():68] Inferring run settings from compute environment: {'program_relpath': 'main.py', 'program': '/Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/main.py'}
+2023-11-06 00:31:53,020 INFO    MainThread:45459 [wandb_init.py:_log_setup():478] Logging user logs to /Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/wandb/run-20231106_003153-egb20aoe/logs/debug.log
+2023-11-06 00:31:53,020 INFO    MainThread:45459 [wandb_init.py:_log_setup():479] Logging internal logs to /Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/wandb/run-20231106_003153-egb20aoe/logs/debug-internal.log
+2023-11-06 00:31:53,020 INFO    MainThread:45459 [wandb_init.py:init():518] calling init triggers
+2023-11-06 00:31:53,020 INFO    MainThread:45459 [wandb_init.py:init():521] wandb.init called with sweep_config: {}
+config: {'learning_rate': 0.0001, 'architecture': '1', 'dataset': 'defalut', 'epochs': 100, 'batch_size': 50, 'plot_freq': 2}
+2023-11-06 00:31:53,020 INFO    MainThread:45459 [wandb_init.py:init():571] starting backend
+2023-11-06 00:31:53,020 INFO    MainThread:45459 [wandb_init.py:init():575] setting up manager
+2023-11-06 00:31:53,025 INFO    MainThread:45459 [backend.py:_multiprocessing_setup():106] multiprocessing start_methods=spawn,fork,forkserver, using: spawn
+2023-11-06 00:31:53,028 INFO    MainThread:45459 [wandb_init.py:init():582] backend started and connected
+2023-11-06 00:31:53,032 INFO    MainThread:45459 [wandb_init.py:init():670] updated telemetry
+2023-11-06 00:31:53,051 INFO    MainThread:45459 [wandb_init.py:init():710] communicating run to backend with 60.0 second timeout
+2023-11-06 00:31:53,645 INFO    MainThread:45459 [wandb_run.py:_on_init():2121] communicating current version
+2023-11-06 00:31:53,800 INFO    MainThread:45459 [wandb_run.py:_on_init():2125] got version response upgrade_message: "wandb version 0.15.12 is available!  To upgrade, please run:\n $ pip install wandb --upgrade"
+
+2023-11-06 00:31:53,800 INFO    MainThread:45459 [wandb_init.py:init():758] starting run threads in backend
+2023-11-06 00:31:56,075 INFO    MainThread:45459 [wandb_run.py:_console_start():2101] atexit reg
+2023-11-06 00:31:56,076 INFO    MainThread:45459 [wandb_run.py:_redirect():1959] redirect: SettingsConsole.WRAP_RAW
+2023-11-06 00:31:56,076 INFO    MainThread:45459 [wandb_run.py:_redirect():2024] Wrapping output streams.
+2023-11-06 00:31:56,076 INFO    MainThread:45459 [wandb_run.py:_redirect():2046] Redirects installed.
+2023-11-06 00:31:56,076 INFO    MainThread:45459 [wandb_init.py:init():798] run started, returning control to user process
+2023-11-06 00:32:03,982 WARNING MsgRouterThr:45459 [router.py:message_loop():77] message_loop has been closed

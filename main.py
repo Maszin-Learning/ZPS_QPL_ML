@@ -23,7 +23,7 @@ from dataset_generator import Generator
 
 learning_rate = 1e-4
 epoch_num = 100
-_batch_size = 5000
+_batch_size = 50
 p = 2
 
 
@@ -70,7 +70,7 @@ else:
 
 # data type
 
-#my_device = torch.device('cpu')
+my_device = torch.device('cpu')
 my_dtype = torch.float32
 
 # initial pulse (to be reconstructed later on)
@@ -152,7 +152,7 @@ loss_list = []
 
 print("\nCreating training set...")
 
-the_generator = Generator(data_num = 20000,
+the_generator = Generator(data_num = 2000,
                           initial_intensity = Y_initial,
                           phase_len = output_dim,
                           device = my_device,

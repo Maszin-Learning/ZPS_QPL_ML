@@ -1,0 +1,34 @@
+{
+    "os": "macOS-14.0-arm64-arm-64bit",
+    "python": "3.9.15",
+    "heartbeatAt": "2023-11-05T23:33:23.712599",
+    "startedAt": "2023-11-05T23:33:22.921602",
+    "docker": null,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "/Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/main.py",
+    "codePath": "main.py",
+    "git": {
+        "remote": "https://github.com/Maszin-Learning/ZPS_QPL_ML.git",
+        "commit": "7fde5309f2bfc6ee0d6a0c288269051f87cac005"
+    },
+    "email": "chrzanowski000@gmail.com",
+    "root": "/Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML",
+    "host": "michas-macbook-air.home",
+    "username": "michalchrzanowski",
+    "executable": "/Users/michalchrzanowski/anaconda3/envs/ML_M1/bin/python",
+    "cpu_count": 8,
+    "cpu_count_logical": 8,
+    "disk": {
+        "total": 228.27386474609375,
+        "used": 209.4258689880371
+    },
+    "gpuapple": {
+        "type": "arm",
+        "vendor": "Apple"
+    },
+    "memory": {
+        "total": 16.0
+    }
+}

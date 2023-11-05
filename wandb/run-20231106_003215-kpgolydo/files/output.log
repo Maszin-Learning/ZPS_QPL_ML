@@ -1,0 +1,29 @@
+CUDA device not found.
+Using mps
+input_dim (spectrum length) = 2000
+output_dim (phase length) = 56
+Creating training set...
+
+
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 2000/2000 [00:06<00:00, 330.47it/s]
+  0%|                                                                                                                                                             | 0/100 [00:01<?, ?it/s]
+Traceback (most recent call last):
+  File "/Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/main.py", line 177, in <module>
+    for pulse, _ in dataloader_train:
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/torch/utils/data/dataloader.py", line 628, in __next__
+    data = self._next_data()
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/torch/utils/data/dataloader.py", line 671, in _next_data
+    data = self._dataset_fetcher.fetch(index)  # may raise StopIteration
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/torch/utils/data/_utils/fetch.py", line 61, in fetch
+    return self.collate_fn(data)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/torch/utils/data/_utils/collate.py", line 265, in default_collate
+    return collate(batch, collate_fn_map=default_collate_fn_map)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/torch/utils/data/_utils/collate.py", line 143, in collate
+    return [collate(samples, collate_fn_map=collate_fn_map) for samples in transposed]  # Backwards compatibility.
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/torch/utils/data/_utils/collate.py", line 143, in <listcomp>
+    return [collate(samples, collate_fn_map=collate_fn_map) for samples in transposed]  # Backwards compatibility.
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/torch/utils/data/_utils/collate.py", line 120, in collate
+    return collate_fn_map[elem_type](batch, collate_fn_map=collate_fn_map)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/torch/utils/data/_utils/collate.py", line 163, in collate_tensor_fn
+    return torch.stack(batch, 0, out=out)
+RuntimeError: stack expects each tensor to be equal size, but got [2000] at entry 0 and [38] at entry 48
