@@ -2,6 +2,9 @@ from dataset_generator import Generator
 import spectral_analysis as sa
 import torch
 import numpy as np
+import torchvision.transforms as transforms  # Transformations and augmentations
+from dataset import Dataset_train
+
 
 # data type
 
@@ -18,3 +21,6 @@ the_generator = Generator(data_num = 10,
                           )
 
 the_generator.generate_and_save()
+
+_transform = transforms.Compose([transforms.ToTensor()])
+dataset_train = Dataset_train(root='', transform=_transform)

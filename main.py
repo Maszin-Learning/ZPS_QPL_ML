@@ -14,6 +14,9 @@ from test import test
 from dataset import Dataset
 from torch.utils.data import DataLoader #Dataloader module
 from test import create_test_pulse
+import torchvision.transforms as transforms  # Transformations and augmentations
+from dataset import Dataset_train
+from dataset_generator import Generator
 
 # cuda 
 
@@ -122,15 +125,21 @@ loss_list = []
 
 print("\nCreating training set...")
 
-dataset_train = Dataset(data_num = data_num,
-                        initial_intensity = Y_initial,
-                        phase_len = output_dim, 
-                        device = my_device, 
-                        dtype = my_dtype, 
-                        max_order = 10, 
-                        max_value = None)
+the_generator = Generator(data_num = 10,
+                          initial_intensity = Y_initial,
+                          phase_len = output_dim,
+                          device = my_device,
+                          dtype = np.float32
+                          )
 
-print("Training set created. It contains {} examples grouped into {}-element long batches.\n".format(_batch_size*batch_num, _batch_size))
+the_generator.generate_and_save()
+
+
+_transform = transforms.Compose([transforms.ToTensor()])
+dataset_train = Dataset_train(root='', transform=_transform)
+
+
+#print("Training set created. It contains {} examples grouped into {}-element long batches.\n".format(_batch_size*batch_num, _batch_size))
 
 dataloader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size=_batch_size, num_workers=0)
 
