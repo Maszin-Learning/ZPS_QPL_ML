@@ -39,7 +39,7 @@ else:
 
 # data type
 
-my_device = torch.device('cpu')
+#my_device = torch.device('cpu')
 my_dtype = torch.float32
 
 # initial pulse (to be reconstructed later on)
