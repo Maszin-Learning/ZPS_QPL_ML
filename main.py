@@ -148,6 +148,7 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
         print('WANDB WORKING OFFLINE')
         wandb.init(mode="disabled") #for offline work
         
+    #recreate pics folder if exist and create if not
     if os.path.isdir("pics"):
         shutil.rmtree('pics') #clear pictures folder
         os.mkdir("pics")
@@ -167,7 +168,6 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
     dataset_train = Dataset_train(root='', transform=True, device = my_device)
     dataloader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size=_batch_size, num_workers=0)
 
-    #print("Training set created. It contains {} examples grouped into {}-element long batches.\n".format(_batch_size*batch_num, _batch_size))
 
     
 
