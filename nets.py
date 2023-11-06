@@ -21,7 +21,6 @@ class network_1(nn.Module):
         self.dropout = nn.Dropout(0.25)
 
     def forward(self,x):
-        #print(x.shape)
         x = self.leakyrelu(self.linear_1(x))
         x = self.bn_1(x)
         x = self.leakyrelu(self.linear_2(x))
@@ -31,7 +30,7 @@ class network_1(nn.Module):
         return x
     
 
-### network_2
+### network_2 testowa dla cpu
 class network_2(nn.Module):
     def __init__(self, input_size, n, output_size):
         super(network_2, self).__init__()
@@ -51,7 +50,6 @@ class network_2(nn.Module):
         self.dropout = nn.Dropout(0.25)
 
     def forward(self,x):
-        #print(x.shape)
         x = self.leakyrelu(self.linear_1(x))
         #x = self.bn_1(x)
         x = self.leakyrelu(self.linear_2(x))
@@ -81,8 +79,9 @@ class network_3(nn.Module):
         self.dropout = nn.Dropout(0.25)
 
     def forward(self,x):
-        #print(x.shape)
         x = self.leakyrelu(self.linear_1(x))
+        x = self.bn_1(x)
+        x = self.leakyrelu(self.linear_2(x))
         x = self.bn_1(x)
         x = self.leakyrelu(self.linear_2(x))
         x = self.bn_1(x)
