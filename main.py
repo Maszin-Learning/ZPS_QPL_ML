@@ -206,6 +206,7 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
             loss_list.append(_loss)
 
         if epoch%_plot_freq==0:
+            model.eval()
             #if epoch == 0:
                 #print("Iteration np. {}. Loss {}.".format(epoch, loss.clone().cpu().detach().numpy()))
             print("Epoch no. {}. Loss {}.".format(epoch, np.mean(np.array(loss_list[epoch*len(dataloader_train): (epoch+1)*len(dataloader_train)]))))
@@ -218,6 +219,7 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
                     device = my_device, 
                     dtype = my_dtype,
                     iter_num =epoch)
+            model.train()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
