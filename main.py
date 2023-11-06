@@ -33,7 +33,7 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
     #WANDB config
 
     # start a new wandb run to track this script
-    wandb.init(
+    """wandb.init(
     # set the wandb project where this run will be logged
     project="platypus",
 
@@ -46,8 +46,8 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
     "architecture": "1",
     "dataset": "defalut",
     }
-    )
-    #wandb.init(mode="disabled") #for offline work
+    )"""
+    wandb.init(mode="disabled") #for offline work
 
 
     # cuda 
@@ -127,10 +127,15 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
             self.normal_1 = nn.LayerNorm(n)
             self.normal_3 = nn.LayerNorm(output_size)
             self.tanh = nn.Tanh()
+            self.bn_1 = nn.BatchNorm1d(n)
             self.dropout = nn.Dropout(0.25)
 
         def forward(self,x):
             x = self.leakyrelu(self.linear_1(x))
+            print(x.shape)
+            x = self.bn_1(x)
+            x = self.leakyrelu(self.linear_2(x))
+            x = self.bn_1(x)
             x = self.dropout(x)
             x = self.linear_3(x)
             return x
