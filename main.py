@@ -146,7 +146,7 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
     optimizer = torch.optim.Adam(model.parameters(), lr = _learning_rate)
     criterion = torch.nn.MSELoss()
     dataset_train = Dataset_train(root='', transform=True, device = my_device)
-    dataloader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size=_batch_size, num_workers=0)
+    dataloader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size=_batch_size, num_workers=0, shuffle=True)
 
 
     
