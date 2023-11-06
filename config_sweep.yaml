@@ -16,7 +16,7 @@ parameters:
       distribution: constant
       value: 3 
     architecture:
-      values: ['network_1','network_3', 'network_4']
+      values: ['network_1','network_3', 'network_4', 'network_5', 'network_6']
     node_number:
       values: [200, 400, 800, 1200, 2000]
     
