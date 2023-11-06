@@ -53,9 +53,9 @@ class network_2(nn.Module):
     def forward(self,x):
         #print(x.shape)
         x = self.leakyrelu(self.linear_1(x))
-        x = self.bn_1(x)
+        #x = self.bn_1(x)
         x = self.leakyrelu(self.linear_2(x))
-        x = self.bn_1(x)
+        x# = self.bn_1(x)
         x = self.dropout(x)
         x = self.linear_3(x)
         return x
