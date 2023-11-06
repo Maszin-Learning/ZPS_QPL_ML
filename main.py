@@ -20,7 +20,7 @@ from dataset_generator import Generator
 import argparse
 import wandb
 
-def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _generate):
+def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _generate, _cpu):
     #hyperparameters
     print('learning_rate:', _learning_rate,'\n',
           'epoch_number:', _epoch_num,'\n',
@@ -69,8 +69,8 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
         print (f"Using {my_device}")
 
     # data type
-
-    #my_device = torch.device('cpu')
+    if _cpu:
+        my_device = torch.device('cpu')
     my_dtype = torch.float32
 
     # initial pulse (to be reconstructed later on)
@@ -226,10 +226,12 @@ if __name__ == "__main__":
     parser.add_argument('-pf', '--plot_freq', default=2, type=int)
     parser.add_argument('-ds', '--dataset_size', default=2000, type=int)
     parser.add_argument('-g', '--generate', action='store_true')
+    parser.add_argument('-c', '--cpu', action='store_true')
     args = parser.parse_args()
     main(args.learning_rate,
          args.epoch_num,
          args.batch_size,
          args.plot_freq,
          args.dataset_size,
-         args.generate)
+         args.generate,
+         args.cpu)
