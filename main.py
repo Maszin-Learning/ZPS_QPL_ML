@@ -189,7 +189,7 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
                     device = my_device, 
                     dtype = my_dtype,
                     iter_num =epoch)
-            wandb.log({"chart": plt})
+            wandb.log({"chart": fig})
             fig.close()
             model.train()
 
