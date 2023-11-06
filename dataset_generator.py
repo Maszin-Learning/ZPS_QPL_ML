@@ -4,6 +4,7 @@ import spectral_analysis as sa
 from utilities import np_to_complex_pt, evolve_pt, evolve_np
 import os
 from tqdm import tqdm
+import shutil
 
 class Generator():
 
@@ -19,10 +20,10 @@ class Generator():
 
 
     def generate_and_save(self):
+        shutil.rmtree('data')
 
         if not os.path.isdir("data"):
             os.mkdir("data")
-        
         if not os.path.isdir("data/train_intensity"):
             os.mkdir("data/train_intensity")
         if not os.path.isdir("data/train_phase"):

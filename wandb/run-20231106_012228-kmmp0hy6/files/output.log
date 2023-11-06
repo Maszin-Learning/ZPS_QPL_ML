@@ -1,0 +1,17 @@
+CUDA device not found.
+Using mps
+input_dim (spectrum length) = 2000
+output_dim (phase length) = 56
+Creating training set...
+Traceback (most recent call last):
+  File "/Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/main.py", line 226, in <module>
+    main(args.learning_rate,
+  File "/Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/main.py", line 165, in main
+    the_generator.generate_and_save()
+  File "/Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/dataset_generator.py", line 23, in generate_and_save
+    shutil.rmtree('/data')
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/shutil.py", line 724, in rmtree
+    onerror(os.lstat, path, sys.exc_info())
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/shutil.py", line 722, in rmtree
+    orig_st = os.lstat(path)
+FileNotFoundError: [Errno 2] No such file or directory: '/data'

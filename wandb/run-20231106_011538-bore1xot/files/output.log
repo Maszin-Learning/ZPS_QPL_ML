@@ -1,0 +1,30 @@
+
+  0%|                                                                                                                                                              | 0/10 [00:00<?, ?it/s]
+CUDA device not found.
+Using mps
+input_dim (spectrum length) = 2000
+output_dim (phase length) = 56
+
+ 10%|███████████████                                                                                                                                       | 1/10 [00:02<00:24,  2.73s/it]
+
+ 30%|█████████████████████████████████████████████                                                                                                         | 3/10 [00:05<00:11,  1.64s/it]
+
+ 40%|████████████████████████████████████████████████████████████                                                                                          | 4/10 [00:06<00:08,  1.49s/it]
+
+ 60%|██████████████████████████████████████████████████████████████████████████████████████████                                                            | 6/10 [00:10<00:06,  1.68s/it]
+Traceback (most recent call last):
+  File "/Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/main.py", line 220, in <module>
+    main(args.learning_rate,
+  File "/Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/main.py", line 189, in main
+    optimizer.step()
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/torch/optim/optimizer.py", line 140, in wrapper
+    out = func(*args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/torch/optim/optimizer.py", line 23, in _use_grad
+    ret = func(self, *args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/torch/optim/adam.py", line 234, in step
+    adam(params_with_grad,
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/torch/optim/adam.py", line 300, in adam
+    func(params,
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/torch/optim/adam.py", line 363, in _single_tensor_adam
+    exp_avg.mul_(beta1).add_(grad, alpha=1 - beta1)
+KeyboardInterrupt
