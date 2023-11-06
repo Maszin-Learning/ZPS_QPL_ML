@@ -19,5 +19,5 @@ parameters:
     architecture:
       values: ['network_3']
     node_number:
-      values: [200, 400, 800, 1000, 1400]
+      values: [100]
     
