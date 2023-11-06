@@ -186,9 +186,7 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
 
     wandb.watch(model, criterion, log="all", log_freq=400)
     for epoch in tqdm(range(_epoch_num)):
-        print('epoch')
         for pulse, _ in dataloader_train:
-            print('element')
             #pulse = pulse.to(my_device)
             # predict phase that will transform gauss into this pulse
 
