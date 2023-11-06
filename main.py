@@ -181,7 +181,7 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
                 #print("Iteration np. {}. Loss {}.".format(epoch, loss.clone().cpu().detach().numpy()))
             print("Epoch no. {}. Loss {}.".format(epoch, np.mean(np.array(loss_list[epoch*len(dataloader_train): (epoch+1)*len(dataloader_train)]))))
 
-            test(model = model,
+            fig=test(model = model,
                     test_pulse = test_pulse,
                     test_phase = test_phase,
                     initial_pulse_Y = initial_pulse.Y.copy(),
@@ -189,6 +189,8 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
                     device = my_device, 
                     dtype = my_dtype,
                     iter_num =epoch)
+            wandb.log({"chart": plt})
+            fig.close()
             model.train()
 
 if __name__ == "__main__":

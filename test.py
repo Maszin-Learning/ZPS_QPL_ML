@@ -106,10 +106,11 @@ def test(model, test_pulse, initial_pulse_Y, initial_pulse_X, device, dtype, tes
 
     if iter_num < 10000:
         plt.savefig("pics/reconstructed_0{}.jpg".format(iter_num), bbox_inches = "tight", dpi = 200)
+        return plt
     else:
         plt.savefig("pics/reconstructed_{}.jpg".format(iter_num), bbox_inches = "tight", dpi = 200)
-        
-    plt.close()
+        return plt
+    
 
 def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
     '''
