@@ -198,7 +198,7 @@ if __name__ == "__main__":
     parser.add_argument('-bs', '--batch_size', default=32, type=int)
     parser.add_argument('-pf', '--plot_freq', default=3, type=int)
     parser.add_argument('-ds', '--dataset_size', default=2000, type=int)
-    parser.add_argument('-g', '--generate', action='store_true') #only generate, training will not run
+    parser.add_argument('-g', '--generate', action='store_true') #only generate, training will not run, wandb will be offline
     parser.add_argument('-fc', '--force_cpu', action='store_true')
     parser.add_argument('-tr', '--test_run', action='store_true')
     parser.add_argument('-nn', '--node_number', default=100, type=int)
