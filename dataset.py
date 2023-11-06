@@ -1,10 +1,9 @@
-from dataset_generator import Generator
 from torch.utils.data import Dataset
 import os
 import numpy as np
 import torch
 
-    
+
 class Dataset_train(Dataset):
     def __init__(self, root ,transform, device):
         self.labels = []
@@ -35,7 +34,7 @@ class Dataset_train(Dataset):
         phase = np.loadtxt(self.files_names_phase[index],
                  delimiter=" ", dtype=np.float32)
         
-        if self.transform:
+        if self.transform: #transform to tensors
             intensity = torch.tensor(intensity, requires_grad=True, device=self._device)
             phase = torch.tensor(phase, requires_grad=True, device=self._device)
 

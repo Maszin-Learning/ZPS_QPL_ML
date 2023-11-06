@@ -7,7 +7,6 @@ from dataset import Dataset_train
 
 
 # data type
-
 my_device = torch.device('cpu')
 my_dtype = np.float32
 
