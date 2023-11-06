@@ -42,11 +42,9 @@ def test(model, test_pulse, initial_pulse_Y, initial_pulse_X, device, dtype, tes
                 color = "black", 
                 lw = 1,
                 zorder = 5)
-    plt.fill_between(initial_pulse_X[plot_from:plot_to], 
+    plt.plot(initial_pulse_X[plot_from:plot_to], 
                         np.abs(np.reshape(test_pulse.clone().cpu().detach().numpy(), input_dim))[plot_from:plot_to], 
-                        color = "darkviolet", 
-                        alpha = 0.2,
-                        zorder = 0)
+                        color = "darkviolet")
     plt.xlabel("THz")
     plt.legend(["Reconstructed intensity", "Initial intensity", "Target intensity"], bbox_to_anchor = [0.95, -0.15])
     plt.grid()
@@ -88,11 +86,9 @@ def test(model, test_pulse, initial_pulse_Y, initial_pulse_X, device, dtype, tes
     else:
         FT_intensity *= np.max(np.abs(reconstructed_phase))
 
-    plt.fill_between(range(idx_end - idx_start), 
-                        np.abs(FT_intensity[idx_start: idx_end]), 
-                        alpha = 0.2, 
-                        color = "orange",
-                        zorder = 0)
+    plt.plot(range(idx_end - idx_start), 
+                        np.abs(FT_intensity[idx_start: idx_end]),
+                        color='red')
     
     plt.xlabel("Quasi-time (unitless)")
     if test_phase != None:
