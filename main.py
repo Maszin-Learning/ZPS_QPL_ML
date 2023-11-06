@@ -108,8 +108,8 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
     # test pulse
     test_pulse, test_phase = create_test_pulse("hermite", initial_pulse, output_dim, my_device, my_dtype)
     ###
-    
 
+    
     # create dataset and wrap it into dataloader
     if _generate:
         print("\nCreating training set...")
@@ -122,7 +122,6 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
                                 )
 
         the_generator.generate_and_save()
-
     
     ###WANDB config
     # start a new wandb run to track this script

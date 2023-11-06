@@ -1,0 +1,210 @@
+2023-11-06 19:26:24 ERROR 400 response executing GraphQL.
+2023-11-06 19:26:24 ERROR {"errors":[{"message":"Invalid configuration for hyperparameter 'learning_rate'","path":["upsertSweep"]}],"data":{"upsertSweep":null}}
+2023-11-06 19:26:24 ERROR Traceback (most recent call last):
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/lib/retry.py", line 131, in __call__
+    result = self._call_fn(*args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/internal/internal_api.py", line 366, in execute
+    return self.client.execute(*args, **kwargs)  # type: ignore
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/vendor/gql-0.2.0/wandb_gql/client.py", line 52, in execute
+    result = self._get_result(document, *args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/vendor/gql-0.2.0/wandb_gql/client.py", line 60, in _get_result
+    return self.transport.execute(document, *args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/lib/gql_request.py", line 59, in execute
+    request.raise_for_status()
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/requests/models.py", line 1021, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 400 Client Error: Bad Request for url: https://api.wandb.ai/graphql
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/cli/cli.py", line 102, in wrapper
+    return func(*args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/cli/cli.py", line 841, in sweep
+    sweep_id, warnings = api.upsert_sweep(
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/apis/internal.py", line 129, in upsert_sweep
+    return self.api.upsert_sweep(*args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/apis/normalize.py", line 73, in wrapper
+    raise err
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/apis/normalize.py", line 41, in wrapper
+    return func(*args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/internal/internal_api.py", line 2960, in upsert_sweep
+    raise e
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/internal/internal_api.py", line 2954, in upsert_sweep
+    response = self.gql(
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/internal/internal_api.py", line 338, in gql
+    ret = self._retry_gql(
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/lib/retry.py", line 147, in __call__
+    retry_timedelta_triggered = check_retry_fn(e)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/util.py", line 877, in no_retry_4xx
+    raise UsageError(body["errors"][0]["message"])
+wandb.errors.UsageError: Invalid configuration for hyperparameter 'learning_rate'
+
+2023-11-06 19:26:55 ERROR 400 response executing GraphQL.
+2023-11-06 19:26:55 ERROR {"errors":[{"message":"Invalid configuration for hyperparameter '_learning_rate'","path":["upsertSweep"]}],"data":{"upsertSweep":null}}
+2023-11-06 19:26:55 ERROR Traceback (most recent call last):
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/lib/retry.py", line 131, in __call__
+    result = self._call_fn(*args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/internal/internal_api.py", line 366, in execute
+    return self.client.execute(*args, **kwargs)  # type: ignore
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/vendor/gql-0.2.0/wandb_gql/client.py", line 52, in execute
+    result = self._get_result(document, *args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/vendor/gql-0.2.0/wandb_gql/client.py", line 60, in _get_result
+    return self.transport.execute(document, *args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/lib/gql_request.py", line 59, in execute
+    request.raise_for_status()
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/requests/models.py", line 1021, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 400 Client Error: Bad Request for url: https://api.wandb.ai/graphql
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/cli/cli.py", line 102, in wrapper
+    return func(*args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/cli/cli.py", line 841, in sweep
+    sweep_id, warnings = api.upsert_sweep(
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/apis/internal.py", line 129, in upsert_sweep
+    return self.api.upsert_sweep(*args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/apis/normalize.py", line 73, in wrapper
+    raise err
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/apis/normalize.py", line 41, in wrapper
+    return func(*args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/internal/internal_api.py", line 2960, in upsert_sweep
+    raise e
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/internal/internal_api.py", line 2954, in upsert_sweep
+    response = self.gql(
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/internal/internal_api.py", line 338, in gql
+    ret = self._retry_gql(
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/lib/retry.py", line 147, in __call__
+    retry_timedelta_triggered = check_retry_fn(e)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/util.py", line 877, in no_retry_4xx
+    raise UsageError(body["errors"][0]["message"])
+wandb.errors.UsageError: Invalid configuration for hyperparameter '_learning_rate'
+
+2023-11-06 19:28:37 ERROR 400 response executing GraphQL.
+2023-11-06 19:28:37 ERROR {"errors":[{"message":"Invalid configuration for hyperparameter 'learning_rate'","path":["upsertSweep"]}],"data":{"upsertSweep":null}}
+2023-11-06 19:28:37 ERROR Traceback (most recent call last):
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/lib/retry.py", line 131, in __call__
+    result = self._call_fn(*args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/internal/internal_api.py", line 366, in execute
+    return self.client.execute(*args, **kwargs)  # type: ignore
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/vendor/gql-0.2.0/wandb_gql/client.py", line 52, in execute
+    result = self._get_result(document, *args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/vendor/gql-0.2.0/wandb_gql/client.py", line 60, in _get_result
+    return self.transport.execute(document, *args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/lib/gql_request.py", line 59, in execute
+    request.raise_for_status()
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/requests/models.py", line 1021, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 400 Client Error: Bad Request for url: https://api.wandb.ai/graphql
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/cli/cli.py", line 102, in wrapper
+    return func(*args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/cli/cli.py", line 841, in sweep
+    sweep_id, warnings = api.upsert_sweep(
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/apis/internal.py", line 129, in upsert_sweep
+    return self.api.upsert_sweep(*args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/apis/normalize.py", line 73, in wrapper
+    raise err
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/apis/normalize.py", line 41, in wrapper
+    return func(*args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/internal/internal_api.py", line 2960, in upsert_sweep
+    raise e
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/internal/internal_api.py", line 2954, in upsert_sweep
+    response = self.gql(
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/internal/internal_api.py", line 338, in gql
+    ret = self._retry_gql(
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/lib/retry.py", line 147, in __call__
+    retry_timedelta_triggered = check_retry_fn(e)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/util.py", line 877, in no_retry_4xx
+    raise UsageError(body["errors"][0]["message"])
+wandb.errors.UsageError: Invalid configuration for hyperparameter 'learning_rate'
+
+2023-11-06 19:32:36 ERROR 400 response executing GraphQL.
+2023-11-06 19:32:36 ERROR {"errors":[{"message":"name required for project query","path":["project"]}],"data":{"project":null}}
+2023-11-06 19:32:36 ERROR Traceback (most recent call last):
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/apis/normalize.py", line 41, in wrapper
+    return func(*args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/internal/internal_api.py", line 1001, in sweep
+    response = self.gql(
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/internal/internal_api.py", line 338, in gql
+    ret = self._retry_gql(
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/lib/retry.py", line 131, in __call__
+    result = self._call_fn(*args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/internal/internal_api.py", line 366, in execute
+    return self.client.execute(*args, **kwargs)  # type: ignore
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/vendor/gql-0.2.0/wandb_gql/client.py", line 52, in execute
+    result = self._get_result(document, *args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/vendor/gql-0.2.0/wandb_gql/client.py", line 60, in _get_result
+    return self.transport.execute(document, *args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/lib/gql_request.py", line 59, in execute
+    request.raise_for_status()
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/requests/models.py", line 1021, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 400 Client Error: Bad Request for url: https://api.wandb.ai/graphql
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/cli/cli.py", line 102, in wrapper
+    return func(*args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/cli/cli.py", line 1496, in agent
+    wandb_agent.agent(sweep_id, entity=entity, project=project, count=count)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/wandb_agent.py", line 583, in agent
+    return run_agent(
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/wandb_agent.py", line 528, in run_agent
+    agent.run()
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/wandb_agent.py", line 190, in run
+    sweep_obj = self._api.sweep(self._sweep_id, "{}")
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/apis/internal.py", line 126, in sweep
+    return self.api.sweep(*args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/apis/normalize.py", line 51, in wrapper
+    raise CommError(message, error)
+wandb.errors.CommError: name required for project query (Error 400: Bad Request)
+
+2023-11-06 19:33:42 ERROR 400 response executing GraphQL.
+2023-11-06 19:33:42 ERROR {"errors":[{"message":"name required for project query","path":["project"]}],"data":{"project":null}}
+2023-11-06 19:33:42 ERROR Traceback (most recent call last):
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/apis/normalize.py", line 41, in wrapper
+    return func(*args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/internal/internal_api.py", line 1001, in sweep
+    response = self.gql(
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/internal/internal_api.py", line 338, in gql
+    ret = self._retry_gql(
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/lib/retry.py", line 131, in __call__
+    result = self._call_fn(*args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/internal/internal_api.py", line 366, in execute
+    return self.client.execute(*args, **kwargs)  # type: ignore
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/vendor/gql-0.2.0/wandb_gql/client.py", line 52, in execute
+    result = self._get_result(document, *args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/vendor/gql-0.2.0/wandb_gql/client.py", line 60, in _get_result
+    return self.transport.execute(document, *args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/lib/gql_request.py", line 59, in execute
+    request.raise_for_status()
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/requests/models.py", line 1021, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 400 Client Error: Bad Request for url: https://api.wandb.ai/graphql
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/cli/cli.py", line 102, in wrapper
+    return func(*args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/cli/cli.py", line 1496, in agent
+    wandb_agent.agent(sweep_id, entity=entity, project=project, count=count)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/wandb_agent.py", line 583, in agent
+    return run_agent(
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/wandb_agent.py", line 528, in run_agent
+    agent.run()
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/wandb_agent.py", line 190, in run
+    sweep_obj = self._api.sweep(self._sweep_id, "{}")
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/apis/internal.py", line 126, in sweep
+    return self.api.sweep(*args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/apis/normalize.py", line 51, in wrapper
+    raise CommError(message, error)
+wandb.errors.CommError: name required for project query (Error 400: Bad Request)
+
