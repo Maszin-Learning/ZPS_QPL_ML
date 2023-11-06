@@ -132,7 +132,7 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
             self.dropout = nn.Dropout(0.25)
 
         def forward(self,x):
-            print(x.shape)
+            #print(x.shape)
             x = self.leakyrelu(self.linear_1(x))
             x = self.bn_1(x)
             x = self.leakyrelu(self.linear_2(x))
