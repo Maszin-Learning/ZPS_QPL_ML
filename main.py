@@ -19,6 +19,7 @@ from dataset import Dataset_train
 from dataset_generator import Generator
 import argparse
 import wandb
+import shutil
 
 def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _generate, _cpu):
     #hyperparameters
@@ -33,7 +34,7 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
     #WANDB config
 
     # start a new wandb run to track this script
-    """wandb.init(
+    wandb.init(
     # set the wandb project where this run will be logged
     project="platypus",
 
@@ -46,9 +47,9 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
     "architecture": "1",
     "dataset": "defalut",
     }
-    )"""
-    wandb.init(mode="disabled") #for offline work
-
+    )
+    #wandb.init(mode="disabled") #for offline work
+    shutil.rmtree('pics') #clear pictures folder
 
     # cuda 
     if torch.cuda.is_available():
@@ -230,7 +231,7 @@ if __name__ == "__main__":
     parser.add_argument('-pf', '--plot_freq', default=2, type=int)
     parser.add_argument('-ds', '--dataset_size', default=2000, type=int)
     parser.add_argument('-g', '--generate', action='store_true')
-    parser.add_argument('-c', '--cpu', action='store_true')
+    parser.add_argument('-fc', '--force_cpu', action='store_true')
     args = parser.parse_args()
     main(args.learning_rate,
          args.epoch_num,
@@ -238,4 +239,4 @@ if __name__ == "__main__":
          args.plot_freq,
          args.dataset_size,
          args.generate,
-         args.cpu)
+         args.force_cpu)
