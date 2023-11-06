@@ -127,12 +127,11 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
             self.normal_1 = nn.LayerNorm(n)
             self.normal_3 = nn.LayerNorm(output_size)
             self.tanh = nn.Tanh()
-            self.bn_1 = nn.BatchNorm1d(n)
+            self.bn_1 = nn.BatchNorm1d(n) #wont work on cpu
             self.dropout = nn.Dropout(0.25)
 
         def forward(self,x):
             x = self.leakyrelu(self.linear_1(x))
-            print(x.shape)
             x = self.bn_1(x)
             x = self.leakyrelu(self.linear_2(x))
             x = self.bn_1(x)
