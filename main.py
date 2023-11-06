@@ -40,11 +40,11 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
     # track hyperparameters and run metadata
     config={
     "learning_rate": _learning_rate,
-    "architecture": "1",
-    "dataset": "defalut",
     "epochs": _epoch_num,
     "batch_size": _batch_size,
-    "plot_freq": _plot_freq,
+    'dataset_size': _dataset_size,
+    "architecture": "1",
+    "dataset": "defalut",
     }
     )
     #wandb.init(mode="disabled") #for offline work
@@ -70,7 +70,7 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
 
     # data type
 
-    my_device = torch.device('cpu')
+    #my_device = torch.device('cpu')
     my_dtype = torch.float32
 
     # initial pulse (to be reconstructed later on)
