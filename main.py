@@ -24,17 +24,18 @@ import shutil
 
 def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _generate, _cpu, _test, _node_number, _net_architecture):
     #hyperparameters
-    print('learning_rate:', _learning_rate,'\n',
+    print('\n',
+          'learning_rate:', _learning_rate,'\n',
           'epoch_number:', _epoch_num,'\n',
           'batch_size:', _batch_size,'\n',
           'plot_frequency:', _plot_freq,'\n',
           'dataset_size:', _dataset_size,'\n',
           'generate:', _generate,'\n',
           'node_number:', _node_number, '\n',
-          'architecture:', _net_architecture)
+          'architecture:', _net_architecture, '\n')
     
     
-    ### Chose architecture
+    ### Chose architecture 
     if _net_architecture == 'network_1':
         from nets import network_1 as network
     if _net_architecture == 'network_2':
@@ -45,34 +46,35 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
         from nets import network_4 as network
 
 
-
-
-    # cuda 
-    if torch.cuda.is_available():
-        my_device = torch.device("cuda")
-        print (f"Using {my_device}")
-        print('allocated CUDA memory: ',torch.cuda.memory_allocated())      # Checking GPU RAM allocated memory
-        print('cached CUDA memory: ',torch.cuda.memory_reserved())
-        torch.cuda.empty_cache()                                            # clear CUDA memory
-        torch.backends.cudnn.benchmark = True                               # let cuda chose the most efficient way of calculating Convolutions
-
-    elif torch.backends.mps.is_available():
-        print ("CUDA device not found.")
-        my_device = torch.device("mps")
-        print (f"Using {my_device}")
-    else:
-        print ("MPS device not found.")
-        my_device = torch.device("cpu")
-        print (f"Using {my_device}")
-
-
+    ### Chose device, disclimer! on cpu network will not run due to batch normalization
     if _cpu:
+        print('Forced cpu')
         my_device = torch.device('cpu')
+    else:
+        if torch.cuda.is_available():
+            my_device = torch.device("cuda")
+            print (f"Using {my_device}")
+            print('allocated CUDA memory: ',torch.cuda.memory_allocated())      # Checking GPU RAM allocated memory
+            print('cached CUDA memory: ',torch.cuda.memory_reserved())
+            torch.cuda.empty_cache()                                            # clear CUDA memory
+            torch.backends.cudnn.benchmark = True                               # let cuda chose the most efficient way of calculating Convolutions
+        elif torch.backends.mps.is_available():
+            print ("CUDA device not found.")
+            my_device = torch.device("mps")
+            print (f"Using {my_device}")
+        else:
+            print ("MPS device not found.")
+            my_device = torch.device("cpu")
+            print (f"Using {my_device}")
+
+
     # data type
     my_dtype = torch.float32
 
-    # initial pulse (to be reconstructed later on)
 
+
+    ###
+    # initial pulse (to be reconstructed later on)
     input_dim = 2000 # number of points in single pulse
 
     bandwidth = [190, 196]
@@ -90,7 +92,6 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
     FT_pulse = initial_pulse.fourier(inplace = False)
 
     # we want to find what is the bandwidth of intensity after FT, to estimate output dimension of NN
-
     initial_pulse_2 = initial_pulse.copy()
     initial_pulse_2.fourier()
     x_start = initial_pulse_2.quantile(0.001)
@@ -105,15 +106,11 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
     print("output_dim (phase length) = {}".format(output_dim))
 
     # test pulse
-
     test_pulse, test_phase = create_test_pulse("hermite", initial_pulse, output_dim, my_device, my_dtype)
-
+    ###
     
 
     # create dataset and wrap it into dataloader
-
-    
-
     if _generate:
         print("\nCreating training set...")
         
@@ -127,9 +124,7 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
         the_generator.generate_and_save()
 
     
-    ###
-        #WANDB config
-
+    ###WANDB config
     # start a new wandb run to track this script
     if not _test:
         wandb.init(
@@ -148,7 +143,7 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
         }
         )
         
-        
+    #for forced offline work -tf
     if _test:
         print('WANDB WORKING OFFLINE')
         wandb.init(mode="disabled") #for offline work
@@ -160,8 +155,8 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
         os.mkdir("pics")
     ###
 
-    # create NN
 
+    # create NN
     model = network(input_size = input_dim, 
                 n = _node_number, 
                 output_size = output_dim)
@@ -169,45 +164,40 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
 
     optimizer = torch.optim.Adam(model.parameters(), lr = _learning_rate)
     criterion = torch.nn.MSELoss()
-
-
-    loss_list = []
-
-
     dataset_train = Dataset_train(root='', transform=True, device = my_device)
-
+    dataloader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size=_batch_size, num_workers=0)
 
     #print("Training set created. It contains {} examples grouped into {}-element long batches.\n".format(_batch_size*batch_num, _batch_size))
 
-    dataloader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size=_batch_size, num_workers=0)
+    
 
-
+    loss_list = []
     wandb.watch(model, criterion, log="all", log_freq=400)
     for epoch in tqdm(range(_epoch_num)):
         for pulse, _ in dataloader_train:
-            #pulse = pulse.to(my_device)
+            #pulse = pulse.to(my_device) # the pulse is already created on device by dataset, uncoment not using designeted dataset for this problem
+            
             # predict phase that will transform gauss into this pulse
-
             predicted_phase = model(pulse)
 
             # transform gauss into something using this phase
-
             initial_intensity = np_to_complex_pt(Y_initial.copy(), device = my_device, dtype = my_dtype)
             reconstructed_intensity = evolve_pt(initial_intensity, predicted_phase, device = my_device, dtype = my_dtype)
 
             # a bit of calculus
-
             loss = criterion(reconstructed_intensity.abs(), pulse) # pulse intensity
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
-            _loss = loss.clone().cpu().detach().numpy()
-            wandb.log({"loss": _loss})
-            # stats
 
+
+            
+            # stats
+            _loss = loss.clone().cpu().detach().numpy()
+            wandb.log({"loss": _loss}) #log loss to wandb
             loss_list.append(_loss)
 
-        if epoch%_plot_freq==0:
+        if epoch%_plot_freq==0: #plot and test model
             model.eval()
             #if epoch == 0:
                 #print("Iteration np. {}. Loss {}.".format(epoch, loss.clone().cpu().detach().numpy()))
