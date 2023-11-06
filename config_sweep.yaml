@@ -9,15 +9,14 @@ parameters:
       max: 0.001
     epoch_num:
       distribution: constant
-      value: 30
+      value: 35
     batch_size:
-      distribution: constant
-      value: 5
+      values: [10, 500, 1000]
     plot_freq:
       distribution: constant
       value: 3 
     architecture:
-      values: ['network_3']
+      values: ['network_1','network_3', 'network_4']
     node_number:
-      values: [100]
+      values: [200, 400, 800, 1200, 2000]
     
