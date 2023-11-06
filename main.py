@@ -205,9 +205,15 @@ if __name__ == "__main__":
     parser.add_argument('-ar', '--architecture', default='network_1', type=str)
     args = parser.parse_args()
     config={}
+    
     ###WANDB config
     # start a new wandb run to track this script
-    if not args.test_run:
+    
+    #for forced offline work -tf
+    if args.test_run or args.generate:
+        print('WANDB WORKING OFFLINE')
+        wandb.init(mode="disabled") #for offline work
+    else:
         wandb.init(
         # set the wandb project where this run will be logged
         project="platypus",
@@ -224,10 +230,7 @@ if __name__ == "__main__":
         }
         )
     
-    #for forced offline work -tf
-    if args.test_run:
-        print('WANDB WORKING OFFLINE')
-        wandb.init(mode="disabled") #for offline work
+
     
     main(args.learning_rate,
          args.epoch_num,
