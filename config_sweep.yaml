@@ -12,7 +12,7 @@ parameters:
       value: 30
     batch_size:
       distribution: constant
-      value: 1000
+      value: 5
     plot_freq:
       distribution: constant
       value: 3 
