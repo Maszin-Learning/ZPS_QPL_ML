@@ -42,7 +42,8 @@ class Generator():
             
             for order in range(self.max_order):
                 coef = np.random.uniform(low = -1, high = 1)
-
+                Y += coef*X**order
+                """
                 if np.random.choice(50) == 1:
                     _coef = np.random.uniform(low = -1, high = 1)
                     Y += coef*X**order + _coef * np.sin(X)
@@ -55,7 +56,7 @@ class Generator():
                     Y += coef*X**order * np.sin(X)
                 else:
                     Y += coef*X**order
-                    
+                """
                 """
                 if r == 1:
                     Y += np.tan(X)*coef*X**order
