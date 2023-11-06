@@ -21,14 +21,15 @@ import argparse
 import wandb
 import shutil
 
-def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _generate, _cpu, _test):
+def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _generate, _cpu, _test, _node_number):
     #hyperparameters
     print('learning_rate:', _learning_rate,'\n',
           'epoch_number:', _epoch_num,'\n',
           'batch_size:', _batch_size,'\n',
           'plot_frequency:', _plot_freq,'\n',
           'dataset_size:', _dataset_size,'\n',
-          'generate:', _generate,'\n')
+          'generate:', _generate,'\n',
+          'node_number:', _node_number)
 
 
 
@@ -93,48 +94,7 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
 
     test_pulse, test_phase = create_test_pulse("hermite", initial_pulse, output_dim, my_device, my_dtype)
 
-    # ok, let's define the NN
-
-    class network(nn.Module):
-        def __init__(self, input_size, n, output_size):
-            super(network, self).__init__()
-            self.input = input_size
-            self.output = output_size
-
-            self.linear_1 = nn.Linear(input_size, n)
-            self.linear_2 = nn.Linear(n, n)
-            self.linear_3 = nn.Linear(n, output_size)
-            
-            self.leakyrelu = nn.LeakyReLU(0.1, inplace = True)
-            
-            self.normal_1 = nn.LayerNorm(n)
-            self.normal_3 = nn.LayerNorm(output_size)
-            self.tanh = nn.Tanh()
-            self.bn_1 = nn.BatchNorm1d(n) #wont work on cpu
-            self.dropout = nn.Dropout(0.25)
-
-        def forward(self,x):
-            #print(x.shape)
-            x = self.leakyrelu(self.linear_1(x))
-            x = self.bn_1(x)
-            x = self.leakyrelu(self.linear_2(x))
-            x = self.bn_1(x)
-            x = self.dropout(x)
-            x = self.linear_3(x)
-            return x
-
-    # create NN
-
-    model = network(input_size = input_dim, 
-                n = 100, 
-                output_size = output_dim)
-    model.to(device = my_device, dtype = my_dtype)
-
-    optimizer = torch.optim.Adam(model.parameters(), lr = _learning_rate)
-    criterion = torch.nn.MSELoss()
-
-
-    loss_list = []
+    
 
     # create dataset and wrap it into dataloader
 
@@ -170,8 +130,10 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
         'dataset_size': _dataset_size,
         "architecture": "1",
         "dataset": "defalut",
+        "node_number": _node_number
         }
         )
+        
         
     if _test:
         print('WANDB WORKING OFFLINE')
@@ -179,7 +141,48 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
     shutil.rmtree('pics') #clear pictures folder
     ###
     
-    
+    # ok, let's define the NN
+
+    class network(nn.Module):
+        def __init__(self, input_size, n, output_size):
+            super(network, self).__init__()
+            self.input = input_size
+            self.output = output_size
+
+            self.linear_1 = nn.Linear(input_size, n)
+            self.linear_2 = nn.Linear(n, n)
+            self.linear_3 = nn.Linear(n, output_size)
+            
+            self.leakyrelu = nn.LeakyReLU(0.1, inplace = True)
+            
+            self.normal_1 = nn.LayerNorm(n)
+            self.normal_3 = nn.LayerNorm(output_size)
+            self.tanh = nn.Tanh()
+            self.bn_1 = nn.BatchNorm1d(n) #wont work on cpu
+            self.dropout = nn.Dropout(0.25)
+
+        def forward(self,x):
+            #print(x.shape)
+            x = self.leakyrelu(self.linear_1(x))
+            x = self.bn_1(x)
+            x = self.leakyrelu(self.linear_2(x))
+            x = self.bn_1(x)
+            x = self.dropout(x)
+            x = self.linear_3(x)
+            return x
+
+    # create NN
+
+    model = network(input_size = input_dim, 
+                n = _node_number, 
+                output_size = output_dim)
+    model.to(device = my_device, dtype = my_dtype)
+
+    optimizer = torch.optim.Adam(model.parameters(), lr = _learning_rate)
+    criterion = torch.nn.MSELoss()
+
+
+    loss_list = []
 
 
     dataset_train = Dataset_train(root='', transform=True, device = my_device)
@@ -241,6 +244,7 @@ if __name__ == "__main__":
     parser.add_argument('-g', '--generate', action='store_true')
     parser.add_argument('-fc', '--force_cpu', action='store_true')
     parser.add_argument('-tr', '--test_run', action='store_true')
+    parser.add_argument('-nn', '--node_number', default=100)
     args = parser.parse_args()
     main(args.learning_rate,
          args.epoch_num,
@@ -249,4 +253,5 @@ if __name__ == "__main__":
          args.dataset_size,
          args.generate,
          args.force_cpu,
-         args.test_run)
+         args.test_run,
+         args.node_number)
