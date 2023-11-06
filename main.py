@@ -139,8 +139,10 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
     if _test:
         print('WANDB WORKING OFFLINE')
         wandb.init(mode="disabled") #for offline work
-    if os.path.isdir("data"):
+        
+    if os.path.isdir("pics"):
         shutil.rmtree('pics') #clear pictures folder
+        os.mkdir("pics")
     else:
         os.mkdir("pics")
     ###
@@ -248,7 +250,7 @@ if __name__ == "__main__":
     parser.add_argument('-g', '--generate', action='store_true')
     parser.add_argument('-fc', '--force_cpu', action='store_true')
     parser.add_argument('-tr', '--test_run', action='store_true')
-    parser.add_argument('-nn', '--node_number', default=100)
+    parser.add_argument('-nn', '--node_number', default=100, type=int)
     args = parser.parse_args()
     main(args.learning_rate,
          args.epoch_num,
