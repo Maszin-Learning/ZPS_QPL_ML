@@ -22,7 +22,7 @@ import argparse
 import wandb
 import shutil
 
-def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _generate, _cpu, _test, _node_number):
+def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _generate, _cpu, _test, _node_number, _net_architecture):
     #hyperparameters
     print('learning_rate:', _learning_rate,'\n',
           'epoch_number:', _epoch_num,'\n',
@@ -30,7 +30,19 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
           'plot_frequency:', _plot_freq,'\n',
           'dataset_size:', _dataset_size,'\n',
           'generate:', _generate,'\n',
-          'node_number:', _node_number)
+          'node_number:', _node_number, '\n',
+          'architecture:', _net_architecture)
+    
+    
+    ### Chose architecture
+    if _net_architecture == 'network_1':
+        from nets import network_1 as network
+    if _net_architecture == 'network_2':
+        from nets import network_2 as network
+    if _net_architecture == 'network_3':
+        from nets import network_3 as network
+    if _net_architecture == 'network_4':
+        from nets import network_4 as network
 
 
 
@@ -53,9 +65,10 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
         my_device = torch.device("cpu")
         print (f"Using {my_device}")
 
-    # data type
+
     if _cpu:
         my_device = torch.device('cpu')
+    # data type
     my_dtype = torch.float32
 
     # initial pulse (to be reconstructed later on)
@@ -129,7 +142,7 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
         "epochs": _epoch_num,
         "batch_size": _batch_size,
         'dataset_size': _dataset_size,
-        "architecture": "1",
+        "architecture": _net_architecture,
         "dataset": "defalut",
         "node_number": _node_number
         }
@@ -146,36 +159,6 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
     else:
         os.mkdir("pics")
     ###
-    
-    # ok, let's define the NN
-
-    class network(nn.Module):
-        def __init__(self, input_size, n, output_size):
-            super(network, self).__init__()
-            self.input = input_size
-            self.output = output_size
-
-            self.linear_1 = nn.Linear(input_size, n)
-            self.linear_2 = nn.Linear(n, n)
-            self.linear_3 = nn.Linear(n, output_size)
-            
-            self.leakyrelu = nn.LeakyReLU(0.1, inplace = True)
-            
-            self.normal_1 = nn.LayerNorm(n)
-            self.normal_3 = nn.LayerNorm(output_size)
-            self.tanh = nn.Tanh()
-            self.bn_1 = nn.BatchNorm1d(n) #wont work on cpu
-            self.dropout = nn.Dropout(0.25)
-
-        def forward(self,x):
-            #print(x.shape)
-            x = self.leakyrelu(self.linear_1(x))
-            x = self.bn_1(x)
-            x = self.leakyrelu(self.linear_2(x))
-            x = self.bn_1(x)
-            x = self.dropout(x)
-            x = self.linear_3(x)
-            return x
 
     # create NN
 
@@ -251,6 +234,7 @@ if __name__ == "__main__":
     parser.add_argument('-fc', '--force_cpu', action='store_true')
     parser.add_argument('-tr', '--test_run', action='store_true')
     parser.add_argument('-nn', '--node_number', default=100, type=int)
+    parser.add_argument('-ar', '--architecture', default='network_1', type=str)
     args = parser.parse_args()
     main(args.learning_rate,
          args.epoch_num,
@@ -260,4 +244,6 @@ if __name__ == "__main__":
          args.generate,
          args.force_cpu,
          args.test_run,
-         args.node_number)
+         args.node_number,
+         args.architecture)
+    
