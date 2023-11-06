@@ -1,0 +1,6 @@
+program: main.py
+method: bayes
+metric:
+  name: loss
+  goal: minimalize
+parameters:
