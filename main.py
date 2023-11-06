@@ -60,7 +60,7 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
         my_device = torch.device("cuda")
         print (f"Using {my_device}")
         print('allocated CUDA memory: ',torch.cuda.memory_allocated())      # Checking GPU RAM allocated memory
-        print('cached CUDA memory: ',torch.cuda.memory_cached())
+        print('cached CUDA memory: ',torch.cuda.memory_reserved())
         torch.cuda.empty_cache()                                            # clear CUDA memory
         torch.backends.cudnn.benchmark = True                               # let cuda chose the most efficient way of calculating Convolutions
 
