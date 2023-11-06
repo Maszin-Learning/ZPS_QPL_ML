@@ -1,2 +1,2 @@
 pip install wandb
-wandb login $wandb_key
+wandb login --relogin $WANDB_KEY
