@@ -5,6 +5,7 @@
 # exclude everything
 pics/*
 data/*
+wandb/*
 # exception to the rule
 !pics/.gitkeep
 !data/.gitkeep
