@@ -5,8 +5,14 @@ metric:
   goal: minimize
 parameters:
     learning_rate:
-      min: 0.0001
+      min: 0.00001
       max: 0.01
     epoch_num:
       distribution: constant
-      value: 1
+      value: 15
+    batch_size:
+      distribution: constant
+      value: 1000
+    node_number:
+      values: [50, 100, 200, 400, 800, 1600]
+    

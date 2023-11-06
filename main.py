@@ -195,43 +195,38 @@ if __name__ == "__main__":
     parser.add_argument('-lr', '--learning_rate', default=1e-4, type=float)
     parser.add_argument('-en', '--epoch_num', default=10, type=int)
     parser.add_argument('-bs', '--batch_size', default=32, type=int)
-    parser.add_argument('-pf', '--plot_freq', default=2, type=int)
+    parser.add_argument('-pf', '--plot_freq', default=3, type=int)
     parser.add_argument('-ds', '--dataset_size', default=2000, type=int)
     parser.add_argument('-g', '--generate', action='store_true')
     parser.add_argument('-fc', '--force_cpu', action='store_true')
     parser.add_argument('-tr', '--test_run', action='store_true')
     parser.add_argument('-nn', '--node_number', default=100, type=int)
-    parser.add_argument('-ar', '--architecture', default='network_2', type=str)
-    parser.add_argument('-sw', '--sweep', action='store_true')
+    parser.add_argument('-ar', '--architecture', default='network_1', type=str)
     args = parser.parse_args()
     config={}
     ###WANDB config
     # start a new wandb run to track this script
-    if args.sweep:
-        print('SWEEP MODE')
-        wandb.init(config='config_sweep.yaml')
-    else:
-        if not args.test_run:
-            wandb.init(
-            # set the wandb project where this run will be logged
-            project="platypus",
+    if not args.test_run:
+        wandb.init(
+        # set the wandb project where this run will be logged
+        project="platypus",
 
-            # track hyperparameters and run metadata
-            config={
-            "learning_rate": args.learning_rate,
-            "epochs": args.epoch_num,
-            "batch_size": args.batch_size,
-            'dataset_size': args.dataset_size,
-            "architecture": args.architecture,
-            "dataset": "defalut",
-            "node_number": args.node_number
-            }
-            )
-        
-        #for forced offline work -tf
-        if args.test_run:
-            print('WANDB WORKING OFFLINE')
-            wandb.init(mode="disabled") #for offline work
+        # track hyperparameters and run metadata
+        config={
+        "learning_rate": args.learning_rate,
+        "epochs": args.epoch_num,
+        "batch_size": args.batch_size,
+        'dataset_size': args.dataset_size,
+        "architecture": args.architecture,
+        "dataset": "defalut",
+        "node_number": args.node_number
+        }
+        )
+    
+    #for forced offline work -tf
+    if args.test_run:
+        print('WANDB WORKING OFFLINE')
+        wandb.init(mode="disabled") #for offline work
     
     main(args.learning_rate,
          args.epoch_num,
