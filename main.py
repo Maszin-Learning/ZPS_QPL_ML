@@ -4,6 +4,7 @@ import spectral_analysis as sa
 import numpy as np
 import pandas as pd
 import torch
+import os
 import torch.nn as nn
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -138,7 +139,10 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
     if _test:
         print('WANDB WORKING OFFLINE')
         wandb.init(mode="disabled") #for offline work
-    shutil.rmtree('pics') #clear pictures folder
+    if os.path.isdir("data"):
+        shutil.rmtree('pics') #clear pictures folder
+    else:
+        os.mkdir("pics")
     ###
     
     # ok, let's define the NN
