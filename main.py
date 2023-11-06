@@ -143,7 +143,7 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
         )
         
     #for forced offline work -tf
-    if _test:
+    if _test:d
         print('WANDB WORKING OFFLINE')
         wandb.init(mode="disabled") #for offline work
         
