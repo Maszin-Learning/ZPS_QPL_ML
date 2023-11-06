@@ -31,29 +31,7 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
           'generate:', _generate,'\n')
 
 
-    #WANDB config
 
-    # start a new wandb run to track this script
-    if not _test:
-        wandb.init(
-        # set the wandb project where this run will be logged
-        project="platypus",
-
-        # track hyperparameters and run metadata
-        config={
-        "learning_rate": _learning_rate,
-        "epochs": _epoch_num,
-        "batch_size": _batch_size,
-        'dataset_size': _dataset_size,
-        "architecture": "1",
-        "dataset": "defalut",
-        }
-        )
-        
-    if _test:
-        print('WANDB WORKING OFFLINE')
-        wandb.init(mode="disabled") #for offline work
-    shutil.rmtree('pics') #clear pictures folder
 
     # cuda 
     if torch.cuda.is_available():
@@ -174,6 +152,34 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
 
         the_generator.generate_and_save()
 
+    
+    ###
+        #WANDB config
+
+    # start a new wandb run to track this script
+    if not _test:
+        wandb.init(
+        # set the wandb project where this run will be logged
+        project="platypus",
+
+        # track hyperparameters and run metadata
+        config={
+        "learning_rate": _learning_rate,
+        "epochs": _epoch_num,
+        "batch_size": _batch_size,
+        'dataset_size': _dataset_size,
+        "architecture": "1",
+        "dataset": "defalut",
+        }
+        )
+        
+    if _test:
+        print('WANDB WORKING OFFLINE')
+        wandb.init(mode="disabled") #for offline work
+    shutil.rmtree('pics') #clear pictures folder
+    ###
+    
+    
 
 
     dataset_train = Dataset_train(root='', transform=True, device = my_device)
