@@ -21,6 +21,8 @@ from dataset_generator import Generator
 import argparse
 import wandb
 import shutil
+import warnings
+
 
 def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _generate, _cpu, _node_number, _net_architecture):
     #hyperparameters
@@ -194,6 +196,7 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
             model.train()
 
 if __name__ == "__main__":
+    warnings.simplefilter("ignore", UserWarning) #ignore warnings from plotly
     parser = argparse.ArgumentParser()
     parser.add_argument('-lr', '--learning_rate', default=1e-4, type=float)
     parser.add_argument('-en', '--epoch_num', default=10, type=int)
