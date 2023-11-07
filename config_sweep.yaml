@@ -11,12 +11,12 @@ parameters:
       distribution: constant
       value: 40
     batch_size:
-      values: [5000]
+      values: [1000]
     plot_freq:
       distribution: constant
       value: 3 
     architecture:
       values: ['network_7']
     node_number:
-      values: [200, 400]
+      values: [100 ,200, 400]
     
