@@ -20,4 +20,3 @@ parameters:
     node_number:
       values: [200, 400, 800, 1200, 2000]
     
-d
