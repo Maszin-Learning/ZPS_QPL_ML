@@ -235,7 +235,7 @@ class network_7(nn.Module): #do not work on cpu
         x = self.max_pool1d_1(x)
         x = self.conv1d_3(x)  
         x = self.conv1d_4(x)        
-        x = torch.flatten(x, start_dim=0, end_dim=-1)
+        x = torch.flatten(x, start_dim=1, end_dim=-1)
         x = self.relu(self.linear_1(x))
         x = self.bn_fc_1(x)
         x = self.dropout(x)
