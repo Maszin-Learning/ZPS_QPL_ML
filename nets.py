@@ -253,7 +253,7 @@ class network_7(nn.Module): #do not work on cpu
     ### network_8 with convolutionas
 class network_8(nn.Module): #do not work on cpu
     def __init__(self, input_size, n, output_size):
-        super(network_7, self).__init__()
+        super(network_8, self).__init__()
         self.input = input_size
         self.output = output_size
 
@@ -311,6 +311,9 @@ class network_8(nn.Module): #do not work on cpu
         x = self.conv1d_4(x)        
         x = torch.flatten(x, start_dim=1, end_dim=-1)
         x = self.relu(self.linear_1(x))
+        x = self.bn_fc_1(x)
+        x = self.dropout(x)
+        x = self.relu(self.linear_2(x))
         x = self.bn_fc_1(x)
         x = self.dropout(x)
         x = self.linear_3(x)
