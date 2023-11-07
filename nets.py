@@ -229,6 +229,7 @@ class network_7(nn.Module): #do not work on cpu
         
 
     def forward(self,x):
+        x = torch.unsqueeze(x, 1)
         print(x.shape)
         x = self.conv1d_1(x)
         x = self.max_pool1d_1(x)
