@@ -11,7 +11,7 @@ parameters:
       distribution: constant
       value: 35
     batch_size:
-      values: [5000]
+      values: [1000,2000]
     plot_freq:
       distribution: constant
       value: 3 
@@ -20,3 +20,4 @@ parameters:
     node_number:
       values: [200, 400, 800, 1200, 2000]
     
+d
