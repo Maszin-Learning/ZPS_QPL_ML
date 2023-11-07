@@ -22,6 +22,7 @@ class network_1(nn.Module):
         self.dropout = nn.Dropout(0.25)
 
     def forward(self,x):
+        print(x.shape)
         x = self.leakyrelu(self.linear_1(x))
         x = self.bn_1(x)
         x = self.dropout(x)
