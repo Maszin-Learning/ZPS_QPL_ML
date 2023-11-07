@@ -1,3 +1,4 @@
 export WANDB_KEY='your api wandb key'
 sh config_wandb.sh
+sh run_sweep.sh
 copy sweep id and past it
