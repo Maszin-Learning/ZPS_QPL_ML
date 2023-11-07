@@ -86,3 +86,25 @@ def np_to_complex_pt(array, device, dtype):
     array = array.reshape(1, array.numel())
 
     return array
+
+
+def TB_prod(t, f, Ut, Uf):
+    
+    def sigma(x, a):
+        mu = np.sum(a*x)/np.sum(np.abs(a))
+        return np.sqrt(np.sum((x-mu)**2 * a)/np.sum(a))##to zwraca poprawne wyniki bez dx
+    
+    S_t = sigma(t, np.abs(Ut)**2)
+    print((S_t)*2.355*1000, "time")
+    S_f = sigma(f, np.abs(Uf)**2)
+    print((S_f)*2.355, "freq")
+    TBp = S_f*S_t*(2.355**2)
+    print("Time bandwidth product: ",TBp)
+    return TBp
+
+def U_f_in__to__U_t_out(U_f_in):
+    return np.fft.ifftshift(np.fft.ifft(np.fft.fftshift(U_f_in)))
+
+
+def U_t_in__to__U_f_out(U_t_in):
+    return np.fft.fftshift(np.fft.fft(np.fft.ifftshift(U_t_in)))

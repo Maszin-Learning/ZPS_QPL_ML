@@ -87,7 +87,7 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
     centre = [193]
     FWHM = 0.25
 
-    initial_pulse = sa.hermitian_pulse(pol_num = 0,
+    initial_pulse = sa.hermitian_pulse(pol_num = 0, #0 for gauss signal
                                     bandwidth = bandwidth,
                                     centre = centre,
                                     FWHM = FWHM,
