@@ -16,7 +16,7 @@ parameters:
       distribution: constant
       value: 3 
     architecture:
-      values: ['network_7']
+      values: ['network_8']
     node_number:
-      values: [100, 200, 400]
+      values: [200, 400]
     
