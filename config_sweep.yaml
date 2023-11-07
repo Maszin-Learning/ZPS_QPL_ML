@@ -6,12 +6,12 @@ metric:
 parameters:
     learning_rate:
       min: 0.0000001
-      max: 0.001
+      max: 0.01
     epoch_num:
       distribution: constant
       value: 35
     batch_size:
-      values: [10, 500, 1000]
+      values: [5000]
     plot_freq:
       distribution: constant
       value: 3 
