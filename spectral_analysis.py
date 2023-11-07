@@ -1142,7 +1142,7 @@ def hermitian_pulse(pol_num, bandwidth, centre, FWHM, num = 1000, x_type = "freq
     spectrum_out = sa.spectrum(X, Y_out, "freq", "intensity")
     spectrum_out.normalize(norm = "L2", shift_to_zero = False)
 
-    return spectrum_out, X
+    return spectrum_out
 
 
 def chirp_phase(bandwidth, centre, fiber_length):

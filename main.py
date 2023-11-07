@@ -18,6 +18,7 @@ from test import create_test_pulse
 import torchvision.transforms as transforms  # Transformations and augmentations
 from dataset import Dataset_train
 from dataset_generator import Generator
+import utilities
 import argparse
 import wandb
 import shutil
@@ -50,6 +51,8 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
         from nets import network_5 as network
     if _net_architecture == 'network_6':
         from nets import network_6 as network
+    if _net_architecture == 'network_7':
+        from nets import network_7 as network
 
 
     ### Chose device, disclimer! on cpu network will not run due to batch normalization
@@ -85,13 +88,21 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
 
     bandwidth = [190, 196]
     centre = [193]
-    FWHM = 0.25
+    FWHM = 0.4
 
     initial_pulse = sa.hermitian_pulse(pol_num = 0, #0 for gauss signal
                                     bandwidth = bandwidth,
                                     centre = centre,
                                     FWHM = FWHM,
                                     num = input_dim)
+    freq_arr = np.linspace(bandwidth[0], bandwidth[1], num = input_dim)
+    t_arr = freq_arr/1e-3
+    
+    initial_pulse_check = initial_pulse.copy()
+    
+    utilities.TB_prod(t_arr, freq_arr, utilities.U_f_in__to__U_t_out(initial_pulse_check.X), initial_pulse_check.X)
+    
+    
 
     Y_initial = initial_pulse.Y.copy()
 
