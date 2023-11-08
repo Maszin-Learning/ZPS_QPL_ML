@@ -6,7 +6,7 @@ metric:
 parameters:
     learning_rate:
       min: 0.0000001
-      max: 0.01
+      max: 0.001
     epoch_num:
       distribution: constant
       value: 10
@@ -20,5 +20,7 @@ parameters:
     node_number:
       values: [200, 400]
     criterion:
-      values: [MSE]
+      values: ['MSE']
+    criterion:
+      values: ['NAdam']
     

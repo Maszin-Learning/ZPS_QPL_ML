@@ -159,8 +159,8 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
                 output_size = output_dim)
     model.to(device = my_device, dtype = my_dtype)
 
-    #optimizer = torch.optim.Adam(model.parameters(), lr = _learning_rate)
-    optimizer = torch.optim.SGD(model.parameters(), lr = _learning_rate)
+    optimizer = torch.optim.NAdam(model.parameters(), lr = _learning_rate)
+    #optimizer = torch.optim.SGD(model.parameters(), lr = _learning_rate)
     criterion = torch.nn.MSELoss()
     #criterion = torch.nn.L1Loss()
     dataset_train = Dataset_train(root='', transform=True, device = my_device)
@@ -227,6 +227,7 @@ if __name__ == "__main__":
     parser.add_argument('-nn', '--node_number', default=100, type=int)
     parser.add_argument('-ar', '--architecture', default='network_1', type=str)
     parser.add_argument('-cr', '--criterion', default='MSE', type=str)
+    parser.add_argument('-op', '--optimalizator', default='Adam', type=str)
     args = parser.parse_args()
     config={}
     
