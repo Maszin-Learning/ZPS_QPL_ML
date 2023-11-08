@@ -20,5 +20,5 @@ parameters:
     node_number:
       values: [200, 400]
     criterion:
-      values: [L1]
+      values: [MSE]
     
