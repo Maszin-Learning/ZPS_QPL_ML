@@ -14,9 +14,9 @@ parameters:
       values: [1000]
     plot_freq:
       distribution: constant
-      value: 3 
+      value: 1
     architecture:
       values: ['network_7']
     node_number:
-      values: [100 ,200, 400]
+      values: [200, 400]
     

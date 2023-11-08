@@ -1,0 +1,7 @@
+#TODO
+-zwiększyć rozmiar inputu -> fazy -> trzeba wtedy ręcznie zmienic parametry w sieciach conv
+    zmienić rozmiar zestawu ternujacego
+-dodać kolejne sieci convolucyjne
+-przenieśc pliki pokazowe fazy do folderu
+-pokombinowac nad datasetem
+-sprawdzic liczenie tbp
