@@ -225,6 +225,7 @@ if __name__ == "__main__":
     parser.add_argument('-tr', '--test_run', action='store_true')
     parser.add_argument('-nn', '--node_number', default=100, type=int)
     parser.add_argument('-ar', '--architecture', default='network_1', type=str)
+    parser.add_argument('-cr', '--criterion', default='MSE', type=str)
     args = parser.parse_args()
     config={}
     

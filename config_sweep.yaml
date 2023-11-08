@@ -19,4 +19,6 @@ parameters:
       values: ['network_7']
     node_number:
       values: [200, 400]
+    criterion:
+      values: [L1]
     
