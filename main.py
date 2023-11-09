@@ -136,7 +136,7 @@ def main(_learning_rate,
     print("output_dim (phase length) = {}".format(output_dim))
 
     # test pulse
-    test_pulse, test_phase = create_test_pulse("translation", initial_pulse, output_dim, my_device, my_dtype)
+    test_pulse, test_phase = create_test_pulse("hermite", initial_pulse, output_dim, my_device, my_dtype)
     ###
 
     
@@ -292,3 +292,4 @@ if __name__ == "__main__":
          args.architecture,
          args.criterion,
          args.optimalizer)
+    

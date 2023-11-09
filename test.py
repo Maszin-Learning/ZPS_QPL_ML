@@ -10,9 +10,6 @@ def test(model, test_pulse, initial_pulse_Y, initial_pulse_X, device, dtype, tes
     You may provide test phase IF you know it. Otherwise leave it to be None.
     '''
 
-    def mse(actual_data, predictions):
-        return np.mean((actual_data - predictions)**2)
-
     input_dim = model.input
     output_dim = model.output
 
@@ -103,10 +100,12 @@ def test(model, test_pulse, initial_pulse_Y, initial_pulse_X, device, dtype, tes
     if not os.path.isdir("pics"):
         os.mkdir("pics")
 
-    loss = mse(np.abs(np.reshape(test_pulse.clone().cpu().detach().numpy(), input_dim)), reconstructed)
-
-    plt.savefig("pics/reconstructed_0{}.jpg".format(iter_num), bbox_inches = "tight", dpi = 200)
-    return plt, loss
+    if iter_num < 10000:
+        plt.savefig("pics/reconstructed_0{}.jpg".format(iter_num), bbox_inches = "tight", dpi = 200)
+        return plt
+    else:
+        plt.savefig("pics/reconstructed_{}.jpg".format(iter_num), bbox_inches = "tight", dpi = 200)
+        return plt
     
 
 def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
@@ -115,6 +114,8 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
     A tuple (test_pulse, test_phase) is returned where test_phase is the phase used to evolve the gaussian
     to the test_pulse. If the pulse wasn't obtained by such evolution, then it is equal to None.
     '''
+
+
 
     if pulse_type == "hermite":
         test_pulse = sa.hermitian_pulse(pol_num = 1,
@@ -136,8 +137,8 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
         test_phase = test_phase.reshape([phase_len])
         test_pulse = evolve_np(np_to_complex_pt(test_pulse.Y, device = device, dtype = dtype), test_phase, device = device, dtype = dtype)
 
-    elif pulse_type == "translation":
-        test_phase = 5*np.linspace(-1, 1, phase_len)
-        test_pulse = evolve_np(initial_pulse.Y, test_phase)
+    elif pulse_type == "random_evolution":
+        max_phase = 20
+        test_pulse, test_phase = pulse_gen(max_phase)
 
     return test_pulse, test_phase
