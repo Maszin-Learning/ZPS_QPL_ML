@@ -244,11 +244,11 @@ def main(_learning_rate,
 if __name__ == "__main__":
     warnings.simplefilter("ignore", UserWarning) #ignore warnings from plotly
     parser = argparse.ArgumentParser()
-    parser.add_argument('-lr', '--learning_rate', default=1e-4, type=float)
+    parser.add_argument('-lr', '--learning_rate', default=1e-5, type=float)
     parser.add_argument('-en', '--epoch_num', default=10, type=int)
-    parser.add_argument('-bs', '--batch_size', default=32, type=int)
+    parser.add_argument('-bs', '--batch_size', default=50, type=int)
     parser.add_argument('-pf', '--plot_freq', default=3, type=int)
-    parser.add_argument('-ds', '--dataset_size', default=2000, type=int)
+    parser.add_argument('-ds', '--dataset_size', default=10000, type=int)
     parser.add_argument('-g', '--generate', action='store_true') #only generate, training will not run, wandb will be offline
     parser.add_argument('-fc', '--force_cpu', action='store_true')
     parser.add_argument('-tr', '--test_run', action='store_true')
