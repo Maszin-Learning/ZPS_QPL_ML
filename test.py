@@ -5,6 +5,7 @@ import os
 import spectral_analysis as sa
 from utilities import np_to_complex_pt, evolve_np, evolve_pt
 from torch.nn import MSELoss
+import torch
 
 def test(model, test_pulse, initial_pulse_Y, initial_pulse_X, device, dtype, test_phase = None, iter_num = 0):
     '''
@@ -73,8 +74,8 @@ def test(model, test_pulse, initial_pulse_Y, initial_pulse_X, device, dtype, tes
                 color = "red",
                 zorder = 10)
 
-    if test_phase != None:
-        test_phase_np = test_phase.clone().cpu().detach().numpy()
+    if type(test_phase) == type(np.array([])):
+        test_phase_np = test_phase.copy()
         test_phase_np -= test_phase_np[floor(output_dim/2)]
         plt.plot(range(idx_end - idx_start),
                     np.real(test_phase_np),
@@ -84,8 +85,8 @@ def test(model, test_pulse, initial_pulse_Y, initial_pulse_X, device, dtype, tes
                     zorder = 5)
 
     FT_intensity /= np.max(FT_intensity[idx_start: idx_end])
-    if test_phase != None:
-        FT_intensity *= np.max(np.concatenate([np.abs(reconstructed_phase), np.abs(test_phase.clone().detach().cpu().numpy())]))
+    if type(test_phase) == type(np.array([])):
+        FT_intensity *= np.max(np.concatenate([np.abs(reconstructed_phase), np.abs(test_phase.copy())]))
     else:
         FT_intensity *= np.max(np.abs(reconstructed_phase))
 
@@ -94,7 +95,7 @@ def test(model, test_pulse, initial_pulse_Y, initial_pulse_X, device, dtype, tes
                         color='red')
     
     plt.xlabel("Quasi-time (unitless)")
-    if test_phase != None:
+    if type(test_phase) == type(np.array([])):
         plt.legend(["Reconstructed phase", "Initial phase", "FT intensity"], bbox_to_anchor = [0.95, -0.15])
     else:
         plt.legend(["Reconstructed phase", "FT intensity"], bbox_to_anchor = [0.95, -0.15])
@@ -128,14 +129,14 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
         test_phase = None
 
     elif pulse_type == "chirp":
-        test_pulse = initial_pulse.copy()
+        if dtype == torch.float32:
+            new_dtype = np.float32
+        else:
+            new_dtype = dtype
+        initial_intensity = initial_pulse.Y.copy()
         chirp = 20
-        test_phase = np_to_complex_pt(chirp*np.linspace(-1, 1, phase_len)**2, device = device, dtype = dtype)
-        test_phase = test_phase.reshape([phase_len])
-        test_pulse = evolve_np(np_to_complex_pt(test_pulse.Y, device = device, dtype = dtype), test_phase, device = device, dtype = dtype)
-
-    elif pulse_type == "random_evolution":
-        max_phase = 20
-        test_pulse, test_phase = pulse_gen(max_phase)
+        test_phase = chirp*np.linspace(-1, 1, phase_len, dtype = new_dtype)**2
+        test_pulse = evolve_np(initial_intensity, test_phase, dtype = new_dtype)
+        test_pulse = np_to_complex_pt(test_pulse, device = device, dtype = torch.float32)
 
     return test_pulse, test_phase

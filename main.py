@@ -35,7 +35,8 @@ def main(_learning_rate,
          _node_number,
          _net_architecture,
          _criterion,
-         _optimalizer):
+         _optimalizer,
+         _test_signal):
     #hyperparameters
     print('\n',
           'learning_rate:', _learning_rate,'\n',
@@ -47,7 +48,8 @@ def main(_learning_rate,
           'node_number:', _node_number, '\n',
           'architecture:', _net_architecture, '\n',
           'criterion:', _criterion, '\n',
-          'optimalizer:', _optimalizer, '\n')
+          'optimalizer:', _optimalizer, '\n',
+          'test_signal:', _test_signal, '\n')
     
     
     ### Chose architecture 
@@ -138,7 +140,7 @@ def main(_learning_rate,
     print("output_dim (phase length) = {}".format(output_dim))
 
     # test pulse
-    test_pulse, test_phase = create_test_pulse("hermite", initial_pulse, output_dim, my_device, my_dtype)
+    test_pulse, test_phase = create_test_pulse(_test_signal, initial_pulse, output_dim, my_device, my_dtype)
     ###
 
     
@@ -255,7 +257,8 @@ if __name__ == "__main__":
     parser.add_argument('-nn', '--node_number', default=100, type=int)
     parser.add_argument('-ar', '--architecture', default='network_1', type=str)
     parser.add_argument('-cr', '--criterion', default='MSE', type=str)
-    parser.add_argument('-op', '--optimalizer', default='Adam', type=str)
+    parser.add_argument('-op', '--optimalizer', default='Adam', type=str,)
+    parser.add_argument('-ts', '--test_signal', default='hermite', type=str,)
     args = parser.parse_args()
     config={}
     
@@ -279,7 +282,8 @@ if __name__ == "__main__":
         'dataset_size': args.dataset_size,
         "architecture": args.architecture,
         "dataset": "defalut",
-        "node_number": args.node_number
+        "node_number": args.node_number,
+        "test_signal": args.test_signal
         }
         )
     
@@ -295,5 +299,6 @@ if __name__ == "__main__":
          args.node_number,
          args.architecture,
          args.criterion,
-         args.optimalizer)
+         args.optimalizer,
+         args.test_signal)
     

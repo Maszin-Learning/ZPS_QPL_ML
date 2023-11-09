@@ -9,7 +9,7 @@ parameters:
       max: 0.001
     epoch_num:
       distribution: constant
-      value: 40
+      value: 25
     batch_size:
       values: [50]
     plot_freq:
@@ -18,9 +18,10 @@ parameters:
     architecture:
       values: ['network_9']
     node_number:
-      values: [100]
+      values: [100, 200]
     criterion:
       values: ['MSE']
     optimalizer:
       values: ['Adam']
-    
+    test_signal:
+      values: ['chirp']
