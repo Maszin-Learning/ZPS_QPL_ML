@@ -5,3 +5,4 @@
 -przenieśc pliki pokazowe fazy do folderu
 -pokombinowac nad datasetem
 -sprawdzic liczenie tbp
+-podyskutować o liczbie nodów
