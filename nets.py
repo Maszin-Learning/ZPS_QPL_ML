@@ -327,10 +327,10 @@ class network_9(nn.Module): #do not work on cpu
         super(network_9, self).__init__()
         self.input = input_size
         self.output = output_size
-
+        self.n_2 = n/2
         self.linear_1 = nn.Linear(74752, n) # change 76 to scalable wersion
-        self.linear_2 = nn.Linear(n, n/2)
-        self.linear_3 = nn.Linear(n/2, output_size)
+        self.linear_2 = nn.Linear(n, self.n_2)
+        self.linear_3 = nn.Linear(self.n_2, output_size)
         
         #convolutions
         self.conv1d_1 = nn.Conv1d(in_channels=1,
