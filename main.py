@@ -101,7 +101,7 @@ def main(_learning_rate,
 
     ###
     # initial pulse (to be reconstructed later on)
-    input_dim = 2000 # number of points in single pulse
+    input_dim = 4000 # number of points in single pulse
 
     bandwidth = [170, 216]
     centre = [193]
@@ -183,6 +183,9 @@ def main(_learning_rate,
         optimizer = torch.optim.NAdam(model.parameters(), lr = _learning_rate)
     if _optimalizer=='SGD':
         optimizer = torch.optim.SGD(model.parameters(), lr = _learning_rate)
+    if _optimalizer=='SparseAdam':
+        optimizer = torch.optim.SparseAdam(model.parameters(), lr = _learning_rate)
+    
     
     
     if _criterion=='MSE':
