@@ -372,7 +372,7 @@ class network_9(nn.Module): #do not work on cpu
         self.relu = nn.ReLU()
         self.bn_fc_1 = nn.BatchNorm1d(n) #wont work on cpu
         self.bn_fc_1 = nn.BatchNorm1d(n)
-        self.dropout = nn.Dropout(0.25)
+        self.dropout = nn.Dropout(0.4)
         
 
     def forward(self,x):
@@ -383,8 +383,10 @@ class network_9(nn.Module): #do not work on cpu
         x = self.conv1d_2(x)
         x = self.max_pool1d_1(x)
         x = self.conv1d_3(x)  
+        x = self.dropout(x)
         x = self.max_pool1d_1(x)
         x = self.conv1d_4(x)
+        x = self.dropout(x)
         #print(x.shape) 
         x = torch.flatten(x, start_dim=1, end_dim=-1)
         #print(x.shape)
