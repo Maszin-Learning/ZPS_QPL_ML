@@ -4,6 +4,7 @@ import torch
 
 ### network_1
 class network_1(nn.Module):
+
     def __init__(self, input_size, n, output_size):
         super(network_1, self).__init__()
         self.input = input_size
