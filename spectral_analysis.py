@@ -558,6 +558,16 @@ class spectrum:
             return round(x, -int(floor(log10(abs(x)))) + n - 1)
     
         return  round_to_dig(np.sum(self.X*np.conjugate(self.X)), 3)
+    
+    def TBP(self):
+        '''
+        Calculate Time-Bandwidth Product.
+        '''
+        fwhm_1 = self.FWHM()
+        fouriered_spectrum = self.fourier(inplace = False)
+        fwhm_2 = fouriered_spectrum.FWHM()
+
+        return fwhm_1*fwhm_2
         
     def FWHM(self):
         '''

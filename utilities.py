@@ -3,6 +3,7 @@ import numpy as np
 from math import floor
 import matplotlib.pyplot as plt
 import os
+import spectral_analysis as sa
     
 def evolve_np(intensity, phase, dtype, abs = True):
 

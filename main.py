@@ -114,7 +114,7 @@ def main(_learning_rate,
     initial_pulse_check = initial_pulse.copy()
     
     utilities.TB_prod(t_arr, freq_arr, utilities.U_f_in__to__U_t_out(initial_pulse_check.X), initial_pulse_check.X)
-    
+    print("TBP calculated with my method is equal to {}".format(initial_pulse.TBP()))
     
 
     Y_initial = initial_pulse.Y.copy()
