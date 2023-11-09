@@ -9,7 +9,7 @@ parameters:
       max: 0.001
     epoch_num:
       distribution: constant
-      value: 10
+      value: 40
     batch_size:
       values: [50]
     plot_freq:
