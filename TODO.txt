@@ -1,6 +1,6 @@
 #TODO
 -zwiększyć rozmiar inputu -> fazy -> trzeba wtedy ręcznie zmienic parametry w sieciach conv
-    zmienić rozmiar zestawu ternujacego
+    zmienić rozmiar zestawu ternujacego DONE
 -dodać kolejne sieci convolucyjne
 -przenieśc pliki pokazowe fazy do folderu
 -pokombinowac nad datasetem
