@@ -4,11 +4,14 @@ from math import floor
 import os
 import spectral_analysis as sa
 from utilities import np_to_complex_pt, evolve_np, evolve_pt
+from torch.nn import MSELoss
 
 def test(model, test_pulse, initial_pulse_Y, initial_pulse_X, device, dtype, test_phase = None, iter_num = 0):
     '''
     You may provide test phase IF you know it. Otherwise leave it to be None.
     '''
+
+    mse = MSELoss()
 
     input_dim = model.input
     output_dim = model.output
@@ -100,12 +103,8 @@ def test(model, test_pulse, initial_pulse_Y, initial_pulse_X, device, dtype, tes
     if not os.path.isdir("pics"):
         os.mkdir("pics")
 
-    if iter_num < 10000:
-        plt.savefig("pics/reconstructed_0{}.jpg".format(iter_num), bbox_inches = "tight", dpi = 200)
-        return plt
-    else:
-        plt.savefig("pics/reconstructed_{}.jpg".format(iter_num), bbox_inches = "tight", dpi = 200)
-        return plt
+    plt.savefig("pics/reconstructed_{}.jpg".format(iter_num), bbox_inches = "tight", dpi = 200)
+    return plt, mse(test_pulse.abs(), reconstructed.abs()).clone().cpu().detach().numpy()
     
 
 def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
@@ -114,8 +113,6 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
     A tuple (test_pulse, test_phase) is returned where test_phase is the phase used to evolve the gaussian
     to the test_pulse. If the pulse wasn't obtained by such evolution, then it is equal to None.
     '''
-
-
 
     if pulse_type == "hermite":
         test_pulse = sa.hermitian_pulse(pol_num = 1,
