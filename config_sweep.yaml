@@ -22,6 +22,6 @@ parameters:
     criterion:
       values: ['MSE']
     optimalizer:
-      values: ['Adam']
+      values: ['SparseAdam']
     test_signal:
       values: ['chirp']

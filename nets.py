@@ -328,7 +328,7 @@ class network_9(nn.Module): #do not work on cpu
         self.input = input_size
         self.output = output_size
 
-        self.linear_1 = nn.Linear(36864, n) # change 76 to scalable wersion
+        self.linear_1 = nn.Linear(74752, n) # change 76 to scalable wersion
         self.linear_2 = nn.Linear(n, n)
         self.linear_3 = nn.Linear(n, output_size)
         
