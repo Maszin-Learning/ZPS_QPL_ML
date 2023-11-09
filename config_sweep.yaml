@@ -21,6 +21,6 @@ parameters:
       values: [200, 400]
     criterion:
       values: ['MSE']
-    criterion:
+    optimalizer:
       values: ['NAdam']
     

@@ -25,7 +25,17 @@ import shutil
 import warnings
 
 
-def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _generate, _cpu, _node_number, _net_architecture):
+def main(_learning_rate,
+         _epoch_num,
+         _batch_size,
+         _plot_freq,
+         _dataset_size,
+         _generate,
+         _cpu,
+         _node_number,
+         _net_architecture,
+         _criterion,
+         _optimalizer):
     #hyperparameters
     print('\n',
           'learning_rate:', _learning_rate,'\n',
@@ -35,7 +45,9 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
           'dataset_size:', _dataset_size,'\n',
           'generate:', _generate,'\n',
           'node_number:', _node_number, '\n',
-          'architecture:', _net_architecture, '\n')
+          'architecture:', _net_architecture, '\n',
+          'criterion:', _criterion, '\n',
+          'optimalizer:', _optimalizer, '\n')
     
     
     ### Chose architecture 
@@ -159,14 +171,26 @@ def main(_learning_rate, _epoch_num, _batch_size , _plot_freq, _dataset_size, _g
                 output_size = output_dim)
     model.to(device = my_device, dtype = my_dtype)
 
-    optimizer = torch.optim.NAdam(model.parameters(), lr = _learning_rate)
-    #optimizer = torch.optim.SGD(model.parameters(), lr = _learning_rate)
-    criterion = torch.nn.MSELoss()
-    #criterion = torch.nn.L1Loss()
+
+
+    if _optimalizer=='Adam':
+        optimizer = torch.optim.Adam(model.parameters(), lr = _learning_rate)
+    if _optimalizer=='NAdam':
+        optimizer = torch.optim.NAdam(model.parameters(), lr = _learning_rate)
+    if _optimalizer=='SGD':
+        optimizer = torch.optim.SGD(model.parameters(), lr = _learning_rate)
+    
+    
+    if _criterion=='MSE':
+        criterion = torch.nn.MSELoss()
+    if _criterion=='L1':
+        criterion = torch.nn.L1Loss()
+    
+    
+    
+    
     dataset_train = Dataset_train(root='', transform=True, device = my_device)
     dataloader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size=_batch_size, num_workers=0, shuffle=True)
-
-
     
 
     loss_list = []
@@ -227,7 +251,7 @@ if __name__ == "__main__":
     parser.add_argument('-nn', '--node_number', default=100, type=int)
     parser.add_argument('-ar', '--architecture', default='network_1', type=str)
     parser.add_argument('-cr', '--criterion', default='MSE', type=str)
-    parser.add_argument('-op', '--optimalizator', default='Adam', type=str)
+    parser.add_argument('-op', '--optimalizer', default='Adam', type=str)
     args = parser.parse_args()
     config={}
     
@@ -265,5 +289,7 @@ if __name__ == "__main__":
          args.generate,
          args.force_cpu,
          args.node_number,
-         args.architecture)
+         args.architecture,
+         args.criterion,
+         args.optimalizer)
     
