@@ -2,7 +2,7 @@
 -zwiększyć rozmiar inputu -> fazy -> trzeba wtedy ręcznie zmienic parametry w sieciach conv
     zmienić rozmiar zestawu ternujacego DONE
 -dodać kolejne sieci convolucyjne
--przenieśc pliki pokazowe fazy do folderu
+-przenieśc pliki pokazowe fazy do folderu DONE
 -pokombinowac nad datasetem
 -sprawdzic liczenie tbp
 -podyskutować o liczbie nodów
