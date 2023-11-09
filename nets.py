@@ -22,7 +22,7 @@ class network_1(nn.Module):
         self.dropout = nn.Dropout(0.25)
 
     def forward(self,x):
-        print(x.shape)
+        #print(x.shape)
         x = self.leakyrelu(self.linear_1(x))
         x = self.bn_1(x)
         x = self.dropout(x)
@@ -149,7 +149,7 @@ class network_5(nn.Module):
         x = self.linear_3(x)
         return x
     
-### network_5 4 with tanh
+### network_6 4 with tanh
 class network_6(nn.Module):
     def __init__(self, input_size, n, output_size):
         super(network_6, self).__init__()
@@ -389,7 +389,7 @@ class network_9(nn.Module): #do not work on cpu
         x = torch.flatten(x, start_dim=1, end_dim=-1)
         #print(x.shape)
         x = self.relu(self.linear_1(x))
-        #x = self.bn_fc_1(x)
+        x = self.bn_fc_1(x)
         x = self.dropout(x)
         x = self.linear_3(x)
         
