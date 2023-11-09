@@ -245,11 +245,9 @@ class network_7(nn.Module): #do not work on cpu
         x = self.dropout(x)
         x = self.linear_3(x)
         
-        
-        
         return x
     
-    
+
     
     
     ### network_8 with convolutionas
@@ -321,6 +319,96 @@ class network_8(nn.Module): #do not work on cpu
         x = self.dropout(x)
         x = self.linear_3(x)
         
+        return x
+    
+    ### network_9 with convolutionas, BIG BOY
+class network_9(nn.Module): #do not work on cpu
+    def __init__(self, input_size, n, output_size):
+        super(network_9, self).__init__()
+        self.input = input_size
+        self.output = output_size
+
+        self.linear_1 = nn.Linear(1520, n) # change 76 to scalable wersion
+        self.linear_2 = nn.Linear(n, n)
+        self.linear_3 = nn.Linear(n, output_size)
         
+        #convolutions
+        self.conv1d_1 = nn.Conv1d(in_channels=1,
+                                  out_channels=108,
+                                  kernel_size=11,
+                                  stride=1,
+                                  padding=1)
+        self.conv1d_2 = nn.Conv1d(in_channels=108,
+                                  out_channels=216,
+                                  kernel_size=7,
+                                  stride=1,
+                                  padding=1)
+        self.conv1d_3 = nn.Conv1d(in_channels=216,
+                                  out_channels=512,
+                                  kernel_size=5,
+                                  stride=1,
+                                  padding=1)
+        self.conv1d_4 = nn.Conv1d(in_channels=512,
+                                  out_channels=512,
+                                  kernel_size=3,
+                                  stride=1,
+                                  padding=1)
+        
+        self.conv1d_1 = nn.Conv1d(in_channels=1,
+                                  out_channels=108,
+                                  kernel_size=11,
+                                  stride=1,
+                                  padding=1)
+        self.conv1d_2 = nn.Conv1d(in_channels=108,
+                                  out_channels=216,
+                                  kernel_size=7,
+                                  stride=1,
+                                  padding=1)
+        self.conv1d_3 = nn.Conv1d(in_channels=216,
+                                  out_channels=512,
+                                  kernel_size=5,
+                                  stride=1,
+                                  padding=1)
+        self.conv1d_4 = nn.Conv1d(in_channels=512,
+                                  out_channels=512,
+                                  kernel_size=3,
+                                  stride=1,
+                                  padding=1)
+        
+        
+        self.max_pool1d_1 = nn.MaxPool1d(kernel_size=5,
+                                         stride=None,
+                                         padding=0)
+        
+        
+        
+        self.leakyrelu = nn.LeakyReLU(0.1, inplace = True)
+        
+        self.normal_1 = nn.LayerNorm(n)
+        self.normal_3 = nn.LayerNorm(output_size)
+        self.tanh = nn.Tanh()
+        self.relu = nn.ReLU()
+        self.bn_fc_1 = nn.BatchNorm1d(n) #wont work on cpu
+        self.bn_fc_1 = nn.BatchNorm1d(n)
+        self.dropout = nn.Dropout(0.25)
+        
+
+    def forward(self,x):
+        x = torch.unsqueeze(x, 1)
+        #print(x.shape)
+        x = self.conv1d_1(x)
+        x = self.max_pool1d_1(x)
+        x = self.conv1d_2(x)
+        x = self.max_pool1d_1(x)
+        x = self.conv1d_3(x)  
+        x = self.conv1d_4(x)
+        print(x.shape)  
+        x = torch.flatten(x, start_dim=1, end_dim=-1)
+        #print(x.shape)
+        x = self.relu(self.linear_1(x))
+        #x = self.bn_fc_1(x)
+        x = self.dropout(x)
+        x = self.linear_3(x)
         
         return x
+    

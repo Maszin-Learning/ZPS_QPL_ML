@@ -67,6 +67,8 @@ def main(_learning_rate,
         from nets import network_7 as network
     if _net_architecture == 'network_8':
         from nets import network_8 as network
+    if _net_architecture == 'network_9':
+        from nets import network_9 as network
 
     ### Chose device, disclimer! on cpu network will not run due to batch normalization
     if _cpu:
