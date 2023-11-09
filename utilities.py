@@ -1,4 +1,3 @@
-
 import torch
 import numpy as np
 from math import floor
@@ -6,6 +5,11 @@ import matplotlib.pyplot as plt
 import os
     
 def evolve_np(intensity, phase, dtype, abs = True):
+
+    if dtype == torch.float32:
+        new_dtype = np.float32
+    else:
+        new_dtype = dtype
 
     input_dim = intensity.shape[-1]
     output_dim = phase.shape[-1]
@@ -17,9 +21,9 @@ def evolve_np(intensity, phase, dtype, abs = True):
     zeroes_shape = np.array(phase.shape)
     zeroes_shape[-1] = floor((input_dim-output_dim)/2)
     zeroes_shape = tuple(zeroes_shape)
-    long_phase = np.concatenate([np.zeros(shape = zeroes_shape, dtype = dtype), 
+    long_phase = np.concatenate([np.zeros(shape = zeroes_shape, dtype = new_dtype), 
                           phase,
-                          np.zeros(shape = zeroes_shape, dtype = dtype)], axis=phase.ndim-1)
+                          np.zeros(shape = zeroes_shape, dtype = new_dtype)], axis=phase.ndim-1)
     
     complex_intensity = intensity*np.exp(1j*long_phase)
 

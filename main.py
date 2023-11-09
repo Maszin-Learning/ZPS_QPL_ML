@@ -136,7 +136,7 @@ def main(_learning_rate,
     print("output_dim (phase length) = {}".format(output_dim))
 
     # test pulse
-    test_pulse, test_phase = create_test_pulse("hermite", initial_pulse, output_dim, my_device, my_dtype)
+    test_pulse, test_phase = create_test_pulse("chirp", initial_pulse, output_dim, my_device, my_dtype)
     ###
 
     
@@ -225,15 +225,16 @@ def main(_learning_rate,
                 #print("Iteration np. {}. Loss {}.".format(epoch, loss.clone().cpu().detach().numpy()))
             print("Epoch no. {}. Loss {}.".format(epoch, np.mean(np.array(loss_list[epoch*len(dataloader_train): (epoch+1)*len(dataloader_train)]))))
 
-            fig, test_loss=test(model = model,
-                    test_pulse = test_pulse,
-                    test_phase = test_phase,
-                    initial_pulse_Y = initial_pulse.Y.copy(),
-                    initial_pulse_X = initial_pulse.X.copy(),
-                    device = my_device, 
-                    dtype = my_dtype,
-                    iter_num =epoch)
-            print(test_loss)
+            fig, test_loss = test(model = model,
+                            test_pulse = test_pulse,
+                            test_phase = test_phase,
+                            initial_pulse_Y = initial_pulse.Y.copy(),
+                            initial_pulse_X = initial_pulse.X.copy(),
+                            device = my_device, 
+                            dtype = my_dtype,
+                            iter_num = epoch)
+            
+            wandb.log({"test_loss": test_loss})
             wandb.log({"chart": fig})
             fig.close()
             model.train()
