@@ -328,7 +328,7 @@ class network_9(nn.Module): #do not work on cpu
         self.input = input_size
         self.output = output_size
 
-        self.linear_1 = nn.Linear(1520, n) # change 76 to scalable wersion
+        self.linear_1 = nn.Linear(36864, n) # change 76 to scalable wersion
         self.linear_2 = nn.Linear(n, n)
         self.linear_3 = nn.Linear(n, output_size)
         
@@ -353,30 +353,12 @@ class network_9(nn.Module): #do not work on cpu
                                   kernel_size=3,
                                   stride=1,
                                   padding=1)
-        
-        self.conv1d_1 = nn.Conv1d(in_channels=1,
-                                  out_channels=108,
-                                  kernel_size=11,
-                                  stride=1,
-                                  padding=1)
-        self.conv1d_2 = nn.Conv1d(in_channels=108,
-                                  out_channels=216,
-                                  kernel_size=7,
-                                  stride=1,
-                                  padding=1)
-        self.conv1d_3 = nn.Conv1d(in_channels=216,
-                                  out_channels=512,
-                                  kernel_size=5,
-                                  stride=1,
-                                  padding=1)
-        self.conv1d_4 = nn.Conv1d(in_channels=512,
-                                  out_channels=512,
-                                  kernel_size=3,
-                                  stride=1,
-                                  padding=1)
+
+
+
         
         
-        self.max_pool1d_1 = nn.MaxPool1d(kernel_size=5,
+        self.max_pool1d_1 = nn.MaxPool1d(kernel_size=3,
                                          stride=None,
                                          padding=0)
         
@@ -401,8 +383,9 @@ class network_9(nn.Module): #do not work on cpu
         x = self.conv1d_2(x)
         x = self.max_pool1d_1(x)
         x = self.conv1d_3(x)  
+        x = self.max_pool1d_1(x)
         x = self.conv1d_4(x)
-        print(x.shape)  
+        #print(x.shape) 
         x = torch.flatten(x, start_dim=1, end_dim=-1)
         #print(x.shape)
         x = self.relu(self.linear_1(x))
