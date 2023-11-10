@@ -6,4 +6,4 @@
 -pokombinowac nad datasetem
 -sprawdzic liczenie tbp
 -podyskutować o liczbie nodów
--dodac test loss
+-dodac test loss DONE

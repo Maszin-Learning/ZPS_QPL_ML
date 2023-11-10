@@ -36,7 +36,8 @@ def main(_learning_rate,
          _net_architecture,
          _criterion,
          _optimalizer,
-         _test_signal):
+         _test_signal,
+         _weight_decay):
     #hyperparameters
     print('\n',
           'learning_rate:', _learning_rate,'\n',
@@ -49,7 +50,8 @@ def main(_learning_rate,
           'architecture:', _net_architecture, '\n',
           'criterion:', _criterion, '\n',
           'optimalizer:', _optimalizer, '\n',
-          'test_signal:', _test_signal, '\n')
+          'test_signal:', _test_signal, '\n',
+          'weight_decay:', _weight_decay, '\n')
     
     
     ### Chose architecture 
@@ -178,13 +180,13 @@ def main(_learning_rate,
 
 
     if _optimalizer=='Adam':
-        optimizer = torch.optim.Adam(model.parameters(), lr = _learning_rate)
+        optimizer = torch.optim.Adam(model.parameters(), lr = _learning_rate, weight_decay=_weight_decay)
     if _optimalizer=='NAdam':
         optimizer = torch.optim.NAdam(model.parameters(), lr = _learning_rate)
     if _optimalizer=='SGD':
         optimizer = torch.optim.SGD(model.parameters(), lr = _learning_rate)
-    if _optimalizer=='SparseAdam':
-        optimizer = torch.optim.SparseAdam(model.parameters(), lr = _learning_rate)
+    if _optimalizer=='RSMprop':
+        optimizer = torch.optim.RMSprop(model.parameters(), lr = _learning_rate)
     
     
     
@@ -204,7 +206,7 @@ def main(_learning_rate,
     wandb.watch(model, criterion, log="all", log_freq=400)
     for epoch in tqdm(range(_epoch_num)):
         for pulse, _ in dataloader_train:
-            #pulse = pulse.to(my_device) # the pulse is already created on device by dataset, uncoment not using designeted dataset for this problem
+            #pulse = pulse.to(my_device) # the pulse is already created on device by dataset, uncoment if not using designeted dataset for this problem
             
             # predict phase that will transform gauss into this pulse
             predicted_phase = model(pulse)
@@ -262,6 +264,7 @@ if __name__ == "__main__":
     parser.add_argument('-cr', '--criterion', default='MSE', type=str)
     parser.add_argument('-op', '--optimalizer', default='Adam', type=str,)
     parser.add_argument('-ts', '--test_signal', default='hermite', type=str,)
+    parser.add_argument('-wd', '--weight_decay', default=0, type=float)
     args = parser.parse_args()
     config={}
     
@@ -286,7 +289,8 @@ if __name__ == "__main__":
         "architecture": args.architecture,
         "dataset": "defalut",
         "node_number": args.node_number,
-        "test_signal": args.test_signal
+        "test_signal": args.test_signal,
+        "weight_decay": args.weight_decay
         }
         )
     
@@ -303,5 +307,6 @@ if __name__ == "__main__":
          args.architecture,
          args.criterion,
          args.optimalizer,
-         args.test_signal)
+         args.test_signal
+         args.weight_decay)
     
