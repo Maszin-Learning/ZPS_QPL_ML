@@ -11,7 +11,7 @@ parameters:
       distribution: constant
       value: 35
     batch_size:
-      value: 3
+      values: [3]
     plot_freq:
       distribution: constant
       value: 1
@@ -24,4 +24,4 @@ parameters:
     optimalizer:
       values: ['Adam']
     test_signal:
-      values: ['hermite]
+      values: ['hermite']
