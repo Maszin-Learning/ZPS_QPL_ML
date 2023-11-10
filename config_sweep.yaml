@@ -11,17 +11,17 @@ parameters:
       distribution: constant
       value: 35
     batch_size:
-      values: [2]
+      values: [200]
     plot_freq:
       distribution: constant
       value: 1
     architecture:
       values: ['network_9']
     node_number:
-      values: [5000]
+      values: [10000]
     criterion:
       values: ['MSE']
     optimalizer:
-      values: ['NAdam']
+      values: ['Adam']
     test_signal:
       values: ['hermite']
