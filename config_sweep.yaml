@@ -11,7 +11,7 @@ parameters:
       distribution: constant
       value: 35
     batch_size:
-      values: [3]
+      value: 3
     plot_freq:
       distribution: constant
       value: 1
