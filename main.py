@@ -103,7 +103,7 @@ def main(_learning_rate,
     # initial pulse (to be reconstructed later on)
     input_dim = 4000 # number of points in single pulse
 
-    bandwidth = [170, 216]
+    bandwidth = [160, 206]
     centre = [193]
     FWHM = 0.4
 
