@@ -307,6 +307,6 @@ if __name__ == "__main__":
          args.architecture,
          args.criterion,
          args.optimalizer,
-         args.test_signal
+         args.test_signal,
          args.weight_decay)
     
