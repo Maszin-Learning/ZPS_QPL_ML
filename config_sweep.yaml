@@ -26,6 +26,6 @@ parameters:
     test_signal:
       values: ['chirp']
     weight_decay:
-      min: 0
+      min: 0.0
       max: 0.1
       
