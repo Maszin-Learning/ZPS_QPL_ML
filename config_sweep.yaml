@@ -1,0 +1,31 @@
+program: main.py
+method: bayes
+metric:
+  name: test_loss
+  goal: minimize
+parameters:
+    learning_rate:
+      min: 0.0000001
+      max: 0.0001
+    epoch_num:
+      distribution: constant
+      value: 35
+    batch_size:
+      values: [50]
+    plot_freq:
+      distribution: constant
+      value: 1
+    architecture:
+      values: ['network_9']
+    node_number:
+      values: [5000]
+    criterion:
+      values: ['MSE']
+    optimalizer:
+      values: ['NAdam','Adam']
+    test_signal:
+      values: ['chirp']
+    weight_decay:
+      min: 0.0
+      max: 0.1
+      

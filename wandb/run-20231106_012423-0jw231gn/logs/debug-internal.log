@@ -1,0 +1,229 @@
+2023-11-06 01:24:23,685 INFO    StreamThr :46783 [internal.py:wandb_internal():87] W&B internal server running at pid: 46783, started at: 2023-11-06 01:24:23.685024
+2023-11-06 01:24:23,686 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: status
+2023-11-06 01:24:23,688 INFO    WriterThread:46783 [datastore.py:open_for_write():85] open: /Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/wandb/run-20231106_012423-0jw231gn/run-0jw231gn.wandb
+2023-11-06 01:24:23,689 DEBUG   SenderThread:46783 [sender.py:send():334] send: header
+2023-11-06 01:24:23,709 DEBUG   SenderThread:46783 [sender.py:send():334] send: run
+2023-11-06 01:24:25,829 INFO    SenderThread:46783 [dir_watcher.py:__init__():216] watching files in: /Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/wandb/run-20231106_012423-0jw231gn/files
+2023-11-06 01:24:25,829 INFO    SenderThread:46783 [sender.py:_start_run_threads():1065] run started: 0jw231gn with start time 1699230263.684414
+2023-11-06 01:24:25,829 DEBUG   SenderThread:46783 [sender.py:send_request():361] send_request: summary_record
+2023-11-06 01:24:25,830 INFO    SenderThread:46783 [sender.py:_save_file():1319] saving file wandb-summary.json with policy end
+2023-11-06 01:24:25,833 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: check_version
+2023-11-06 01:24:25,833 DEBUG   SenderThread:46783 [sender.py:send_request():361] send_request: check_version
+2023-11-06 01:24:25,994 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: run_start
+2023-11-06 01:24:26,010 DEBUG   HandlerThread:46783 [system_info.py:__init__():31] System info init
+2023-11-06 01:24:26,011 DEBUG   HandlerThread:46783 [system_info.py:__init__():46] System info init done
+2023-11-06 01:24:26,011 INFO    HandlerThread:46783 [system_monitor.py:start():151] Starting system monitor
+2023-11-06 01:24:26,011 INFO    SystemMonitor:46783 [system_monitor.py:_start():116] Starting system asset monitoring threads
+2023-11-06 01:24:26,011 INFO    HandlerThread:46783 [system_monitor.py:probe():172] Collecting system info
+2023-11-06 01:24:26,012 DEBUG   HandlerThread:46783 [system_info.py:probe():195] Probing system
+2023-11-06 01:24:26,012 INFO    SystemMonitor:46783 [interfaces.py:start():168] Started cpu
+2023-11-06 01:24:26,012 INFO    SystemMonitor:46783 [interfaces.py:start():168] Started disk
+2023-11-06 01:24:26,015 INFO    SystemMonitor:46783 [interfaces.py:start():168] Started gpuapple
+2023-11-06 01:24:26,016 INFO    SystemMonitor:46783 [interfaces.py:start():168] Started memory
+2023-11-06 01:24:26,017 INFO    SystemMonitor:46783 [interfaces.py:start():168] Started network
+2023-11-06 01:24:26,021 DEBUG   HandlerThread:46783 [system_info.py:_probe_git():180] Probing git
+2023-11-06 01:24:26,039 DEBUG   HandlerThread:46783 [system_info.py:_probe_git():188] Probing git done
+2023-11-06 01:24:26,040 DEBUG   HandlerThread:46783 [system_info.py:probe():241] Probing system done
+2023-11-06 01:24:26,040 DEBUG   HandlerThread:46783 [system_monitor.py:probe():181] {'os': 'macOS-14.0-arm64-arm-64bit', 'python': '3.9.15', 'heartbeatAt': '2023-11-06T00:24:26.012371', 'startedAt': '2023-11-06T00:24:23.673480', 'docker': None, 'cuda': None, 'args': ('-ds', '1', '-g'), 'state': 'running', 'program': '/Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/main.py', 'codePath': 'main.py', 'git': {'remote': 'https://github.com/Maszin-Learning/ZPS_QPL_ML.git', 'commit': 'ef9568a67044713e60c66b671499faf035cd3f70'}, 'email': 'chrzanowski000@gmail.com', 'root': '/Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML', 'host': 'michas-macbook-air.home', 'username': 'michalchrzanowski', 'executable': '/Users/michalchrzanowski/anaconda3/envs/ML_M1/bin/python', 'cpu_count': 8, 'cpu_count_logical': 8, 'disk': {'total': 228.27386474609375, 'used': 207.41960906982422}, 'gpuapple': {'type': 'arm', 'vendor': 'Apple'}, 'memory': {'total': 16.0}}
+2023-11-06 01:24:26,040 INFO    HandlerThread:46783 [system_monitor.py:probe():182] Finished collecting system info
+2023-11-06 01:24:26,040 INFO    HandlerThread:46783 [system_monitor.py:probe():185] Publishing system info
+2023-11-06 01:24:26,040 DEBUG   HandlerThread:46783 [system_info.py:_save_pip():51] Saving list of pip packages installed into the current environment
+2023-11-06 01:24:26,040 DEBUG   HandlerThread:46783 [system_info.py:_save_pip():67] Saving pip packages done
+2023-11-06 01:24:26,040 DEBUG   HandlerThread:46783 [system_info.py:_save_conda():74] Saving list of conda packages installed into the current environment
+2023-11-06 01:24:26,832 INFO    Thread-13 :46783 [dir_watcher.py:_on_file_created():275] file/dir created: /Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/wandb/run-20231106_012423-0jw231gn/files/requirements.txt
+2023-11-06 01:24:26,832 INFO    Thread-13 :46783 [dir_watcher.py:_on_file_created():275] file/dir created: /Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/wandb/run-20231106_012423-0jw231gn/files/conda-environment.yaml
+2023-11-06 01:24:26,833 INFO    Thread-13 :46783 [dir_watcher.py:_on_file_created():275] file/dir created: /Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/wandb/run-20231106_012423-0jw231gn/files/wandb-summary.json
+2023-11-06 01:24:28,165 DEBUG   HandlerThread:46783 [system_info.py:_save_conda():86] Saving conda packages done
+2023-11-06 01:24:28,166 INFO    HandlerThread:46783 [system_monitor.py:probe():187] Finished publishing system info
+2023-11-06 01:24:28,167 DEBUG   SenderThread:46783 [sender.py:send():334] send: files
+2023-11-06 01:24:28,168 INFO    SenderThread:46783 [sender.py:_save_file():1319] saving file wandb-metadata.json with policy now
+2023-11-06 01:24:28,170 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: stop_status
+2023-11-06 01:24:28,170 DEBUG   SenderThread:46783 [sender.py:send_request():361] send_request: stop_status
+2023-11-06 01:24:28,211 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: partial_history
+2023-11-06 01:24:28,495 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: partial_history
+2023-11-06 01:24:28,497 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: partial_history
+2023-11-06 01:24:28,567 DEBUG   SenderThread:46783 [sender.py:send():334] send: telemetry
+2023-11-06 01:24:28,591 DEBUG   SenderThread:46783 [sender.py:send():334] send: telemetry
+2023-11-06 01:24:28,591 DEBUG   SenderThread:46783 [sender.py:send():334] send: history
+2023-11-06 01:24:28,591 DEBUG   SenderThread:46783 [sender.py:send_request():361] send_request: summary_record
+2023-11-06 01:24:28,591 INFO    SenderThread:46783 [sender.py:_save_file():1319] saving file wandb-summary.json with policy end
+2023-11-06 01:24:28,592 DEBUG   SenderThread:46783 [sender.py:send():334] send: history
+2023-11-06 01:24:28,592 DEBUG   SenderThread:46783 [sender.py:send_request():361] send_request: summary_record
+2023-11-06 01:24:28,597 INFO    SenderThread:46783 [sender.py:_save_file():1319] saving file wandb-summary.json with policy end
+2023-11-06 01:24:28,597 DEBUG   SenderThread:46783 [sender.py:send():334] send: history
+2023-11-06 01:24:28,598 DEBUG   SenderThread:46783 [sender.py:send_request():361] send_request: summary_record
+2023-11-06 01:24:28,598 INFO    SenderThread:46783 [sender.py:_save_file():1319] saving file wandb-summary.json with policy end
+2023-11-06 01:24:28,620 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: partial_history
+2023-11-06 01:24:28,620 DEBUG   SenderThread:46783 [sender.py:send():334] send: history
+2023-11-06 01:24:28,620 DEBUG   SenderThread:46783 [sender.py:send_request():361] send_request: summary_record
+2023-11-06 01:24:28,621 INFO    SenderThread:46783 [sender.py:_save_file():1319] saving file wandb-summary.json with policy end
+2023-11-06 01:24:28,623 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: partial_history
+2023-11-06 01:24:28,624 DEBUG   SenderThread:46783 [sender.py:send():334] send: history
+2023-11-06 01:24:28,624 DEBUG   SenderThread:46783 [sender.py:send_request():361] send_request: summary_record
+2023-11-06 01:24:28,625 INFO    SenderThread:46783 [sender.py:_save_file():1319] saving file wandb-summary.json with policy end
+2023-11-06 01:24:28,748 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: status_report
+2023-11-06 01:24:28,751 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: partial_history
+2023-11-06 01:24:28,752 DEBUG   SenderThread:46783 [sender.py:send():334] send: history
+2023-11-06 01:24:28,752 DEBUG   SenderThread:46783 [sender.py:send_request():361] send_request: summary_record
+2023-11-06 01:24:28,752 INFO    SenderThread:46783 [sender.py:_save_file():1319] saving file wandb-summary.json with policy end
+2023-11-06 01:24:28,754 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: partial_history
+2023-11-06 01:24:28,755 DEBUG   SenderThread:46783 [sender.py:send():334] send: history
+2023-11-06 01:24:28,755 DEBUG   SenderThread:46783 [sender.py:send_request():361] send_request: summary_record
+2023-11-06 01:24:28,755 INFO    SenderThread:46783 [sender.py:_save_file():1319] saving file wandb-summary.json with policy end
+2023-11-06 01:24:28,840 INFO    Thread-13 :46783 [dir_watcher.py:_on_file_modified():292] file/dir modified: /Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/wandb/run-20231106_012423-0jw231gn/files/conda-environment.yaml
+2023-11-06 01:24:28,840 INFO    Thread-13 :46783 [dir_watcher.py:_on_file_modified():292] file/dir modified: /Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/wandb/run-20231106_012423-0jw231gn/files/wandb-summary.json
+2023-11-06 01:24:28,841 INFO    Thread-13 :46783 [dir_watcher.py:_on_file_created():275] file/dir created: /Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/wandb/run-20231106_012423-0jw231gn/files/output.log
+2023-11-06 01:24:28,841 INFO    Thread-13 :46783 [dir_watcher.py:_on_file_created():275] file/dir created: /Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/wandb/run-20231106_012423-0jw231gn/files/wandb-metadata.json
+2023-11-06 01:24:28,883 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: partial_history
+2023-11-06 01:24:28,884 DEBUG   SenderThread:46783 [sender.py:send():334] send: history
+2023-11-06 01:24:28,884 DEBUG   SenderThread:46783 [sender.py:send_request():361] send_request: summary_record
+2023-11-06 01:24:28,885 INFO    SenderThread:46783 [sender.py:_save_file():1319] saving file wandb-summary.json with policy end
+2023-11-06 01:24:28,887 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: partial_history
+2023-11-06 01:24:28,888 DEBUG   SenderThread:46783 [sender.py:send():334] send: history
+2023-11-06 01:24:28,888 DEBUG   SenderThread:46783 [sender.py:send_request():361] send_request: summary_record
+2023-11-06 01:24:28,889 INFO    SenderThread:46783 [sender.py:_save_file():1319] saving file wandb-summary.json with policy end
+2023-11-06 01:24:28,963 INFO    Thread-16 :46783 [upload_job.py:push():143] Uploaded file /var/folders/jk/d1fxpr1x0x5cdrnf898bjdph0000gn/T/tmpr17mes1qwandb/ydps12zz-wandb-metadata.json
+2023-11-06 01:24:29,016 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: partial_history
+2023-11-06 01:24:29,017 DEBUG   SenderThread:46783 [sender.py:send():334] send: history
+2023-11-06 01:24:29,017 DEBUG   SenderThread:46783 [sender.py:send_request():361] send_request: summary_record
+2023-11-06 01:24:29,018 INFO    SenderThread:46783 [sender.py:_save_file():1319] saving file wandb-summary.json with policy end
+2023-11-06 01:24:29,019 DEBUG   SenderThread:46783 [sender.py:send():334] send: exit
+2023-11-06 01:24:29,019 INFO    SenderThread:46783 [sender.py:send_exit():557] handling exit code: 0
+2023-11-06 01:24:29,019 INFO    SenderThread:46783 [sender.py:send_exit():559] handling runtime: 3
+2023-11-06 01:24:29,020 INFO    SenderThread:46783 [sender.py:_save_file():1319] saving file wandb-summary.json with policy end
+2023-11-06 01:24:29,020 INFO    SenderThread:46783 [sender.py:send_exit():565] send defer
+2023-11-06 01:24:29,020 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: defer
+2023-11-06 01:24:29,020 INFO    HandlerThread:46783 [handler.py:handle_request_defer():170] handle defer: 0
+2023-11-06 01:24:29,020 DEBUG   SenderThread:46783 [sender.py:send_request():361] send_request: defer
+2023-11-06 01:24:29,020 INFO    SenderThread:46783 [sender.py:send_request_defer():581] handle sender defer: 0
+2023-11-06 01:24:29,020 INFO    SenderThread:46783 [sender.py:transition_state():585] send defer: 1
+2023-11-06 01:24:29,021 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: defer
+2023-11-06 01:24:29,021 INFO    HandlerThread:46783 [handler.py:handle_request_defer():170] handle defer: 1
+2023-11-06 01:24:29,021 DEBUG   SenderThread:46783 [sender.py:send_request():361] send_request: defer
+2023-11-06 01:24:29,021 INFO    SenderThread:46783 [sender.py:send_request_defer():581] handle sender defer: 1
+2023-11-06 01:24:29,021 INFO    SenderThread:46783 [sender.py:transition_state():585] send defer: 2
+2023-11-06 01:24:29,021 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: defer
+2023-11-06 01:24:29,021 INFO    HandlerThread:46783 [handler.py:handle_request_defer():170] handle defer: 2
+2023-11-06 01:24:29,021 INFO    HandlerThread:46783 [system_monitor.py:finish():161] Stopping system monitor
+2023-11-06 01:24:29,044 DEBUG   SystemMonitor:46783 [system_monitor.py:_start():130] Starting system metrics aggregation loop
+2023-11-06 01:24:29,046 DEBUG   SystemMonitor:46783 [system_monitor.py:_start():137] Finished system metrics aggregation loop
+2023-11-06 01:24:29,047 DEBUG   SystemMonitor:46783 [system_monitor.py:_start():141] Publishing last batch of metrics
+2023-11-06 01:24:29,048 INFO    HandlerThread:46783 [interfaces.py:finish():175] Joined cpu
+2023-11-06 01:24:29,048 INFO    HandlerThread:46783 [interfaces.py:finish():175] Joined disk
+2023-11-06 01:24:29,115 INFO    HandlerThread:46783 [interfaces.py:finish():175] Joined gpuapple
+2023-11-06 01:24:29,115 INFO    HandlerThread:46783 [interfaces.py:finish():175] Joined memory
+2023-11-06 01:24:29,116 INFO    HandlerThread:46783 [interfaces.py:finish():175] Joined network
+2023-11-06 01:24:29,116 DEBUG   SenderThread:46783 [sender.py:send_request():361] send_request: defer
+2023-11-06 01:24:29,116 INFO    SenderThread:46783 [sender.py:send_request_defer():581] handle sender defer: 2
+2023-11-06 01:24:29,116 INFO    SenderThread:46783 [sender.py:transition_state():585] send defer: 3
+2023-11-06 01:24:29,117 DEBUG   SenderThread:46783 [sender.py:send():334] send: telemetry
+2023-11-06 01:24:29,117 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: defer
+2023-11-06 01:24:29,117 INFO    HandlerThread:46783 [handler.py:handle_request_defer():170] handle defer: 3
+2023-11-06 01:24:29,117 DEBUG   SenderThread:46783 [sender.py:send():334] send: stats
+2023-11-06 01:24:29,117 DEBUG   SenderThread:46783 [sender.py:send_request():361] send_request: defer
+2023-11-06 01:24:29,117 INFO    SenderThread:46783 [sender.py:send_request_defer():581] handle sender defer: 3
+2023-11-06 01:24:29,117 INFO    SenderThread:46783 [sender.py:transition_state():585] send defer: 4
+2023-11-06 01:24:29,118 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: defer
+2023-11-06 01:24:29,118 INFO    HandlerThread:46783 [handler.py:handle_request_defer():170] handle defer: 4
+2023-11-06 01:24:29,118 DEBUG   SenderThread:46783 [sender.py:send_request():361] send_request: defer
+2023-11-06 01:24:29,118 INFO    SenderThread:46783 [sender.py:send_request_defer():581] handle sender defer: 4
+2023-11-06 01:24:29,118 INFO    SenderThread:46783 [sender.py:transition_state():585] send defer: 5
+2023-11-06 01:24:29,119 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: defer
+2023-11-06 01:24:29,119 INFO    HandlerThread:46783 [handler.py:handle_request_defer():170] handle defer: 5
+2023-11-06 01:24:29,119 DEBUG   SenderThread:46783 [sender.py:send():334] send: summary
+2023-11-06 01:24:29,120 INFO    SenderThread:46783 [sender.py:_save_file():1319] saving file wandb-summary.json with policy end
+2023-11-06 01:24:29,120 DEBUG   SenderThread:46783 [sender.py:send_request():361] send_request: defer
+2023-11-06 01:24:29,120 INFO    SenderThread:46783 [sender.py:send_request_defer():581] handle sender defer: 5
+2023-11-06 01:24:29,121 INFO    SenderThread:46783 [sender.py:transition_state():585] send defer: 6
+2023-11-06 01:24:29,121 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: defer
+2023-11-06 01:24:29,121 INFO    HandlerThread:46783 [handler.py:handle_request_defer():170] handle defer: 6
+2023-11-06 01:24:29,121 DEBUG   SenderThread:46783 [sender.py:send_request():361] send_request: defer
+2023-11-06 01:24:29,121 INFO    SenderThread:46783 [sender.py:send_request_defer():581] handle sender defer: 6
+2023-11-06 01:24:29,126 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: status_report
+2023-11-06 01:24:29,475 INFO    SenderThread:46783 [sender.py:transition_state():585] send defer: 7
+2023-11-06 01:24:29,475 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: defer
+2023-11-06 01:24:29,475 INFO    HandlerThread:46783 [handler.py:handle_request_defer():170] handle defer: 7
+2023-11-06 01:24:29,475 DEBUG   SenderThread:46783 [sender.py:send_request():361] send_request: defer
+2023-11-06 01:24:29,475 INFO    SenderThread:46783 [sender.py:send_request_defer():581] handle sender defer: 7
+2023-11-06 01:24:29,841 INFO    Thread-13 :46783 [dir_watcher.py:_on_file_modified():292] file/dir modified: /Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/wandb/run-20231106_012423-0jw231gn/files/config.yaml
+2023-11-06 01:24:29,841 INFO    Thread-13 :46783 [dir_watcher.py:_on_file_modified():292] file/dir modified: /Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/wandb/run-20231106_012423-0jw231gn/files/wandb-summary.json
+2023-11-06 01:24:30,021 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: poll_exit
+2023-11-06 01:24:30,602 INFO    SenderThread:46783 [sender.py:transition_state():585] send defer: 8
+2023-11-06 01:24:30,602 DEBUG   SenderThread:46783 [sender.py:send_request():361] send_request: poll_exit
+2023-11-06 01:24:30,602 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: defer
+2023-11-06 01:24:30,602 INFO    HandlerThread:46783 [handler.py:handle_request_defer():170] handle defer: 8
+2023-11-06 01:24:30,603 DEBUG   SenderThread:46783 [sender.py:send_request():361] send_request: defer
+2023-11-06 01:24:30,603 INFO    SenderThread:46783 [sender.py:send_request_defer():581] handle sender defer: 8
+2023-11-06 01:24:30,605 INFO    SenderThread:46783 [sender.py:transition_state():585] send defer: 9
+2023-11-06 01:24:30,605 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: defer
+2023-11-06 01:24:30,605 INFO    HandlerThread:46783 [handler.py:handle_request_defer():170] handle defer: 9
+2023-11-06 01:24:30,605 DEBUG   SenderThread:46783 [sender.py:send():334] send: artifact
+2023-11-06 01:24:30,844 INFO    Thread-13 :46783 [dir_watcher.py:_on_file_modified():292] file/dir modified: /Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/wandb/run-20231106_012423-0jw231gn/files/output.log
+2023-11-06 01:24:31,026 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: poll_exit
+2023-11-06 01:24:31,714 INFO    SenderThread:46783 [sender.py:send_artifact():1415] sent artifact job-https___github.com_Maszin-Learning_ZPS_QPL_ML.git_main.py - {'id': 'QXJ0aWZhY3Q6NjI5MzE5MzQz', 'digest': 'd68216f43bb70ec188e6fd858c806958', 'state': 'COMMITTED', 'aliases': [{'artifactCollectionName': 'job-https___github.com_Maszin-Learning_ZPS_QPL_ML.git_main.py', 'alias': 'v4'}], 'artifactSequence': {'id': 'QXJ0aWZhY3RDb2xsZWN0aW9uOjExMjk1NTc2NA==', 'latestArtifact': {'id': 'QXJ0aWZhY3Q6NjI5MzIxMDcx', 'versionIndex': 5}}, 'version': 'v4'}
+2023-11-06 01:24:31,715 DEBUG   SenderThread:46783 [sender.py:send_request():361] send_request: defer
+2023-11-06 01:24:31,715 INFO    SenderThread:46783 [sender.py:send_request_defer():581] handle sender defer: 9
+2023-11-06 01:24:31,715 INFO    SenderThread:46783 [dir_watcher.py:finish():362] shutting down directory watcher
+2023-11-06 01:24:31,848 INFO    SenderThread:46783 [dir_watcher.py:finish():392] scan: /Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/wandb/run-20231106_012423-0jw231gn/files
+2023-11-06 01:24:31,848 INFO    SenderThread:46783 [dir_watcher.py:finish():406] scan save: /Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/wandb/run-20231106_012423-0jw231gn/files/requirements.txt requirements.txt
+2023-11-06 01:24:31,848 INFO    SenderThread:46783 [dir_watcher.py:finish():406] scan save: /Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/wandb/run-20231106_012423-0jw231gn/files/output.log output.log
+2023-11-06 01:24:31,851 INFO    SenderThread:46783 [dir_watcher.py:finish():406] scan save: /Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/wandb/run-20231106_012423-0jw231gn/files/config.yaml config.yaml
+2023-11-06 01:24:31,855 INFO    SenderThread:46783 [dir_watcher.py:finish():406] scan save: /Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/wandb/run-20231106_012423-0jw231gn/files/wandb-summary.json wandb-summary.json
+2023-11-06 01:24:31,859 INFO    SenderThread:46783 [dir_watcher.py:finish():406] scan save: /Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/wandb/run-20231106_012423-0jw231gn/files/conda-environment.yaml conda-environment.yaml
+2023-11-06 01:24:31,862 INFO    SenderThread:46783 [dir_watcher.py:finish():406] scan save: /Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/wandb/run-20231106_012423-0jw231gn/files/wandb-metadata.json wandb-metadata.json
+2023-11-06 01:24:31,863 INFO    SenderThread:46783 [sender.py:transition_state():585] send defer: 10
+2023-11-06 01:24:31,865 DEBUG   SenderThread:46783 [sender.py:send_request():361] send_request: poll_exit
+2023-11-06 01:24:31,866 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: defer
+2023-11-06 01:24:31,866 INFO    HandlerThread:46783 [handler.py:handle_request_defer():170] handle defer: 10
+2023-11-06 01:24:31,867 DEBUG   SenderThread:46783 [sender.py:send_request():361] send_request: defer
+2023-11-06 01:24:31,867 INFO    SenderThread:46783 [sender.py:send_request_defer():581] handle sender defer: 10
+2023-11-06 01:24:31,867 INFO    SenderThread:46783 [file_pusher.py:finish():160] shutting down file pusher
+2023-11-06 01:24:32,029 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: poll_exit
+2023-11-06 01:24:32,030 DEBUG   SenderThread:46783 [sender.py:send_request():361] send_request: poll_exit
+2023-11-06 01:24:32,446 INFO    Thread-19 :46783 [upload_job.py:push():143] Uploaded file /Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/wandb/run-20231106_012423-0jw231gn/files/config.yaml
+2023-11-06 01:24:32,470 INFO    Thread-17 :46783 [upload_job.py:push():143] Uploaded file /Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/wandb/run-20231106_012423-0jw231gn/files/requirements.txt
+2023-11-06 01:24:32,535 INFO    Thread-21 :46783 [upload_job.py:push():143] Uploaded file /Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/wandb/run-20231106_012423-0jw231gn/files/conda-environment.yaml
+2023-11-06 01:24:32,962 INFO    Thread-20 :46783 [upload_job.py:push():143] Uploaded file /Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/wandb/run-20231106_012423-0jw231gn/files/wandb-summary.json
+2023-11-06 01:24:32,962 INFO    Thread-18 :46783 [upload_job.py:push():143] Uploaded file /Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/wandb/run-20231106_012423-0jw231gn/files/output.log
+2023-11-06 01:24:33,035 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: poll_exit
+2023-11-06 01:24:33,035 DEBUG   SenderThread:46783 [sender.py:send_request():361] send_request: poll_exit
+2023-11-06 01:24:33,168 INFO    Thread-12 :46783 [sender.py:transition_state():585] send defer: 11
+2023-11-06 01:24:33,169 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: defer
+2023-11-06 01:24:33,169 INFO    HandlerThread:46783 [handler.py:handle_request_defer():170] handle defer: 11
+2023-11-06 01:24:33,169 DEBUG   SenderThread:46783 [sender.py:send_request():361] send_request: defer
+2023-11-06 01:24:33,170 INFO    SenderThread:46783 [sender.py:send_request_defer():581] handle sender defer: 11
+2023-11-06 01:24:33,170 INFO    SenderThread:46783 [file_pusher.py:join():165] waiting for file pusher
+2023-11-06 01:24:33,170 INFO    SenderThread:46783 [sender.py:transition_state():585] send defer: 12
+2023-11-06 01:24:33,170 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: defer
+2023-11-06 01:24:33,170 INFO    HandlerThread:46783 [handler.py:handle_request_defer():170] handle defer: 12
+2023-11-06 01:24:33,170 DEBUG   SenderThread:46783 [sender.py:send_request():361] send_request: defer
+2023-11-06 01:24:33,170 INFO    SenderThread:46783 [sender.py:send_request_defer():581] handle sender defer: 12
+2023-11-06 01:24:33,774 INFO    SenderThread:46783 [sender.py:transition_state():585] send defer: 13
+2023-11-06 01:24:33,775 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: defer
+2023-11-06 01:24:33,775 INFO    HandlerThread:46783 [handler.py:handle_request_defer():170] handle defer: 13
+2023-11-06 01:24:33,775 DEBUG   SenderThread:46783 [sender.py:send_request():361] send_request: defer
+2023-11-06 01:24:33,775 INFO    SenderThread:46783 [sender.py:send_request_defer():581] handle sender defer: 13
+2023-11-06 01:24:33,776 INFO    SenderThread:46783 [sender.py:transition_state():585] send defer: 14
+2023-11-06 01:24:33,776 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: defer
+2023-11-06 01:24:33,776 DEBUG   SenderThread:46783 [sender.py:send():334] send: final
+2023-11-06 01:24:33,776 INFO    HandlerThread:46783 [handler.py:handle_request_defer():170] handle defer: 14
+2023-11-06 01:24:33,776 DEBUG   SenderThread:46783 [sender.py:send():334] send: footer
+2023-11-06 01:24:33,776 DEBUG   SenderThread:46783 [sender.py:send_request():361] send_request: defer
+2023-11-06 01:24:33,777 INFO    SenderThread:46783 [sender.py:send_request_defer():581] handle sender defer: 14
+2023-11-06 01:24:33,777 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: poll_exit
+2023-11-06 01:24:33,778 DEBUG   SenderThread:46783 [sender.py:send_request():361] send_request: poll_exit
+2023-11-06 01:24:33,778 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: poll_exit
+2023-11-06 01:24:33,778 DEBUG   SenderThread:46783 [sender.py:send_request():361] send_request: poll_exit
+2023-11-06 01:24:33,779 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: server_info
+2023-11-06 01:24:33,779 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: get_summary
+2023-11-06 01:24:33,779 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: sampled_history
+2023-11-06 01:24:33,780 DEBUG   SenderThread:46783 [sender.py:send_request():361] send_request: server_info
+2023-11-06 01:24:34,085 INFO    MainThread:46783 [wandb_run.py:_footer_history_summary_info():3427] rendering history
+2023-11-06 01:24:34,085 INFO    MainThread:46783 [wandb_run.py:_footer_history_summary_info():3459] rendering summary
+2023-11-06 01:24:34,086 INFO    MainThread:46783 [wandb_run.py:_footer_sync_info():3383] logging synced files
+2023-11-06 01:24:34,086 DEBUG   HandlerThread:46783 [handler.py:handle_request():144] handle_request: shutdown
+2023-11-06 01:24:34,087 INFO    HandlerThread:46783 [handler.py:finish():841] shutting down handler
+2023-11-06 01:24:34,782 INFO    WriterThread:46783 [datastore.py:close():299] close: /Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/wandb/run-20231106_012423-0jw231gn/run-0jw231gn.wandb
+2023-11-06 01:24:35,089 INFO    SenderThread:46783 [sender.py:finish():1491] shutting down sender
+2023-11-06 01:24:35,089 INFO    SenderThread:46783 [file_pusher.py:finish():160] shutting down file pusher
+2023-11-06 01:24:35,089 INFO    SenderThread:46783 [file_pusher.py:join():165] waiting for file pusher

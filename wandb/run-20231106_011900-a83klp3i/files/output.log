@@ -1,0 +1,27 @@
+CUDA device not found.
+Using mps
+input_dim (spectrum length) = 2000
+output_dim (phase length) = 56
+  0%|                                                                                                                                                              | 0/10 [00:00<?, ?it/s]
+Traceback (most recent call last):
+  File "/Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/main.py", line 226, in <module>
+    main(args.learning_rate,
+  File "/Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/main.py", line 180, in main
+    for pulse, _ in dataloader_train:
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/torch/utils/data/dataloader.py", line 628, in __next__
+    data = self._next_data()
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/torch/utils/data/dataloader.py", line 671, in _next_data
+    data = self._dataset_fetcher.fetch(index)  # may raise StopIteration
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/torch/utils/data/_utils/fetch.py", line 58, in fetch
+    data = [self.dataset[idx] for idx in possibly_batched_index]
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/torch/utils/data/_utils/fetch.py", line 58, in <listcomp>
+    data = [self.dataset[idx] for idx in possibly_batched_index]
+  File "/Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/dataset.py", line 33, in __getitem__
+    intensity = np.loadtxt(self.files_names_intensity[index],
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/numpy/lib/npyio.py", line 1318, in loadtxt
+    arr = _read(fname, dtype=dtype, comment=comment, delimiter=delimiter,
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/numpy/lib/npyio.py", line 979, in _read
+    arr = _load_from_filelike(
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/codecs.py", line 319, in decode
+    def decode(self, input, final=False):
+KeyboardInterrupt

@@ -1,140 +1,311 @@
+# modules
+
 import spectral_analysis as sa
-import numpy as np
-
-pulse_1 = sa.gaussian_pulse((1540,1560), 1550, 3)
-pulse_1.x_type = "wl"
-pulse_1.wl_to_freq()
-signal_len=len(pulse_1)
-
-pulse_2 = sa.gaussian_pulse((1545,1565), 1555, 3)
-pulse_2.x_type = "wl"
-pulse_2.wl_to_freq()
-
-#sa.plot(pulse_1)
-
-#pulse_1.fourier()
-#sa.plot(pulse_1)
-#pulse_1.Y = pulse_1.Y*np.exp(1j*pulse_1.X)
-
-#sa.plot(pulse_1, title='' , save=True)
-
-
-
-### OPTIMALIZATION
 import numpy as np
 import pandas as pd
 import torch
+import os
 import torch.nn as nn
 import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm import tqdm
-print('xxx')
-#device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-if torch.cuda.is_available():
-    device_ = torch.device("cuda")
-    print (f"Using {device_}")
-    #Checking GPU RAM allocated memory
-    print('allocated CUDA memory: ',torch.cuda.memory_allocated())
-    print('cached CUDA memory: ',torch.cuda.memory_cached())
-    torch.cuda.empty_cache() # clear CUDA memory
-    torch.backends.cudnn.benchmark = True #let cudnn chose the most efficient way of calculating Convolutions
+from math import floor
+from utilities import evolve_pt, np_to_complex_pt, plot_phases, evolve_np
+from test import test
+from dataset import Dataset
+from torch.utils.data import DataLoader #Dataloader module
+from test import create_test_pulse
+import torchvision.transforms as transforms  # Transformations and augmentations
+from dataset import Dataset_train
+from dataset_generator import Generator
+import utilities
+import argparse
+import wandb
+import shutil
+import warnings
+
+
+def main(_learning_rate,
+         _epoch_num,
+         _batch_size,
+         _plot_freq,
+         _dataset_size,
+         _generate,
+         _cpu,
+         _node_number,
+         _net_architecture,
+         _criterion,
+         _optimalizer,
+         _test_signal,
+         _weight_decay):
+    #hyperparameters
+    print('\n',
+          'learning_rate:', _learning_rate,'\n',
+          'epoch_number:', _epoch_num,'\n',
+          'batch_size:', _batch_size,'\n',
+          'plot_frequency:', _plot_freq,'\n',
+          'dataset_size:', _dataset_size,'\n',
+          'generate:', _generate,'\n',
+          'node_number:', _node_number, '\n',
+          'architecture:', _net_architecture, '\n',
+          'criterion:', _criterion, '\n',
+          'optimalizer:', _optimalizer, '\n',
+          'test_signal:', _test_signal, '\n',
+          'weight_decay:', _weight_decay, '\n')
     
-elif torch.backends.mps.is_available():
-    print ("CUDA device not found.")
-    device_ = torch.device("mps")
-    print (f"Using {device_}")
-else:
-    print ("MPS device not found.")
-    device_ = torch.device("cpu")
-    print (f"Using {device_}")
-
-#define globaly used dtype and device
-device_ = torch.device('cpu')
-dtype_ = torch.float32
-
-# create class
-class AutoEncoder(nn.Module):
-    def __init__(self,input_size,n,output_size):
-        # super function. It inherits from nn.Module and we can access everything in nn.Module
-        super (AutoEncoder,self).__init__()
-        # Linear function.
-        self.linear_1 = nn.Linear(input_size,n)
-        self.linear_2 = nn.Linear(n,n)
-        self.linear_3 = nn.Linear(n,output_size)
-
-    def forward(self,x):
-        x = self.linear_1(x)
-        x = self.linear_2(x)
-        return self.linear_3(x)
     
-#configuration of W&B
-config = dict (
-    # Hyper-parameters
-    input_dim = signal_len,
-    output_dim = signal_len,
-    p = 5, #number of plots
-    criterion = nn.MSELoss(), # loss function
-    learning_rate = 0.01,
-    epoch_num = 1,
-    node_number = 50000,
-    architecture = "NN_1",
-    dataset_id = "peds-0192",
-    infra = "Local_cpu",
-)    
+    ### Chose architecture 
+    if _net_architecture == 'network_1':
+        from nets import network_1 as network
+    if _net_architecture == 'network_2':
+        from nets import network_2 as network
+    if _net_architecture == 'network_3':
+        from nets import network_3 as network
+    if _net_architecture == 'network_4':
+        from nets import network_4 as network
+    if _net_architecture == 'network_5':
+        from nets import network_5 as network
+    if _net_architecture == 'network_6':
+        from nets import network_6 as network
+    if _net_architecture == 'network_7':
+        from nets import network_7 as network
+    if _net_architecture == 'network_8':
+        from nets import network_8 as network
+    if _net_architecture == 'network_9':
+        from nets import network_9 as network
+
+    ### Chose device, disclimer! on cpu network will not run due to batch normalization
+    if _cpu:
+        print('Forced cpu')
+        my_device = torch.device('cpu')
+    else:
+        if torch.cuda.is_available():
+            my_device = torch.device("cuda")
+            print (f"Using {my_device}")
+            print('allocated CUDA memory: ',torch.cuda.memory_allocated())      # Checking GPU RAM allocated memory
+            print('cached CUDA memory: ',torch.cuda.memory_reserved())
+            torch.cuda.empty_cache()                                            # clear CUDA memory
+            torch.backends.cudnn.benchmark = True                               # let cuda chose the most efficient way of calculating Convolutions
+        elif torch.backends.mps.is_available():
+            print ("CUDA device not found.")
+            my_device = torch.device("mps")
+            print (f"Using {my_device}")
+        else:
+            print ("MPS device not found.")
+            my_device = torch.device("cpu")
+            print (f"Using {my_device}")
+
+
+    # data type
+    my_dtype = torch.float32
+
+
+
+    ###
+    # initial pulse (to be reconstructed later on)
+    input_dim = 5000 # number of points in single pulse
+
+    bandwidth = [160, 206]
+    centre = [193]
+    FWHM = 0.4
+
+    initial_pulse = sa.hermitian_pulse(pol_num = 0, #0 for gauss signal
+                                    bandwidth = bandwidth,
+                                    centre = centre,
+                                    FWHM = FWHM,
+                                    num = input_dim)
+    freq_arr = np.linspace(bandwidth[0], bandwidth[1], num = input_dim)
+    t_arr = freq_arr/1e-3
     
-# Initialize network
-model = AutoEncoder(input_size=config['input_dim'], n=config['node_number'], output_size=config['output_dim'])
-model.to(device=device_, dtype=dtype_) # project model onto device and chosen dtype
-optimizer = torch.optim.SGD(model.parameters(),lr = config['learning_rate'])
-# Optimization (find parameters that minimize error)
-# X = random phase input, shape = (2*signal input, 1)
-# Y = defined shape of function
+    initial_pulse_check = initial_pulse.copy()
+    
+    utilities.TB_prod(t_arr, freq_arr, utilities.U_f_in__to__U_t_out(initial_pulse_check.X), initial_pulse_check.X)
+    
+    
 
-#X_real=pulse_1.X.real
-#X_imag=pulse_1.X.imag
-#X_pulse_conc= np.concatenate((X_real, X_imag), axis=None)
-#X = torch.tensor(X_pulse_conc.reshape(signal_len*2,1), requires_grad=True, device=device_).to(dtype=dtype_)
-X = torch.tensor(np.random.rand(1, signal_len), requires_grad=True, device=device_).to(dtype=dtype_)
+    Y_initial = initial_pulse.Y.copy()
 
+    FT_pulse = initial_pulse.fourier(inplace = False)
 
-Y_real=pulse_2.Y.real
-Y_imag=pulse_2.Y.imag
-Y_pulse_conc= np.concatenate((Y_real, Y_imag), axis=None)
-Y = torch.tensor(Y_pulse_conc.reshape(signal_len*2,1), requires_grad=True, device=device_).to(dtype=dtype_)
+    # we want to find what is the bandwidth of intensity after FT, to estimate output dimension of NN
+    initial_pulse_2 = initial_pulse.copy()
+    initial_pulse_2.fourier()
+    x_start = initial_pulse_2.quantile(0.001)
+    x_end = initial_pulse_2.quantile(0.999)
+    reconstructed_phase = np.searchsorted(initial_pulse_2.X, x_start)
+    idx_end = np.searchsorted(initial_pulse_2.X, x_end)
+    output_dim = idx_end - reconstructed_phase    # number of points of non-zero FT-intensity
+    if output_dim % 2 == 1:
+        output_dim += 1
 
+    print("\ninput_dim (spectrum length) = {}".format(input_dim))  
+    print("output_dim (phase length) = {}".format(output_dim))
 
+    # test pulse
+    test_pulse, test_phase = create_test_pulse(_test_signal, initial_pulse, output_dim, my_device, my_dtype)
+    ###
 
     
-#calculation
-loss_list = []
-z_ = config['epoch_num']/config['p']
-parameters ={}
-criterion = config['criterion']
+    # create dataset and wrap it into dataloader
+    if _generate:
+        print("\nCreating training set...")
+        
+        the_generator = Generator(data_num = _dataset_size,
+                                initial_intensity = Y_initial,
+                                phase_len = output_dim,
+                                device = my_device,
+                                dtype = np.float32
+                                )
 
-pulse_1.fourier()
+        the_generator.generate_and_save()
+        exit()
+    
+        
+        
+    #recreate pics folder if exist and create if not
+    if os.path.isdir("pics"):
+        shutil.rmtree('pics') #clear pictures folder
+        os.mkdir("pics")
+    else:
+        os.mkdir("pics")
+    ###
 
-pulse_2_Y_real=pulse_2.Y.real
-pulse_2_Y_imag=pulse_2.X.imag
-pulse_2_conc_target = np.concatenate((pulse_2_Y_real, pulse_2_Y_imag), axis=None)
-print('xxx')
-for epoch in tqdm(range(config['epoch_num'])):
-    
-    optimizer.zero_grad() # zero gradients
-    results = model(X) # Forward to get output
-    pulse_1.Y *=torch.exp(1j*results)
-    pulse_1.inv_fourier()
-    pulse_1_Y_real=pulse_1.Y.real
-    pulse_1_Y_imag=pulse_1.X.imag
-    pulse_1_conc_result= np.concatenate((pulse_1_Y_real, pulse_1_Y_imag), axis=None)
-    pulse_1_conc_result_torch = torch.tensor(pulse_1_conc_result, requires_grad=True, device=device_).to(dtype=dtype_)
-    loss = criterion(pulse_1_conc_result, pulse_2_conc_target) # Calculate Loss/criterion
-    
-    loss.backward() # backward propagation
-    optimizer.step() # Updating parameters
-    loss_list.append(loss.data) # store loss
-    
-    # print loss
-    if epoch % z_ == 0:
-       print('epoch {}, loss {}'.format(epoch, loss.data))
 
-print(f'---Model calculated---\nloss: {loss_list[epoch_num - 1]}')
+    # create NN
+    model = network(input_size = input_dim, 
+                n = _node_number, 
+                output_size = output_dim)
+    model.to(device = my_device, dtype = my_dtype)
+
+
+
+    if _optimalizer=='Adam':
+        optimizer = torch.optim.Adam(model.parameters(), lr = _learning_rate, weight_decay=_weight_decay)
+    if _optimalizer=='NAdam':
+        optimizer = torch.optim.NAdam(model.parameters(), lr = _learning_rate)
+    if _optimalizer=='SGD':
+        optimizer = torch.optim.SGD(model.parameters(), lr = _learning_rate)
+    if _optimalizer=='RSMprop':
+        optimizer = torch.optim.RMSprop(model.parameters(), lr = _learning_rate)
+    
+    
+    
+    if _criterion=='MSE':
+        criterion = torch.nn.MSELoss()
+    if _criterion=='L1':
+        criterion = torch.nn.L1Loss()
+    
+    
+    
+    
+    dataset_train = Dataset_train(root='', transform=True, device = my_device)
+    dataloader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size=_batch_size, num_workers=0, shuffle=True)
+    
+
+    loss_list = []
+    wandb.watch(model, criterion, log="all", log_freq=400)
+    for epoch in tqdm(range(_epoch_num)):
+        for pulse, _ in dataloader_train:
+            #pulse = pulse.to(my_device) # the pulse is already created on device by dataset, uncoment if not using designeted dataset for this problem
+            
+            # predict phase that will transform gauss into this pulse
+            predicted_phase = model(pulse)
+
+            # transform gauss into something using this phase
+            initial_intensity = np_to_complex_pt(Y_initial.copy(), device = my_device, dtype = my_dtype)
+            reconstructed_intensity = evolve_pt(initial_intensity, predicted_phase, device = my_device, dtype = my_dtype)
+
+            # a bit of calculus
+            loss = criterion(reconstructed_intensity.abs(), pulse) # pulse intensity
+            loss.backward()
+            optimizer.step()
+            optimizer.zero_grad()
+
+
+            
+            # stats
+            _loss = loss.clone().cpu().detach().numpy()
+            wandb.log({"loss": _loss}) #log loss to wandb
+            loss_list.append(_loss)
+
+        if epoch%_plot_freq==0: #plot and test model
+            model.eval()
+            #if epoch == 0:
+                #print("Iteration np. {}. Loss {}.".format(epoch, loss.clone().cpu().detach().numpy()))
+            print("Epoch no. {}. Loss {}.".format(epoch, np.mean(np.array(loss_list[epoch*len(dataloader_train): (epoch+1)*len(dataloader_train)]))))
+
+            fig, test_loss=test(model = model,
+                    test_pulse = test_pulse,
+                    test_phase = test_phase,
+                    initial_pulse_Y = initial_pulse.Y.copy(),
+                    initial_pulse_X = initial_pulse.X.copy(),
+                    device = my_device, 
+                    dtype = my_dtype,
+                    iter_num =epoch)
+            wandb.log({"chart": fig})
+            print('test_loss',test_loss)
+            wandb.log({"test_loss": test_loss})
+            fig.close()
+            model.train()
+
+if __name__ == "__main__":
+    warnings.simplefilter("ignore", UserWarning) #ignore warnings from plotly
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-lr', '--learning_rate', default=1e-5, type=float)
+    parser.add_argument('-en', '--epoch_num', default=10, type=int)
+    parser.add_argument('-bs', '--batch_size', default=50, type=int)
+    parser.add_argument('-pf', '--plot_freq', default=3, type=int)
+    parser.add_argument('-ds', '--dataset_size', default=10000, type=int)
+    parser.add_argument('-g', '--generate', action='store_true') #only generate, training will not run, wandb will be offline
+    parser.add_argument('-fc', '--force_cpu', action='store_true')
+    parser.add_argument('-tr', '--test_run', action='store_true')
+    parser.add_argument('-nn', '--node_number', default=100, type=int)
+    parser.add_argument('-ar', '--architecture', default='network_1', type=str)
+    parser.add_argument('-cr', '--criterion', default='MSE', type=str)
+    parser.add_argument('-op', '--optimalizer', default='Adam', type=str,)
+    parser.add_argument('-ts', '--test_signal', default='hermite', type=str,)
+    parser.add_argument('-wd', '--weight_decay', default=0, type=float)
+    args = parser.parse_args()
+    config={}
+    
+    ###WANDB config
+    # start a new wandb run to track this script
+    
+    #for forced offline work -tf
+    if args.test_run or args.generate:
+        print('WANDB WORKING OFFLINE')
+        wandb.init(mode="disabled") #for offline work
+    else:
+        wandb.init(
+        # set the wandb project where this run will be logged
+        project="platypus",
+
+        # track hyperparameters and run metadata
+        config={
+        "learning_rate": args.learning_rate,
+        "epochs": args.epoch_num,
+        "batch_size": args.batch_size,
+        'dataset_size': args.dataset_size,
+        "architecture": args.architecture,
+        "dataset": "defalut",
+        "node_number": args.node_number,
+        "test_signal": args.test_signal,
+        "weight_decay": args.weight_decay
+        }
+        )
+    
+
+    
+    main(args.learning_rate,
+         args.epoch_num,
+         args.batch_size,
+         args.plot_freq,
+         args.dataset_size,
+         args.generate,
+         args.force_cpu,
+         args.node_number,
+         args.architecture,
+         args.criterion,
+         args.optimalizer,
+         args.test_signal,
+         args.weight_decay)

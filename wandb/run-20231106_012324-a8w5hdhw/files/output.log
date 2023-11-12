@@ -1,0 +1,13 @@
+CUDA device not found.
+Using mps
+input_dim (spectrum length) = 2000
+output_dim (phase length) = 56
+Creating training set...
+Traceback (most recent call last):
+  File "/Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/main.py", line 226, in <module>
+    main(args.learning_rate,
+  File "/Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/main.py", line 165, in main
+    the_generator.generate_and_save()
+  File "/Users/michalchrzanowski/Library/CloudStorage/GoogleDrive-mp.chrzanowsk3@student.uw.edu.pl/My Drive/Files/Programming/ZPS_QPL_ML/dataset_generator.py", line 32, in generate_and_save
+    for example_num in tqdm(range(self.data_num)):
+TypeError: 'str' object cannot be interpreted as an integer
