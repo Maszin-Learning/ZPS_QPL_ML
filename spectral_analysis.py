@@ -1095,11 +1095,15 @@ def ratio(vis_value):
     return X[r]
 
 
+
 def gaussian_pulse(bandwidth, centre, FWHM, x_type = "freq", num = 1000):
     '''
     Creates spectrum with gaussian intensity. "bandwidth" is a tuple with start and the end of the entire spectrum. 
     "centre" and "FWHM" characterize the pulse itself. The spectrum is composed of \"num\" = 1000 points on default.
     '''
+
+    if x_type not in ["freq", "wl", "time"]:
+        raise Exception("x_type must be either \"freq\", \"nm\" or \"time\"")
 
     import spectral_analysis as sa
     X = np.linspace(bandwidth[0], bandwidth[1], num = num)
@@ -1108,7 +1112,23 @@ def gaussian_pulse(bandwidth, centre, FWHM, x_type = "freq", num = 1000):
         return 1/(std*np.sqrt(2*np.pi))*np.exp(-(x-mu)**2/(2*std**2))
     gauss = np.vectorize(gauss)
     Y = gauss(X, centre, sd)
-    return sa.spectrum(X, Y, "freq", "intensity")
+    return sa.spectrum(X, Y, x_type, "intensity")
+
+def hermitian_pulse(bandwidth, centre, FWHM, x_type):
+
+    if x_type not in ["freq", "wl", "time"]:
+        raise Exception("x_type must be either \"freq\", \"nm\" or \"time\"")
+
+    import spectral_analysis as sa
+    from math import floor
+    
+    X = np.linspace(bandwidth[0], bandwidth[1], 2000)
+    sd = FWHM/2.355
+    def gauss(x, mu, std):
+        return 1/(std*np.sqrt(2*np.pi))*np.exp(-(x-mu)**2/(2*std**2))
+    gauss = np.vectorize(gauss)
+    Y = (X - X[np.searchsorted(X, centre)])*gauss(X, centre, sd)
+    return sa.spectrum(X, Y, x_type, "intensity")
 
 
 def hermitian_pulse(pol_num, bandwidth, centre, FWHM, num = 1000, x_type = "freq"):

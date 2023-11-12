@@ -309,4 +309,3 @@ if __name__ == "__main__":
          args.optimalizer,
          args.test_signal,
          args.weight_decay)
-    
