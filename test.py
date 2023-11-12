@@ -9,7 +9,27 @@ import torch
 
 def test(model, test_pulse, initial_pulse_Y, initial_pulse_X, device, dtype, test_phase = None, iter_num = 0):
     '''
-    You may provide test phase IF you know it. Otherwise leave it to be None.
+    ## Test the model with a given test_pulse.
+
+    # Arguments:
+
+    model - the model of the neural network.
+
+    test_pulse - one-dimensional complex Pytorch Tensor.
+
+    initial_pulse_Y - one-dimensional real-valued NumPy array.
+
+    initial_pulse_X - one-dimensional real-valued NumPy array.
+
+    test_phase - one-dimensional real-valued NumPy array or None - it serves only for plotting.
+
+    iter_num - the test plot is saved as \"pics/reconstructed_[iter_num].jpg\"
+
+    ## Note:
+
+    1. initial_pulse_Y, initial_pulse_X and test_pulse must have the same length.
+
+    2. The length of test_phase should be equal to the length of the significant part of Fourier-transformed initial_pulse_Y.
     '''
 
     mse = MSELoss()
@@ -110,9 +130,19 @@ def test(model, test_pulse, initial_pulse_Y, initial_pulse_X, device, dtype, tes
 
 def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
     '''
-    pulse_type for now must be either \"hermite\", \"chirp\" or \"random_evolution\".
-    A tuple (test_pulse, test_phase) is returned where test_phase is the phase used to evolve the gaussian
-    to the test_pulse. If the pulse wasn't obtained by such evolution, then it is equal to None.
+    ## Create a test_intensity and test_phase within given rules.
+    # Arguments:
+
+    pulse_type - if \"hermite\", then the test intensity is a 1 Hermite-Gauss polynomial.
+    if \"chirp\", then the test intensity is chirped Gaussian function. 
+
+    initial_pulse - a spectrum class object containing the initial spectrum that is - possibly - transformed into test_pulse.
+
+    phase_len - the length of significant part of the Fourier transformed initial_pulse
+
+    # Returns:
+    (test_pulse, test_phase), where test_pulse is one-dimensional complex PyTorch Tensor and test_phase is one-dimensional
+     real NumPy Array or None, if the phase needed to transform initial_pulse to the test_pulse is not known.
     '''
 
     if pulse_type == "hermite":

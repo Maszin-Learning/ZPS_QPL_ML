@@ -4,6 +4,7 @@ import numpy as np
 from math import floor
 import matplotlib.pyplot as plt
 import os
+from dataset_generator import Generator
     
 def evolve_np(intensity, phase, dtype, abs = True):
 
@@ -34,6 +35,9 @@ def evolve_np(intensity, phase, dtype, abs = True):
     
 
 def evolve_pt(intensity, phase, device, dtype, abs = True):
+    '''
+    Functions used to evolve batches of
+    '''
 
     input_dim = intensity.shape[-1]
     output_dim = phase.shape[-1]
@@ -66,6 +70,7 @@ def plot_phases(phase_generator, num, phase_type = "regular"):
     if not os.path.isdir("example_phases"):
         os.mkdir("example_phases")
 
+
     for i in range(num):
         phase = phase_generator(100, phase_type = phase_type)
         plt.plot(np.linspace(0, 1, 100), phase, color = "deeppink")
@@ -79,8 +84,6 @@ def np_to_complex_pt(array, device, dtype):
     '''
     # real-valued numpy array to complex pytorch tensor
     '''
-
-
     array = torch.tensor([[array[i], 0] for i in range(len(array))], requires_grad = True, device = device, dtype = dtype)
     array = torch.view_as_complex(array)
     array = array.reshape(1, array.numel())
