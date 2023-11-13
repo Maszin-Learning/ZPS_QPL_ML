@@ -73,8 +73,8 @@ def main(_learning_rate,
         from nets import network_8 as network
     if _net_architecture == 'network_9':
         from nets import network_9 as network
-
-    plot_dataset()
+    if _net_architecture == 'network_11':
+        from nets import network_11 as network
 
     ### Chose device, disclimer! on cpu network will not run due to batch normalization
     if _cpu:
@@ -105,7 +105,7 @@ def main(_learning_rate,
     # initial pulse (to be reconstructed later on)
     input_dim = 5000 # number of points in single pulse
 
-    bandwidth = [160, 206]
+    bandwidth = [190, 196]
     centre = [193]
     FWHM = 0.4
 
