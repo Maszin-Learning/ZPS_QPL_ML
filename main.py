@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm import tqdm
 from math import floor
-from utilities import evolve_pt, np_to_complex_pt, plot_phases, evolve_np
+from utilities import evolve_pt, np_to_complex_pt, evolve_np, plot_dataset
 from test import test
 from dataset import Dataset
 from torch.utils.data import DataLoader #Dataloader module
@@ -74,6 +74,8 @@ def main(_learning_rate,
     if _net_architecture == 'network_9':
         from nets import network_9 as network
 
+    plot_dataset()
+
     ### Chose device, disclimer! on cpu network will not run due to batch normalization
     if _cpu:
         print('Forced cpu')
@@ -99,8 +101,6 @@ def main(_learning_rate,
     # data type
     my_dtype = torch.float32
 
-
-
     ###
     # initial pulse (to be reconstructed later on)
     input_dim = 5000 # number of points in single pulse
@@ -119,10 +119,9 @@ def main(_learning_rate,
     
     initial_pulse_check = initial_pulse.copy()
     
-    utilities.TB_prod(t_arr, freq_arr, utilities.U_f_in__to__U_t_out(initial_pulse_check.X), initial_pulse_check.X)
+    utilities.TB_prod(t_arr, freq_arr, utilities.freq_to_time(initial_pulse_check.X), initial_pulse_check.X)
     
     
-
     Y_initial = initial_pulse.Y.copy()
 
     FT_pulse = initial_pulse.fourier(inplace = False)
@@ -143,7 +142,6 @@ def main(_learning_rate,
 
     # test pulse
     test_pulse, test_phase = create_test_pulse(_test_signal, initial_pulse, output_dim, my_device, my_dtype)
-    ###
 
     
     # create dataset and wrap it into dataloader
@@ -161,14 +159,12 @@ def main(_learning_rate,
         exit()
     
         
-        
-    #recreate pics folder if exist and create if not
+    # recreate pics folder if exists and create it otherwise
     if os.path.isdir("pics"):
-        shutil.rmtree('pics') #clear pictures folder
+        shutil.rmtree('pics') # clear pictures folder
         os.mkdir("pics")
     else:
         os.mkdir("pics")
-    ###
 
 
     # create NN
@@ -176,7 +172,6 @@ def main(_learning_rate,
                 n = _node_number, 
                 output_size = output_dim)
     model.to(device = my_device, dtype = my_dtype)
-
 
 
     if _optimalizer=='Adam':
@@ -189,13 +184,10 @@ def main(_learning_rate,
         optimizer = torch.optim.RMSprop(model.parameters(), lr = _learning_rate)
     
     
-    
     if _criterion=='MSE':
         criterion = torch.nn.MSELoss()
     if _criterion=='L1':
         criterion = torch.nn.L1Loss()
-    
-    
     
     
     dataset_train = Dataset_train(root='', transform=True, device = my_device)
@@ -221,8 +213,6 @@ def main(_learning_rate,
             optimizer.step()
             optimizer.zero_grad()
 
-
-            
             # stats
             _loss = loss.clone().cpu().detach().numpy()
             wandb.log({"loss": _loss}) #log loss to wandb

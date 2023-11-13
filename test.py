@@ -9,7 +9,7 @@ import torch
 
 def test(model, test_pulse, initial_pulse_Y, initial_pulse_X, device, dtype, test_phase = None, iter_num = 0):
     '''
-    ## Test the model with a given test_pulse.
+    ## Test the model with a given test pulse.
 
     # Arguments:
 
@@ -25,7 +25,12 @@ def test(model, test_pulse, initial_pulse_Y, initial_pulse_X, device, dtype, tes
 
     iter_num - the test plot is saved as \"pics/reconstructed_[iter_num].jpg\"
 
-    ## Note:
+    # Returns:
+
+    (plot, loss) - where plot (returned in a strange way) depicts model predictions on test pulse and phase, 
+    and loss is MSE of that prediction.
+
+    # Note:
 
     1. initial_pulse_Y, initial_pulse_X and test_pulse must have the same length.
 
