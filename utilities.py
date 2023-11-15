@@ -4,6 +4,7 @@ from math import floor
 import matplotlib.pyplot as plt
 import os
 import shutil
+from tqdm import tqdm
     
 def evolve_np(intensity, phase, dtype, abs = True):
     '''
@@ -96,32 +97,73 @@ def evolve_pt(intensity, phase, device, dtype, abs = True):
         return complex_intensity
     
     
-def plot_dataset(num, device, max_order = 10, max_value = 10):
+def plot_dataset(number, pulse, ft_pulse):
+    '''
+    # Plot \"number\" of phases and intensities that are saved as .csv files in \"data\" folder.
+    \"pulse\" is a spectrum class object representing the initial - not transformed - pulse. 
+    \"ft_pulse\" is a spectrum class object of the same length as the phase in the dataset. It is the Fourier transform of
+    the initial pulse.
+    '''
 
-    from dataset_generator import Generator # IT MUST BE HERE - to avoid circular imports.
-
-    my_generator = Generator(None, 
-                             None, 
-                             phase_len = num, 
-                             device = device,
-                             max_order = max_order,
-                             max_value = max_value)
-    phase_generator = Generator.phase_gen()
+    # prepare place for saving plots
 
     if os.path.isdir("dataset_sample"):
         shutil.rmtree('dataset_sample')
-        os.mkdir("dataset_sample")
-    else:
-        os.mkdir("dataset_sample")
+    os.mkdir("dataset_sample")
 
-    for i in range(num):
-        phase = phase_generator(100)
-        plt.plot(np.linspace(0, 1, 100), phase, color = "deeppink")
+    # check how the dataset looks like
+
+    intensity_labels = os.listdir('data/train_intensity')
+    phase_labels = os.listdir('data/train_intensity')
+    dataset_size = len(intensity_labels)
+
+    if len(intensity_labels) != len(phase_labels):
+        raise Exception("Number of generated phases is not equal to number of the intensities.")
+    if len(intensity_labels) < number:
+        raise Exception("That's not very good idea to save more plots that the amount of data you have.")
+    
+    # pick random examples to plot
+
+    plot_indices = np.random.randint(low = 0, high = dataset_size, size = number)
+
+    # and plot them
+
+    pulse_safe = ft_pulse.copy()
+
+    print("Saving example phases and intensities...")
+
+    for n in tqdm(range(len(plot_indices))):
+        i = plot_indices[n]
+
+        phase = np.loadtxt("data/train_phase/" + phase_labels[i])
+        intensity = np.loadtxt("data/train_intensity/" + intensity_labels[i])
+
+        pulse_safe.Y /= np.max(np.abs(pulse_safe.Y))
+        pulse_safe.Y *= np.max(np.abs(phase))
+
+        plt.subplot(2, 1, 2)
+        plt.fill_between(pulse_safe.X, pulse_safe.Y, color = "orange", alpha = 0.4)
+        plt.scatter(pulse_safe.X, phase, color = "red", s = 9)
         plt.grid()
-        plt.title("Test phase")
-        plt.savefig("dataset_sample/phase_{}.jpg".format(i + 1))
+        plt.legend(["Spectral intensity", "Spectral phase"])
+        plt.title("Train phase")
+        plt.xlabel("Quasitime (ps)")
+        plt.ylabel("Spectral phase (rad)")
+
+        plt.subplot(2, 1, 1)
+        plt.plot(pulse.X, intensity, color = "darkorange")
+        plt.plot(pulse.X, pulse.Y, color = "black", linestyle = "dashed")
+        plt.grid()
+        plt.legend(["New intensity", "Initial intensity"])
+        plt.title("Train intensity")
+        plt.xlabel("Frequency (THz)")
+        plt.ylabel("Intensity (a.u.)")
+
+        plt.tight_layout()
+        plt.savefig("dataset_sample/{}.jpg".format(i + 1))
         plt.close()
 
+    print("Saving completed.\n")
 
 def np_to_complex_pt(array, device, dtype):
     '''
