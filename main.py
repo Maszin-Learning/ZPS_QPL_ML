@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm import tqdm
 from math import floor
-from utilities import evolve_pt, np_to_complex_pt, plot_phases, evolve_np
+from utilities import evolve_pt, np_to_complex_pt, evolve_np, plot_dataset
 from test import test
 from dataset import Dataset
 from torch.utils.data import DataLoader #Dataloader module
@@ -73,8 +73,11 @@ def main(_learning_rate,
         from nets import network_8 as network
     if _net_architecture == 'network_9':
         from nets import network_9 as network
+    if _net_architecture == 'network_11':
+        from nets import network_11 as network
 
-    ### Chose device, disclimer! on cpu network will not run due to batch normalization
+    ### Chose device, disclaimer! on cpu network will not run due to batch normalization
+
     if _cpu:
         print('Forced cpu')
         my_device = torch.device('cpu')
@@ -95,45 +98,37 @@ def main(_learning_rate,
             my_device = torch.device("cpu")
             print (f"Using {my_device}")
 
-
     # data type
+
     my_dtype = torch.float32
 
+    # initial pulse (that is transformed by some phase)
 
+    input_dim = 5000 # number of points in a single pulse
 
-    ###
-    # initial pulse (to be reconstructed later on)
-    input_dim = 5000 # number of points in single pulse
-
-    bandwidth = [160, 206]
+    bandwidth = [190, 196]
     centre = [193]
     FWHM = 0.4
 
-    initial_pulse = sa.hermitian_pulse(pol_num = 0, #0 for gauss signal
+    initial_pulse = sa.hermitian_pulse(pol_num = 0, # 0 for gauss signal
                                     bandwidth = bandwidth,
                                     centre = centre,
                                     FWHM = FWHM,
                                     num = input_dim)
     freq_arr = np.linspace(bandwidth[0], bandwidth[1], num = input_dim)
     t_arr = freq_arr/1e-3
-    
-    initial_pulse_check = initial_pulse.copy()
-    
-    utilities.TB_prod(t_arr, freq_arr, utilities.U_f_in__to__U_t_out(initial_pulse_check.X), initial_pulse_check.X)
-    
-    
-
+        
     Y_initial = initial_pulse.Y.copy()
 
-    FT_pulse = initial_pulse.fourier(inplace = False)
-
     # we want to find what is the bandwidth of intensity after FT, to estimate output dimension of NN
+
     initial_pulse_2 = initial_pulse.copy()
     initial_pulse_2.fourier()
     x_start = initial_pulse_2.quantile(0.001)
     x_end = initial_pulse_2.quantile(0.999)
     reconstructed_phase = np.searchsorted(initial_pulse_2.X, x_start)
     idx_end = np.searchsorted(initial_pulse_2.X, x_end)
+    idx_start = np.searchsorted(initial_pulse_2.X, x_start)
     output_dim = idx_end - reconstructed_phase    # number of points of non-zero FT-intensity
     if output_dim % 2 == 1:
         output_dim += 1
@@ -141,12 +136,19 @@ def main(_learning_rate,
     print("\ninput_dim (spectrum length) = {}".format(input_dim))  
     print("output_dim (phase length) = {}".format(output_dim))
 
-    # test pulse
-    test_pulse, test_phase = create_test_pulse(_test_signal, initial_pulse, output_dim, my_device, my_dtype)
-    ###
+    # stuff for plots
 
+    pulse_ft = initial_pulse_2.copy()
+    pulse_ft.X = np.real(pulse_ft.X)
+    pulse_ft.Y = np.abs(pulse_ft.Y)
+    pulse_ft.cut(inplace = True, start = idx_start, end = idx_end, how = "index")    
+
+    # test pulse
+
+    test_pulse, test_phase = create_test_pulse(_test_signal, initial_pulse, output_dim, my_device, my_dtype)
     
     # create dataset and wrap it into dataloader
+
     if _generate:
         print("\nCreating training set...")
         
@@ -158,52 +160,54 @@ def main(_learning_rate,
                                 )
 
         the_generator.generate_and_save()
+        print("Successfully created training set containing {} spectra.\n".format(len(os.listdir('data/train_intensity'))))
+
+        plot_dataset(20, pulse = initial_pulse, ft_pulse = pulse_ft)
+
         exit()
-    
-        
-        
-    #recreate pics folder if exist and create if not
+
+    # recreate pics folder if exists and create it otherwise
+
     if os.path.isdir("pics"):
-        shutil.rmtree('pics') #clear pictures folder
+        shutil.rmtree('pics') # clear pictures folder
         os.mkdir("pics")
     else:
         os.mkdir("pics")
-    ###
-
 
     # create NN
+
     model = network(input_size = input_dim, 
                 n = _node_number, 
                 output_size = output_dim)
     model.to(device = my_device, dtype = my_dtype)
 
+    # choose optimizer
 
-
-    if _optimalizer=='Adam':
+    if _optimalizer =='Adam':
         optimizer = torch.optim.Adam(model.parameters(), lr = _learning_rate, weight_decay=_weight_decay)
-    if _optimalizer=='NAdam':
+    if _optimalizer =='NAdam':
         optimizer = torch.optim.NAdam(model.parameters(), lr = _learning_rate)
-    if _optimalizer=='SGD':
+    if _optimalizer =='SGD':
         optimizer = torch.optim.SGD(model.parameters(), lr = _learning_rate)
-    if _optimalizer=='RSMprop':
+    if _optimalizer =='RSMprop':
         optimizer = torch.optim.RMSprop(model.parameters(), lr = _learning_rate)
     
+    # choose loss function
     
-    
-    if _criterion=='MSE':
+    if _criterion =='MSE':
         criterion = torch.nn.MSELoss()
-    if _criterion=='L1':
+    if _criterion =='L1':
         criterion = torch.nn.L1Loss()
-    
-    
     
     
     dataset_train = Dataset_train(root='', transform=True, device = my_device)
     dataloader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size=_batch_size, num_workers=0, shuffle=True)
     
+    # learning loop
 
     loss_list = []
     wandb.watch(model, criterion, log="all", log_freq=400)
+
     for epoch in tqdm(range(_epoch_num)):
         for pulse, _ in dataloader_train:
             #pulse = pulse.to(my_device) # the pulse is already created on device by dataset, uncoment if not using designeted dataset for this problem
@@ -221,17 +225,14 @@ def main(_learning_rate,
             optimizer.step()
             optimizer.zero_grad()
 
-
-            
             # stats
             _loss = loss.clone().cpu().detach().numpy()
             wandb.log({"loss": _loss}) #log loss to wandb
             loss_list.append(_loss)
 
-        if epoch%_plot_freq==0: #plot and test model
+        if epoch%_plot_freq == 0: # plot and test model
             model.eval()
-            #if epoch == 0:
-                #print("Iteration np. {}. Loss {}.".format(epoch, loss.clone().cpu().detach().numpy()))
+
             print("Epoch no. {}. Loss {}.".format(epoch, np.mean(np.array(loss_list[epoch*len(dataloader_train): (epoch+1)*len(dataloader_train)]))))
 
             fig, test_loss=test(model = model,
@@ -242,6 +243,7 @@ def main(_learning_rate,
                     device = my_device, 
                     dtype = my_dtype,
                     iter_num =epoch)
+            
             wandb.log({"chart": fig})
             print('test_loss',test_loss)
             wandb.log({"test_loss": test_loss})
@@ -249,14 +251,14 @@ def main(_learning_rate,
             model.train()
 
 if __name__ == "__main__":
-    warnings.simplefilter("ignore", UserWarning) #ignore warnings from plotly
+    warnings.simplefilter("ignore", UserWarning) # ignore warnings from plotly
     parser = argparse.ArgumentParser()
     parser.add_argument('-lr', '--learning_rate', default=1e-5, type=float)
     parser.add_argument('-en', '--epoch_num', default=10, type=int)
     parser.add_argument('-bs', '--batch_size', default=50, type=int)
     parser.add_argument('-pf', '--plot_freq', default=3, type=int)
     parser.add_argument('-ds', '--dataset_size', default=10000, type=int)
-    parser.add_argument('-g', '--generate', action='store_true') #only generate, training will not run, wandb will be offline
+    parser.add_argument('-g', '--generate', action='store_true') # only generate, training will not run, wandb will be offline
     parser.add_argument('-fc', '--force_cpu', action='store_true')
     parser.add_argument('-tr', '--test_run', action='store_true')
     parser.add_argument('-nn', '--node_number', default=100, type=int)
@@ -268,13 +270,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
     config={}
     
-    ###WANDB config
+    ### WANDB config
     # start a new wandb run to track this script
     
-    #for forced offline work -tf
+    # for forced offline work -tf
     if args.test_run or args.generate:
         print('WANDB WORKING OFFLINE')
-        wandb.init(mode="disabled") #for offline work
+        wandb.init(mode="disabled") # for offline work
     else:
         wandb.init(
         # set the wandb project where this run will be logged
@@ -293,8 +295,6 @@ if __name__ == "__main__":
         "weight_decay": args.weight_decay
         }
         )
-    
-
     
     main(args.learning_rate,
          args.epoch_num,

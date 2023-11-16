@@ -8,7 +8,7 @@ import shutil
 
 class Generator():
 
-    def __init__(self, data_num, initial_intensity, phase_len, device, dtype, max_order=10, max_value=10):
+    def __init__(self, data_num, initial_intensity, phase_len, device, dtype, max_order=10, max_value=np.pi):
         self.data_num = data_num
         self.initial_intensity = initial_intensity
         self.intensity_len = len(initial_intensity)
