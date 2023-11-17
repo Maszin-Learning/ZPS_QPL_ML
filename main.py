@@ -140,6 +140,7 @@ def main(_learning_rate,
     # stuff for plots
 
     pulse_ft = long_pulse_2.copy()
+    pulse_ft.fourier()
     pulse_ft.X = np.real(pulse_ft.X)
     pulse_ft.Y = np.abs(pulse_ft.Y)
     pulse_ft.cut(inplace = True, start = idx_start, end = idx_end, how = "index")    
