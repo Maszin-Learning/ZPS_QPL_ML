@@ -5,6 +5,7 @@ from utilities import np_to_complex_pt, evolve_pt, evolve_np
 import os
 from tqdm import tqdm
 import shutil
+from math import floor
 
 class Generator():
 
@@ -36,44 +37,106 @@ class Generator():
 
 
     def phase_gen(self):
-        if np.random.choice(5) == 1:      # slowly varying phase
+
+        def polynomial():
+            '''
+            Sum of regular polynomials.
+            '''
             X = np.linspace(-1, 1, self.phase_len)
             Y = np.zeros(self.phase_len)
+
+            max_order = 10
             
-            for order in range(self.max_order):
+            for order in range(max_order):
                 coef = np.random.uniform(low = -1, high = 1)
-                if np.random.choice(50) == 1:
-                    _coef = np.random.uniform(low = -1, high = 1)
-                    Y += coef*X**order + _coef * np.sin(X)
-                if np.random.choice(50) == 1:
-                    _coef = np.random.uniform(low = -1, high = 1)
-                    Y += coef*X**order + _coef * np.tan(X)
-                if np.random.choice(50) == 1:
-                    Y += coef*X**order * np.tan(X)
-                if np.random.choice(50) == 1:
-                    Y += coef*X**order * np.sin(X)
-                else:
-                    Y += coef*X**order
-                """
-                if r == 1:
-                    Y += np.tan(X)*coef*X**order
-                if r == 2:
-                    Y += np.sin(X)*coef*X**order
-                """
-        else:                                               # rapidly varying phase  UPDATE: It causes convergence
+                Y += coef*X**order
+
+            Y /= np.max(np.abs(Y))
+            return Y
+            
+        def absolute_like():
+            '''
+            Absolute value with random "middle".
+            '''
+            X = np.linspace(-1, 1, self.phase_len)
+            middle = np.random.uniform(-0.5, 0.5)
+            X += middle
+            return np.abs(X)/np.max(np.abs(X))
+
+        def absolute_like_multi():
+            '''
+            Sum of up to 5 absolute values.
+            '''
+            Y = absolute_like()
+            num = np.random.randint(5)
+            for i in range(num):
+                Y += absolute_like()
+            Y /= np.max(np.abs(Y))
+            return Y
+
+        def step_like():
+            '''
+            Random constant value till some place, then another random constant value.
+            '''
+            a, b = np.random.uniform(low = 0, high = 2*np.pi, size = 2)
+            border = np.random.randint(low = floor(0.25*self.phase_len), high = floor(0.75*self.phase_len))
+            Y = np.concatenate([a*np.ones(border), b*np.ones(self.phase_len-border)])
+            Y /= np.max(np.abs(Y))
+            return Y
+        
+        def step_like_multi():
+            '''
+            Sum of up to 5 step functions.
+            '''
+            Y = step_like()
+            num = np.random.randint(5)
+            for i in range(num):
+                Y += step_like()
+            Y /= np.max(np.abs(Y))
+            return Y
+
+        def hermite_like():
+            '''
+            Sum of the Hermite polynomials.
+            '''
+
+            max_order = 6
+
             Y = np.zeros(self.phase_len)
-            for order in range(4):
+            for order in range(max_order):
                 coef = np.random.uniform(low = -1, high = 1)
                 Y += coef*sa.hermitian_pulse(pol_num = order,
                     bandwidth = [-1, 1],
                     centre = 0,
                     FWHM = 0.5,
                     num = self.phase_len).Y
-        if self.max_value == None:
+                
+            Y /= np.max(np.abs(Y))
             return Y
-        else:
-            return Y/np.max(np.abs(Y))*self.max_value
         
+        # let's toss a coin, my friend
+        coin = np.random.choice(np.array([0,1,2,3,4,5]), size = 1, p = [0.35, 0.25, 0.10, 0.05, 0.20, 0.05])
+
+        if coin == 0:
+            phase = hermite_like()
+        elif coin == 1:
+            phase = polynomial()
+        elif coin == 2:
+            phase = step_like()
+        elif coin == 3:
+            phase = step_like_multi()
+        elif coin == 4:
+            phase = absolute_like()*5
+        elif coin == 5:
+            phase = absolute_like_multi()*5
+        else:
+            raise Exception("Your multidimensional coin has more dimensions that one could expect.")
+
+        scale = np.random.uniform(1, np.pi)
+
+        return phase*scale
+
+
     def pulse_gen(self):
         '''
         Returns tuple (intensity, phase), where phase is NONZERO part of phase used to evolve initial_intensity into intensity.
