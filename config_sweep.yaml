@@ -24,7 +24,7 @@ parameters:
     optimalizer:
       values: ['NAdam','Adam']
     test_signal:
-      values: ['hermit']
+      values: ['hermite']
     weight_decay:
       min: 0.0
       max: 0.1
