@@ -18,13 +18,13 @@ parameters:
     architecture:
       values: ['network_9']
     node_number:
-      values: [5000]
+      values: [100, 500, 1000]
     criterion:
       values: ['MSE']
     optimalizer:
       values: ['NAdam','Adam']
     test_signal:
-      values: ['chirp']
+      values: ['hermit']
     weight_decay:
       min: 0.0
       max: 0.1
