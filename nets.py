@@ -419,5 +419,5 @@ class network_11(nn.Module):
         x = self.normal_1(x)
         #x = self.leakyrelu(self.linear_2(x))
         x = self.linear_3(x)
-        x = self.normal_3(x)
-        return self.leakyrelu(x)
+        #x = self.normal_3(x)
+        return x
