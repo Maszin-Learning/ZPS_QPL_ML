@@ -16,13 +16,13 @@ parameters:
       distribution: constant
       value: 1
     architecture:
-      values: ['network_9']
+      values: ['network_9', 'network_11']
     node_number:
-      values: [500, 1000, 5000]
+      values: [300, 500, 1000, 2000]
     criterion:
       values: ['MSE']
     optimalizer:
-      values: ['NAdam','Adam']
+      values: ['Adam']
     test_signal:
       values: ['hermite']
     weight_decay:
