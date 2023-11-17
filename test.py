@@ -7,7 +7,7 @@ from utilities import np_to_complex_pt, evolve_np, evolve_pt
 from torch.nn import MSELoss
 import torch
 
-def test(model, test_pulse, initial_pulse_Y, initial_pulse_X, device, dtype, test_phase = None, iter_num = 0):
+def test(model, test_pulse, initial_pulse, device, dtype, test_phase = None, iter_num = 0):
     '''
     ## Test the model with a given test pulse.
 
@@ -17,9 +17,7 @@ def test(model, test_pulse, initial_pulse_Y, initial_pulse_X, device, dtype, tes
 
     test_pulse - one-dimensional complex Pytorch Tensor.
 
-    initial_pulse_Y - one-dimensional real-valued NumPy array.
-
-    initial_pulse_X - one-dimensional real-valued NumPy array.
+    initial_pulse - a spectrum class object
 
     test_phase - one-dimensional real-valued NumPy array or None - it serves only for plotting.
 
@@ -41,9 +39,13 @@ def test(model, test_pulse, initial_pulse_Y, initial_pulse_X, device, dtype, tes
 
     input_dim = model.input
     output_dim = model.output
+    spectrum_len = len(initial_pulse)
+    zeros_num = floor((spectrum_len - input_dim)/2)
 
-    plot_from = floor(input_dim*1/6)
-    plot_to = floor(input_dim*5/6)
+    initial_pulse_short = initial_pulse.cut(start = zeros_num, end = zeros_num+input_dim, inplace = False, how = "index")
+
+    plot_from = floor(1/6*input_dim)
+    plot_to = floor(5/6*input_dim)
 
     # generate test chirp pulse
 
@@ -51,27 +53,25 @@ def test(model, test_pulse, initial_pulse_Y, initial_pulse_X, device, dtype, tes
     test_phase_pred = test_phase_pred.reshape([output_dim])
 
     # evolve
-
-    initial_intensity = np_to_complex_pt(initial_pulse_Y.copy(), device = device, dtype = dtype)
-
+    initial_intensity = np_to_complex_pt(np.abs(initial_pulse.Y.copy()), device = device, dtype = dtype)
     test_intensity = evolve_pt(initial_intensity, test_phase_pred, device = device, dtype = dtype)
-    reconstructed = test_intensity.abs() 
+    reconstructed = test_intensity.abs()[:,zeros_num : zeros_num+input_dim] 
 
     plt.subplot(1, 2, 1)
     plt.title("The intensity")
 
-    plt.scatter(initial_pulse_X[plot_from:plot_to], 
+    plt.scatter(initial_pulse_short.X[plot_from:plot_to], 
                 np.abs(np.reshape(reconstructed.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to]), 
                 color = "green", 
                 s = 1,
                 zorder = 10)
-    plt.plot(initial_pulse_X[plot_from:plot_to], 
-                np.abs(initial_pulse_Y[plot_from:plot_to]), 
+    plt.plot(initial_pulse_short.X[plot_from:plot_to], 
+                np.abs(initial_pulse_short.Y[plot_from:plot_to]), 
                 linestyle = "dashed", 
                 color = "black", 
                 lw = 1,
                 zorder = 5)
-    plt.plot(initial_pulse_X[plot_from:plot_to], 
+    plt.plot(initial_pulse_short.X[plot_from:plot_to], 
                         np.abs(np.reshape(test_pulse.clone().cpu().detach().numpy(), input_dim))[plot_from:plot_to], 
                         color = "darkviolet")
     plt.xlabel("THz")
@@ -85,10 +85,10 @@ def test(model, test_pulse, initial_pulse_Y, initial_pulse_X, device, dtype, tes
     reconstructed_phase = np.unwrap(test_phase_pred.clone().cpu().detach().numpy().reshape(output_dim))
     reconstructed_phase -= reconstructed_phase[floor(output_dim/2)]
 
-    idx_start = floor(input_dim/2 - output_dim/2)
-    idx_end = floor(input_dim/2 + output_dim/2)
+    idx_start = floor(zeros_num + input_dim/2 - output_dim/2)
+    idx_end = floor(zeros_num + input_dim/2 + output_dim/2)
 
-    FT_intensity = initial_pulse_Y.copy()
+    FT_intensity = initial_pulse.Y.copy()
     FT_intensity = np.fft.fftshift(FT_intensity)
     FT_intensity = np.fft.fft(FT_intensity)
     FT_intensity = np.fft.fftshift(FT_intensity)
@@ -157,8 +157,8 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
                                         FWHM = 1,
                                         num = len(initial_pulse))
 
-        test_pulse.Y /= np.sum(test_pulse.Y*np.conjugate(test_pulse.Y))
-        test_pulse.Y *= np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y))
+        test_pulse.Y = test_pulse.Y / np.sum(test_pulse.Y*np.conjugate(test_pulse.Y))
+        test_pulse.Y = test_pulse.Y * np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y))
         
         test_pulse = np_to_complex_pt(test_pulse.Y, device = device, dtype = dtype)
         test_phase = None

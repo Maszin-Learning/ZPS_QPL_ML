@@ -105,31 +105,32 @@ def main(_learning_rate,
     # initial pulse (that is transformed by some phase)
 
     input_dim = 5000 # number of points in a single pulse
+    zeroes_num = 5000
 
     bandwidth = [190, 196]
-    centre = [193]
+    centre = 193
     FWHM = 0.4
 
+    # this is our input for the net
     initial_pulse = sa.hermitian_pulse(pol_num = 0, # 0 for gauss signal
                                     bandwidth = bandwidth,
                                     centre = centre,
                                     FWHM = FWHM,
                                     num = input_dim)
-    freq_arr = np.linspace(bandwidth[0], bandwidth[1], num = input_dim)
-    t_arr = freq_arr/1e-3
-        
+    
+    # this serves only to generate FT pulse
+    long_pulse = initial_pulse.zero_padding(length = zeroes_num, inplace = False)
+    long_pulse_2 = long_pulse.copy()    
     Y_initial = initial_pulse.Y.copy()
 
     # we want to find what is the bandwidth of intensity after FT, to estimate output dimension of NN
 
-    initial_pulse_2 = initial_pulse.copy()
-    initial_pulse_2.fourier()
-    x_start = initial_pulse_2.quantile(0.001)
-    x_end = initial_pulse_2.quantile(0.999)
-    reconstructed_phase = np.searchsorted(initial_pulse_2.X, x_start)
-    idx_end = np.searchsorted(initial_pulse_2.X, x_end)
-    idx_start = np.searchsorted(initial_pulse_2.X, x_start)
-    output_dim = idx_end - reconstructed_phase    # number of points of non-zero FT-intensity
+    long_pulse.fourier()
+    x_start = long_pulse.quantile(0.001)
+    x_end = long_pulse.quantile(0.999)
+    idx_start = np.searchsorted(long_pulse.X, x_start)
+    idx_end = np.searchsorted(long_pulse.X, x_end)
+    output_dim = idx_end - idx_start    # number of points of non-zero FT-intensity
     if output_dim % 2 == 1:
         output_dim += 1
 
@@ -138,7 +139,8 @@ def main(_learning_rate,
 
     # stuff for plots
 
-    pulse_ft = initial_pulse_2.copy()
+    pulse_ft = long_pulse_2.copy()
+    pulse_ft.fourier()
     pulse_ft.X = np.real(pulse_ft.X)
     pulse_ft.Y = np.abs(pulse_ft.Y)
     pulse_ft.cut(inplace = True, start = idx_start, end = idx_end, how = "index")    
@@ -146,7 +148,7 @@ def main(_learning_rate,
     # test pulse
 
     test_pulse, test_phase = create_test_pulse(_test_signal, initial_pulse, output_dim, my_device, my_dtype)
-    
+
     # create dataset and wrap it into dataloader
 
     if _generate:
@@ -199,7 +201,6 @@ def main(_learning_rate,
     if _criterion =='L1':
         criterion = torch.nn.L1Loss()
     
-    
     dataset_train = Dataset_train(root='', transform=True, device = my_device)
     dataloader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size=_batch_size, num_workers=0, shuffle=True)
     
@@ -210,17 +211,17 @@ def main(_learning_rate,
 
     for epoch in tqdm(range(_epoch_num)):
         for pulse, _ in dataloader_train:
-            #pulse = pulse.to(my_device) # the pulse is already created on device by dataset, uncoment if not using designeted dataset for this problem
+            # pulse = pulse.to(my_device) # the pulse is already created on device by dataset, uncomment if not using designated dataset for this problem
             
             # predict phase that will transform gauss into this pulse
             predicted_phase = model(pulse)
 
             # transform gauss into something using this phase
-            initial_intensity = np_to_complex_pt(Y_initial.copy(), device = my_device, dtype = my_dtype)
+            initial_intensity = np_to_complex_pt(long_pulse_2.Y.copy(), device = my_device, dtype = my_dtype)
             reconstructed_intensity = evolve_pt(initial_intensity, predicted_phase, device = my_device, dtype = my_dtype)
 
             # a bit of calculus
-            loss = criterion(reconstructed_intensity.abs(), pulse) # pulse intensity
+            loss = criterion(reconstructed_intensity.abs()[:,zeroes_num: input_dim + zeroes_num], pulse) # pulse intensity
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
@@ -234,15 +235,13 @@ def main(_learning_rate,
             model.eval()
 
             print("Epoch no. {}. Loss {}.".format(epoch, np.mean(np.array(loss_list[epoch*len(dataloader_train): (epoch+1)*len(dataloader_train)]))))
-
             fig, test_loss=test(model = model,
                     test_pulse = test_pulse,
                     test_phase = test_phase,
-                    initial_pulse_Y = initial_pulse.Y.copy(),
-                    initial_pulse_X = initial_pulse.X.copy(),
+                    initial_pulse = long_pulse_2.copy(),
                     device = my_device, 
                     dtype = my_dtype,
-                    iter_num =epoch)
+                    iter_num = epoch)
             
             wandb.log({"chart": fig})
             print('test_loss',test_loss)
@@ -280,8 +279,8 @@ if __name__ == "__main__":
     else:
         wandb.init(
         # set the wandb project where this run will be logged
-        project="platypus",
-
+        project = "platypus",
+        entity = "zps_qpl_ml",
         # track hyperparameters and run metadata
         config={
         "learning_rate": args.learning_rate,
