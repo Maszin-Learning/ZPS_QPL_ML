@@ -164,7 +164,7 @@ def main(_learning_rate,
         the_generator.generate_and_save()
         print("Successfully created training set containing {} spectra.\n".format(len(os.listdir('data/train_intensity'))))
 
-        plot_dataset(20, pulse = initial_pulse, ft_pulse = pulse_ft)
+        plot_dataset(100, pulse = initial_pulse, ft_pulse = pulse_ft)
 
         exit()
 
