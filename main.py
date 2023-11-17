@@ -105,7 +105,7 @@ def main(_learning_rate,
     # initial pulse (that is transformed by some phase)
 
     input_dim = 5000 # number of points in a single pulse
-    zeroes_num = 2500
+    zeroes_num = 5000
 
     bandwidth = [190, 196]
     centre = 193
@@ -278,8 +278,8 @@ if __name__ == "__main__":
     else:
         wandb.init(
         # set the wandb project where this run will be logged
-        project="platypus",
-
+        project = "platypus",
+        entity = "zps_qpl_ml",
         # track hyperparameters and run metadata
         config={
         "learning_rate": args.learning_rate,
