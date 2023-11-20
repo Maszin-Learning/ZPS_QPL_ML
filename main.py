@@ -38,7 +38,9 @@ def main(_learning_rate,
          _optimalizer,
          _test_signal,
          _weight_decay):
-    #hyperparameters
+    
+    # hyperparameters
+
     print('\n',
           'learning_rate:', _learning_rate,'\n',
           'epoch_number:', _epoch_num,'\n',
@@ -53,8 +55,8 @@ def main(_learning_rate,
           'test_signal:', _test_signal, '\n',
           'weight_decay:', _weight_decay, '\n')
     
-    
-    ### Chose architecture 
+    # Choose architecture 
+
     if _net_architecture == 'network_1':
         from nets import network_1 as network
     if _net_architecture == 'network_2':
@@ -76,7 +78,7 @@ def main(_learning_rate,
     if _net_architecture == 'network_11':
         from nets import network_11 as network
 
-    ### Chose device, disclaimer! on cpu network will not run due to batch normalization
+    # Choose device, disclaimer! on cpu network will not run due to batch normalization
 
     if _cpu:
         print('Forced cpu')
@@ -102,23 +104,25 @@ def main(_learning_rate,
 
     my_dtype = torch.float32
 
-    # initial pulse (that is transformed by some phase)
+    # initial pulse (that is to be transformed by some phase)
 
-    input_dim = 5000 # number of points in a single pulse
-    zeroes_num = 5000
+    input_dim = 5000    # number of points in a single pulse
+    zeroes_num = 5000   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
 
     bandwidth = [190, 196]
     centre = 193
     FWHM = 0.4
 
-    # this is our input for the net
     initial_pulse = sa.hermitian_pulse(pol_num = 0, # 0 for gauss signal
                                     bandwidth = bandwidth,
                                     centre = centre,
                                     FWHM = FWHM,
                                     num = input_dim)
     
+    fwhm_init = initial_pulse.FWHM()
+    
     # this serves only to generate FT pulse
+
     long_pulse = initial_pulse.zero_padding(length = zeroes_num, inplace = False)
     long_pulse_2 = long_pulse.copy()    
     Y_initial = initial_pulse.Y.copy()
@@ -148,6 +152,15 @@ def main(_learning_rate,
     # test pulse
 
     test_pulse, test_phase = create_test_pulse(_test_signal, initial_pulse, output_dim, my_device, my_dtype)
+
+    test_spectrum = sa.spectrum(initial_pulse.X.copy(), 
+                                test_pulse.clone().detach().cpu().numpy().ravel(), 
+                                x_type = initial_pulse.x_type,
+                                y_type = initial_pulse.y_type)
+    test_spectrum.fourier()
+    fwhm_test = test_spectrum.FWHM()
+
+    print("\nTime-bandwidth product equals to {}.\n".format(fwhm_test*fwhm_init))
 
     # create dataset and wrap it into dataloader
 

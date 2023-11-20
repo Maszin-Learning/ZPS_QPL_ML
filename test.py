@@ -154,7 +154,7 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
         test_pulse = sa.hermitian_pulse(pol_num = 1,
                                         bandwidth = (initial_pulse.X[0], initial_pulse.X[-1]),
                                         centre = 193,
-                                        FWHM = 1,
+                                        FWHM = 0.5,
                                         num = len(initial_pulse))
 
         test_pulse.Y = test_pulse.Y / np.sum(test_pulse.Y*np.conjugate(test_pulse.Y))
