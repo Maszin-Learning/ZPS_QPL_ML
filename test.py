@@ -169,9 +169,21 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
         else:
             new_dtype = dtype
         initial_intensity = initial_pulse.Y.copy()
-        chirp = 20
+        chirp = 100
         test_phase = chirp*np.linspace(-1, 1, phase_len, dtype = new_dtype)**2
         test_pulse = evolve_np(initial_intensity, test_phase, dtype = new_dtype)
         test_pulse = np_to_complex_pt(test_pulse, device = device, dtype = torch.float32)
+
+    elif pulse_type == "two_pulses":
+        pulses = initial_pulse.copy()
+        pulses.very_smart_shift(-0.8, inplace = True)
+        pulses.Y = pulses.Y + pulses.very_smart_shift(1.6, inplace = False).Y
+        pulses.Y = pulses.Y / np.sum(pulses.Y*np.conjugate(pulses.Y))
+        pulses.Y = pulses.Y * np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y))
+        test_pulse = np_to_complex_pt(pulses.Y, device = device, dtype = dtype)
+        test_phase = None
+
+    else:
+        raise Exception("Pulse_type not defined.")
 
     return test_pulse, test_phase

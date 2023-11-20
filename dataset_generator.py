@@ -45,23 +45,24 @@ class Generator():
             X = np.linspace(-1, 1, self.phase_len)
             Y = np.zeros(self.phase_len)
 
-            max_order = 10
+            max_order = 5
             
             for order in range(max_order):
                 coef = np.random.uniform(low = -1, high = 1)
                 Y += coef*X**order
 
             Y /= np.max(np.abs(Y))
-            return Y
+            return Y*np.random.uniform(1, 2*np.pi)
             
         def absolute_like():
             '''
             Absolute value with random "middle".
             '''
             X = np.linspace(-1, 1, self.phase_len)
-            middle = np.random.uniform(-0.5, 0.5)
+            middle = 0#np.random.uniform(-0.5, 0.5)
             X += middle
-            return np.abs(X)/np.max(np.abs(X))
+            Y = np.abs(X)/np.max(np.abs(X))
+            return Y*np.random.uniform(1, 25*np.pi)
 
         def absolute_like_multi():
             '''
@@ -72,14 +73,14 @@ class Generator():
             for i in range(num):
                 Y += absolute_like()
             Y /= np.max(np.abs(Y))
-            return Y
+            return Y*np.random.uniform(1, 25*np.pi)
 
         def step_like():
             '''
             Random constant value till some place, then another random constant value.
             '''
             a, b = np.random.uniform(low = 0, high = 2*np.pi, size = 2)
-            border = np.random.randint(low = floor(0.25*self.phase_len), high = floor(0.75*self.phase_len))
+            border = np.random.randint(low = floor(0.3*self.phase_len), high = floor(0.7*self.phase_len))
             Y = np.concatenate([a*np.ones(border), b*np.ones(self.phase_len-border)])
             Y /= np.max(np.abs(Y))
             return Y
@@ -100,7 +101,7 @@ class Generator():
             Sum of the Hermite polynomials.
             '''
 
-            max_order = 6
+            max_order = 10
 
             Y = np.zeros(self.phase_len)
             for order in range(max_order):
@@ -112,10 +113,10 @@ class Generator():
                     num = self.phase_len).Y
                 
             Y /= np.max(np.abs(Y))
-            return Y
+            return Y*np.random.uniform(1, np.pi)
         
         # let's toss a coin, my friend
-        coin = np.random.choice(np.array([0,1,2,3,4,5]), size = 1, p = [0.35, 0.25, 0.10, 0.05, 0.20, 0.05])
+        coin = np.random.choice(np.array([0,1,2,3,4,5]), size = 1, p = [0.75, 0.05, 0.05, 0.05, 0.05, 0.05])
 
         if coin == 0:
             phase = hermite_like()
@@ -126,15 +127,13 @@ class Generator():
         elif coin == 3:
             phase = step_like_multi()
         elif coin == 4:
-            phase = absolute_like()*5
+            phase = absolute_like()
         elif coin == 5:
-            phase = absolute_like_multi()*5
+            phase = absolute_like_multi()
         else:
             raise Exception("Your multidimensional coin has more dimensions that one could expect.")
 
-        scale = np.random.uniform(1, np.pi)
-
-        return phase*scale
+        return phase
 
 
     def pulse_gen(self):

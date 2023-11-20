@@ -409,24 +409,19 @@ class network_9(nn.Module): #do not work on cpu
         x = self.conv1d_1(x)
         x = self.avg_pool1d_1(x)
         self.bn_cv_1(x)
-        print(x.shape)
         
         x = self.conv1d_2(x)
         x = self.avg_pool1d_1(x)
         self.bn_cv_2(x)
-        print(x.shape)
         
         x = self.conv1d_3(x)  
         x = self.avg_pool1d_1(x)
         self.bn_cv_3(x)
-        print(x.shape)
         
         x = self.conv1d_4(x)
         self.bn_cv_4(x)
-        print(x.shape) 
         
         x = torch.flatten(x, start_dim=1, end_dim=-1)
-        print(x.shape)
         x = self.elu(self.linear_1(x))
         x = self.dropout(x)
         x = self.elu(self.linear_2(x))
@@ -454,7 +449,7 @@ class network_11(nn.Module):
     def forward(self,x):
         x = self.leakyrelu(self.linear_1(x))
         x = self.normal_1(x)
-        #x = self.leakyrelu(self.linear_2(x))
+        x = self.leakyrelu(self.linear_2(x))
         x = self.linear_3(x)
-        x = self.normal_3(x)
-        return self.leakyrelu(x)
+        #x = self.normal_3(x)
+        return x
