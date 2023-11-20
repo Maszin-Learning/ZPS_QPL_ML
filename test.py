@@ -183,6 +183,21 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
         test_pulse = np_to_complex_pt(pulses.Y, device = device, dtype = dtype)
         test_phase = None
 
+    elif pulse_type == "from_dataset":
+        intensity_labels = os.listdir('data/train_intensity')
+        phase_labels = os.listdir('data/train_phase')
+        dataset_size = len(intensity_labels)
+        number = np.random.randint(low = 0, high = dataset_size)
+        intensity_name = intensity_labels[number]
+        phase_name = phase_labels[number]
+
+        test_pulse = np.loadtxt('data/train_intensity/' + intensity_name,
+                 delimiter = " ", dtype = np.float32)
+        test_phase = np.loadtxt('data/train_phase/' + phase_name,
+                 delimiter = " ", dtype = np.float32)
+        
+        test_pulse = np_to_complex_pt(test_pulse, device = device, dtype = dtype)
+
     else:
         raise Exception("Pulse_type not defined.")
 

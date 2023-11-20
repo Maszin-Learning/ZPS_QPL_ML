@@ -145,17 +145,17 @@ def plot_dataset(number, pulse, ft_pulse):
         plt.fill_between(pulse_safe.X, pulse_safe.Y, color = "orange", alpha = 0.4)
         plt.scatter(pulse_safe.X, phase, color = "red", s = 9)
         plt.grid()
-        plt.legend(["Spectral intensity", "Spectral phase"])
+        plt.legend(["Temporal intensity", "Temporal phase"])
         plt.title("Train phase")
         plt.xlabel("Quasitime (ps)")
-        plt.ylabel("Spectral phase (rad)")
+        plt.ylabel("Temporal phase (rad)")
 
         plt.subplot(2, 1, 1)
         plt.plot(pulse.X, intensity, color = "darkorange")
         plt.plot(pulse.X, pulse.Y, color = "black", linestyle = "dashed")
         plt.grid()
-        plt.legend(["New intensity", "Initial intensity"])
-        plt.title("Train intensity")
+        plt.legend(["Evolved intensity", "Initial intensity"])
+        plt.title("Spectral intensity")
         plt.xlabel("Frequency (THz)")
         plt.ylabel("Intensity (a.u.)")
 
@@ -174,28 +174,3 @@ def np_to_complex_pt(array, device, dtype):
     array = array.reshape(1, array.numel())
 
     return array
-
-
-def TB_prod(time, freq, time_intensity, freq_intensity):
-    
-    def sigma(X, Y):
-        the_mean = np.sum(Y*X)/np.sum(np.abs(Y))
-        return np.sqrt(np.sum((X-the_mean)**2 * Y)/np.sum(Y))##to zwraca poprawne wyniki bez dx
-    
-    std_time = sigma(time, np.abs(time_intensity)**2)
-    print(std_time*2.355*1000, "time")
-
-    std_freq = sigma(freq, np.abs(freq_intensity)**2)
-    print(std_freq*2.355, "freq")
-
-    TBp = std_freq*std_time*(2.355**2)
-    print("Time bandwidth product: {}".format(TBp))
-
-    return TBp
-
-def freq_to_time(freq_intensity):
-    return np.fft.ifftshift(np.fft.ifft(np.fft.fftshift(freq_intensity)))
-
-
-def time_to_freq(time_intensity):
-    return np.fft.fftshift(np.fft.fft(np.fft.ifftshift(time_intensity)))
