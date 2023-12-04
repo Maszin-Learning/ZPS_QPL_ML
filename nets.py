@@ -1,5 +1,6 @@
 import torch.nn as nn
 import torch
+import numpy as np
 
 
 ### network_1
@@ -14,6 +15,7 @@ class network_1(nn.Module):
         self.linear_3 = nn.Linear(n, output_size)
         
         self.leakyrelu = nn.LeakyReLU(0.1, inplace = True)
+        self.sigmoid = nn.Sigmoid()
         
         self.normal_1 = nn.LayerNorm(n)
         self.normal_3 = nn.LayerNorm(output_size)
@@ -27,7 +29,8 @@ class network_1(nn.Module):
         x = self.bn_1(x)
         x = self.dropout(x)
         x = self.linear_3(x)
-        return x
+        return self.sigmoid(x)* np.pi*2
+
     
 
 ### network_2 testowa dla cpu
@@ -71,6 +74,7 @@ class network_3(nn.Module):
         self.linear_3 = nn.Linear(n, output_size)
         
         self.leakyrelu = nn.LeakyReLU(0.1, inplace = True)
+        self.sigmoid = nn.Sigmoid()
         
         self.normal_1 = nn.LayerNorm(n)
         self.normal_3 = nn.LayerNorm(output_size)
@@ -186,7 +190,7 @@ class network_7(nn.Module): #do not work on cpu
         self.input = input_size
         self.output = output_size
 
-        self.linear_1 = nn.Linear(1520, n) # change 76 to scalable wersion
+        self.linear_1 = nn.Linear(3920, n) # change 76 to scalable wersion
         self.linear_2 = nn.Linear(n, n)
         self.linear_3 = nn.Linear(n, output_size)
         
@@ -350,7 +354,7 @@ class network_9(nn.Module): #do not work on cpu
         super(network_9, self).__init__()
         self.input = input_size
         self.output = output_size
-        self.linear_1 = nn.Linear(93696, n) # change 76 to scalable wersion
+        self.linear_1 = nn.Linear(93696, n) # change 76 to scalable version
         self.linear_2 = nn.Linear(n, n)
         self.linear_3 = nn.Linear(n, output_size)
         
@@ -388,7 +392,7 @@ class network_9(nn.Module): #do not work on cpu
         
         
         self.leakyrelu = nn.LeakyReLU(0.1, inplace = True)
-        
+        self.sigmoid = nn.Sigmoid()
         self.normal_1 = nn.LayerNorm(n)
         self.normal_3 = nn.LayerNorm(output_size)
         self.tanh = nn.Tanh()
@@ -409,32 +413,27 @@ class network_9(nn.Module): #do not work on cpu
         x = self.conv1d_1(x)
         x = self.avg_pool1d_1(x)
         self.bn_cv_1(x)
-        print(x.shape)
         
         x = self.conv1d_2(x)
         x = self.avg_pool1d_1(x)
         self.bn_cv_2(x)
-        print(x.shape)
         
         x = self.conv1d_3(x)  
         x = self.avg_pool1d_1(x)
         self.bn_cv_3(x)
-        print(x.shape)
         
         x = self.conv1d_4(x)
         self.bn_cv_4(x)
-        print(x.shape) 
         
         x = torch.flatten(x, start_dim=1, end_dim=-1)
-        print(x.shape)
         x = self.elu(self.linear_1(x))
         x = self.dropout(x)
         x = self.elu(self.linear_2(x))
         x = self.bn_fc_1(x)
         x = self.dropout(x)
         x = self.linear_3(x)
-        
         return x
+        #return self.sigmoid(x)*3.1415927*2
     
 class network_11(nn.Module):
     def __init__(self, input_size, n, output_size):
@@ -443,18 +442,17 @@ class network_11(nn.Module):
         self.input = input_size
         self.output = output_size
         self.linear_1 = nn.Linear(input_size,n)
-        #self.linear_2 = nn.Linear(n,n)9
+        #self.linear_2 = nn.Linear(n,n)
         self.linear_3 = nn.Linear(n,output_size)
-        
+        self.sigmoid = nn.Sigmoid()
         self.leakyrelu=nn.LeakyReLU(1, inplace=True)
         
-        self.normal_1 = nn.LayerNorm(n)
+        self.normal_1 = nn.LayerNorm(input_size)
         self.normal_3 = nn.LayerNorm(output_size)
 
     def forward(self,x):
-        x = self.leakyrelu(self.linear_1(x))
         x = self.normal_1(x)
-        #x = self.leakyrelu(self.linear_2(x))
+        x = self.leakyrelu(self.linear_1(x))
         x = self.linear_3(x)
-        x = self.normal_3(x)
-        return self.leakyrelu(x)
+
+        return self.sigmoid(x)* np.pi*2

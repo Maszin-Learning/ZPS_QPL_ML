@@ -145,17 +145,17 @@ def plot_dataset(number, pulse, ft_pulse):
         plt.fill_between(pulse_safe.X, pulse_safe.Y, color = "orange", alpha = 0.4)
         plt.scatter(pulse_safe.X, phase, color = "red", s = 9)
         plt.grid()
-        plt.legend(["Spectral intensity", "Spectral phase"])
+        plt.legend(["Temporal intensity", "Temporal phase"])
         plt.title("Train phase")
         plt.xlabel("Quasitime (ps)")
-        plt.ylabel("Spectral phase (rad)")
+        plt.ylabel("Temporal phase (rad)")
 
         plt.subplot(2, 1, 1)
         plt.plot(pulse.X, intensity, color = "darkorange")
         plt.plot(pulse.X, pulse.Y, color = "black", linestyle = "dashed")
         plt.grid()
-        plt.legend(["New intensity", "Initial intensity"])
-        plt.title("Train intensity")
+        plt.legend(["Evolved intensity", "Initial intensity"])
+        plt.title("Spectral intensity")
         plt.xlabel("Frequency (THz)")
         plt.ylabel("Intensity (a.u.)")
 
@@ -165,37 +165,54 @@ def plot_dataset(number, pulse, ft_pulse):
 
     print("Saving completed.\n")
 
+
 def np_to_complex_pt(array, device, dtype):
     '''
     Transform one-dimensional real-valued NumPy array into complex-valued PyTorch Tensor with shape [1, len(array)].
     '''
-    array = torch.tensor([[array[i], 0] for i in range(len(array))], requires_grad = True, device = device, dtype = dtype)
+    array = torch.tensor([[np.real(array[i]), 0] for i in range(len(array))], requires_grad = True, device = device, dtype = dtype)
     array = torch.view_as_complex(array)
     array = array.reshape(1, array.numel())
 
     return array
 
 
-def TB_prod(time, freq, time_intensity, freq_intensity):
-    
-    def sigma(X, Y):
-        the_mean = np.sum(Y*X)/np.sum(np.abs(Y))
-        return np.sqrt(np.sum((X-the_mean)**2 * Y)/np.sum(Y))##to zwraca poprawne wyniki bez dx
-    
-    std_time = sigma(time, np.abs(time_intensity)**2)
-    print(std_time*2.355*1000, "time")
-
-    std_freq = sigma(freq, np.abs(freq_intensity)**2)
-    print(std_freq*2.355, "freq")
-
-    TBp = std_freq*std_time*(2.355**2)
-    print("Time bandwidth product: {}".format(TBp))
-
-    return TBp
-
-def freq_to_time(freq_intensity):
-    return np.fft.ifftshift(np.fft.ifft(np.fft.fftshift(freq_intensity)))
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
-def time_to_freq(time_intensity):
-    return np.fft.fftshift(np.fft.fft(np.fft.ifftshift(time_intensity)))
+def comp_var(X, Y):
+    '''
+    Variance of the distribution.
+    '''
+    Y_2 = Y.copy()
+    Y_2 = np.abs(Y_2)
+    Y_2 /= np.sum(Y_2)
+    X_mean = np.mean(X)
+    var = np.sum(Y_2*(X-X_mean)**2)
+    return var
+
+
+def comp_std(X, Y):
+    '''
+    Standard deviation of the distribution.
+    '''
+    return np.sqrt(comp_var(X, Y))
+
+
+def comp_FWHM(std):
+    '''
+    Estimate Full Width at Half Maximum given the standard deviation of the distribution. For a gaussian the formula is precise.
+    '''
+    return 2*np.sqrt(2*np.log(2))*std
+
+
+def comp_mean_TBP(initial_X, initial_FWHM):
+    FWHMs = []
+    intensity_labels = os.listdir('data/train_intensity')
+    for label in tqdm(intensity_labels):
+        intensity = np.loadtxt("data/train_intensity/" + label)
+        FWHMs.append(comp_FWHM(comp_std(initial_X, intensity)))
+
+    TBPs = np.array(FWHMs)*initial_FWHM/2
+    return np.mean(TBPs), np.std(TBPs)

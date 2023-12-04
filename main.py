@@ -10,11 +10,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm import tqdm
 from math import floor
-from utilities import evolve_pt, np_to_complex_pt, evolve_np, plot_dataset
-from test import test
+from utilities import evolve_pt, np_to_complex_pt, evolve_np, plot_dataset, comp_FWHM, comp_std, comp_mean_TBP
 from dataset import Dataset
 from torch.utils.data import DataLoader #Dataloader module
-from test import create_test_pulse
+from test import create_test_pulse, test, create_test_set
 import torchvision.transforms as transforms  # Transformations and augmentations
 from dataset import Dataset_train
 from dataset_generator import Generator
@@ -38,7 +37,9 @@ def main(_learning_rate,
          _optimalizer,
          _test_signal,
          _weight_decay):
-    #hyperparameters
+    
+    # hyperparameters
+
     print('\n',
           'learning_rate:', _learning_rate,'\n',
           'epoch_number:', _epoch_num,'\n',
@@ -53,8 +54,8 @@ def main(_learning_rate,
           'test_signal:', _test_signal, '\n',
           'weight_decay:', _weight_decay, '\n')
     
-    
-    ### Chose architecture 
+    # Choose architecture 
+
     if _net_architecture == 'network_1':
         from nets import network_1 as network
     if _net_architecture == 'network_2':
@@ -76,7 +77,7 @@ def main(_learning_rate,
     if _net_architecture == 'network_11':
         from nets import network_11 as network
 
-    ### Chose device, disclaimer! on cpu network will not run due to batch normalization
+    # Choose device, disclaimer! on cpu network will not run due to batch normalization
 
     if _cpu:
         print('Forced cpu')
@@ -102,23 +103,23 @@ def main(_learning_rate,
 
     my_dtype = torch.float32
 
-    # initial pulse (that is transformed by some phase)
+    # initial pulse (that is to be transformed by some phase)
 
-    input_dim = 5000 # number of points in a single pulse
-    zeroes_num = 5000
+    input_dim = 5000    # number of points in a single pulse
+    zeroes_num = 10000   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
 
     bandwidth = [190, 196]
     centre = 193
-    FWHM = 0.4
+    width = 0.4
 
-    # this is our input for the net
     initial_pulse = sa.hermitian_pulse(pol_num = 0, # 0 for gauss signal
                                     bandwidth = bandwidth,
                                     centre = centre,
-                                    FWHM = FWHM,
+                                    FWHM = width,
                                     num = input_dim)
-    
+        
     # this serves only to generate FT pulse
+
     long_pulse = initial_pulse.zero_padding(length = zeroes_num, inplace = False)
     long_pulse_2 = long_pulse.copy()    
     Y_initial = initial_pulse.Y.copy()
@@ -126,6 +127,7 @@ def main(_learning_rate,
     # we want to find what is the bandwidth of intensity after FT, to estimate output dimension of NN
 
     long_pulse.fourier()
+    fwhm_init_F = comp_FWHM(comp_std(initial_pulse.fourier(inplace = False).X, initial_pulse.fourier(inplace = False).Y))
     x_start = long_pulse.quantile(0.001)
     x_end = long_pulse.quantile(0.999)
     idx_start = np.searchsorted(long_pulse.X, x_start)
@@ -149,6 +151,12 @@ def main(_learning_rate,
 
     test_pulse, test_phase = create_test_pulse(_test_signal, initial_pulse, output_dim, my_device, my_dtype)
 
+    fwhm_test = comp_FWHM(comp_std(initial_pulse.X.copy(), test_pulse.clone().detach().cpu().numpy().ravel()))
+    print("\nTime-bandwidth product of the test pulse is equal to {}.\n".format(round(fwhm_test*fwhm_init_F/2, 5)))   # WARNING: This "/2" is just empirical correction
+    if fwhm_test*fwhm_init_F/2 < 0.44:
+        print("TRANSFORMATION IMPOSSIBLE\n")
+    test_set = create_test_set(initial_pulse, output_dim, my_device, my_dtype)
+
     # create dataset and wrap it into dataloader
 
     if _generate:
@@ -156,6 +164,7 @@ def main(_learning_rate,
         
         the_generator = Generator(data_num = _dataset_size,
                                 initial_intensity = Y_initial,
+                                FT_X = pulse_ft.X,
                                 phase_len = output_dim,
                                 device = my_device,
                                 dtype = np.float32
@@ -165,6 +174,10 @@ def main(_learning_rate,
         print("Successfully created training set containing {} spectra.\n".format(len(os.listdir('data/train_intensity'))))
 
         plot_dataset(100, pulse = initial_pulse, ft_pulse = pulse_ft)
+
+        print("Calculating mean Time-Bandwidth Product of the training set...")
+        TBP_mean, TBP_std = comp_mean_TBP(initial_pulse.X, fwhm_init_F)
+        print("Mean TBP of the training dataset is equal to {} +- {}.\n".format(round(TBP_mean, 5), round(TBP_std, 5)))   
 
         exit()
 
@@ -182,6 +195,8 @@ def main(_learning_rate,
                 n = _node_number, 
                 output_size = output_dim)
     model.to(device = my_device, dtype = my_dtype)
+
+    print("Model parameters: {}\n".format(utilities.count_parameters(model)))
 
     # choose optimizer
 
@@ -235,18 +250,36 @@ def main(_learning_rate,
             model.eval()
 
             print("Epoch no. {}. Loss {}.".format(epoch, np.mean(np.array(loss_list[epoch*len(dataloader_train): (epoch+1)*len(dataloader_train)]))))
-            fig, test_loss=test(model = model,
+            fig, test_loss = test(model = model,
                     test_pulse = test_pulse,
                     test_phase = test_phase,
                     initial_pulse = long_pulse_2.copy(),
                     device = my_device, 
                     dtype = my_dtype,
-                    iter_num = epoch)
+                    iter_num = epoch,
+                    save = True)
             
             wandb.log({"chart": fig})
             print('test_loss',test_loss)
             wandb.log({"test_loss": test_loss})
             fig.close()
+
+            test_set_losses = []
+            for test_signal in test_set:
+                fig, test_loss_temp = test(model = model,
+                                test_pulse = test_signal,
+                                test_phase = test_phase,
+                                initial_pulse = long_pulse_2.copy(),
+                                device = my_device, 
+                                dtype = my_dtype,
+                                iter_num = epoch,
+                                save = False)
+                test_set_losses.append(test_loss_temp)
+                fig.close()
+
+            wandb.log({"test_set_loss": np.mean(test_set_losses)})
+            print('test_set_loss', np.mean(test_set_losses))
+
             model.train()
 
 if __name__ == "__main__":

@@ -7,7 +7,7 @@ from utilities import np_to_complex_pt, evolve_np, evolve_pt
 from torch.nn import MSELoss
 import torch
 
-def test(model, test_pulse, initial_pulse, device, dtype, test_phase = None, iter_num = 0):
+def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = None, iter_num = 0, ):
     '''
     ## Test the model with a given test pulse.
 
@@ -44,8 +44,8 @@ def test(model, test_pulse, initial_pulse, device, dtype, test_phase = None, ite
 
     initial_pulse_short = initial_pulse.cut(start = zeros_num, end = zeros_num+input_dim, inplace = False, how = "index")
 
-    plot_from = floor(1/6*input_dim)
-    plot_to = floor(5/6*input_dim)
+    plot_from = floor(0*input_dim)
+    plot_to = floor(1*input_dim)
 
     # generate test chirp pulse
 
@@ -126,10 +126,11 @@ def test(model, test_pulse, initial_pulse, device, dtype, test_phase = None, ite
         plt.legend(["Reconstructed phase", "FT intensity"], bbox_to_anchor = [0.95, -0.15])
     plt.grid()
 
-    if not os.path.isdir("pics"):
-        os.mkdir("pics")
+    if save:
+        if not os.path.isdir("pics"):
+            os.mkdir("pics")
+        plt.savefig("pics/reconstructed_{}.jpg".format(iter_num), bbox_inches = "tight", dpi = 200)
 
-    plt.savefig("pics/reconstructed_{}.jpg".format(iter_num), bbox_inches = "tight", dpi = 200)
     return plt, mse(test_pulse.abs(), reconstructed.abs()).clone().cpu().detach().numpy()
     
 
@@ -139,7 +140,9 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
     # Arguments:
 
     pulse_type - if \"hermite\", then the test intensity is a 1 Hermite-Gauss polynomial.
-    if \"chirp\", then the test intensity is chirped Gaussian function. 
+    If \"chirp\", then the test intensity is chirped Gaussian function. 
+    If \"from_dataset\", then chooses at random a intensity saved in \"data/train_intensity\".
+    If \"two_pulses\", then returns two separated gaussian pulses.
 
     initial_pulse - a spectrum class object containing the initial spectrum that is - possibly - transformed into test_pulse.
 
@@ -151,17 +154,17 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
     '''
 
     if pulse_type == "hermite":
-        test_pulse = sa.hermitian_pulse(pol_num = 1,
+        test_pulse_ = sa.hermitian_pulse(pol_num = 1,
                                         bandwidth = (initial_pulse.X[0], initial_pulse.X[-1]),
                                         centre = 193,
                                         FWHM = 1,
                                         num = len(initial_pulse))
 
-        test_pulse.Y = test_pulse.Y / np.sum(test_pulse.Y*np.conjugate(test_pulse.Y))
-        test_pulse.Y = test_pulse.Y * np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y))
+        test_pulse_.Y = test_pulse_.Y / np.sqrt(np.sum(test_pulse_.Y*np.conjugate(test_pulse_.Y)))
+        test_pulse_.Y = test_pulse_.Y * np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
         
-        test_pulse = np_to_complex_pt(test_pulse.Y, device = device, dtype = dtype)
-        test_phase = None
+        test_pulse_ = np_to_complex_pt(test_pulse_.Y, device = device, dtype = dtype)
+        test_phase_ = None
 
     elif pulse_type == "chirp":
         if dtype == torch.float32:
@@ -169,9 +172,71 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
         else:
             new_dtype = dtype
         initial_intensity = initial_pulse.Y.copy()
-        chirp = 20
-        test_phase = chirp*np.linspace(-1, 1, phase_len, dtype = new_dtype)**2
-        test_pulse = evolve_np(initial_intensity, test_phase, dtype = new_dtype)
-        test_pulse = np_to_complex_pt(test_pulse, device = device, dtype = torch.float32)
+        chirp = 100
+        test_phase_ = chirp*np.linspace(-1, 1, phase_len, dtype = new_dtype)**2
+        test_pulse_ = evolve_np(initial_intensity, test_phase_, dtype = new_dtype)
+        test_pulse_ = np_to_complex_pt(test_pulse_, device = device, dtype = torch.float32)
 
-    return test_pulse, test_phase
+    elif pulse_type == "two_pulses":
+        pulses = sa.hermitian_pulse(pol_num = 0, 
+                                    bandwidth = [initial_pulse.X[0], initial_pulse.X[-1]],
+                                    centre = initial_pulse.quantile(0.5),
+                                    FWHM = initial_pulse.FWHM(),
+                                    num = len(initial_pulse),
+                                    x_type = initial_pulse.x_type)
+        pulses.Y = pulses.Y + pulses.very_smart_shift(-0.5, inplace = False).Y + pulses.very_smart_shift(0.5, inplace = False).Y
+        pulses.Y = pulses.Y / np.sqrt(np.sum(pulses.Y*np.conjugate(pulses.Y)))
+        pulses.Y = pulses.Y * np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
+        test_pulse_ = np_to_complex_pt(pulses.Y, device = device, dtype = dtype)
+        test_phase_ = None
+
+    elif pulse_type == "from_dataset":
+        intensity_labels = os.listdir('data/train_intensity')
+        phase_labels = os.listdir('data/train_phase')
+        dataset_size = len(intensity_labels)
+        number = np.random.randint(low = 0, high = dataset_size)
+        intensity_name = intensity_labels[number]
+        phase_name = phase_labels[number]
+
+        test_pulse_ = np.loadtxt('data/train_intensity/' + intensity_name,
+                 delimiter = " ", dtype = np.float32)
+        test_phase_ = np.loadtxt('data/train_phase/' + phase_name,
+                 delimiter = " ", dtype = np.float32)
+        
+        test_pulse_ = np_to_complex_pt(test_pulse_, device = device, dtype = dtype)
+
+    elif pulse_type == "exponential":
+        exp_intensity = np.exp(np.linspace(-3, 3, len(initial_pulse))) - np.exp(-1.5)
+        for i in range(floor(len(exp_intensity)*3/4), len(exp_intensity)):
+            exp_intensity[i] = 0
+        for i in range(0, floor(len(exp_intensity)*1/4)):
+            exp_intensity[i] = 0
+        exp_intensity = exp_intensity / np.sqrt(np.sum(exp_intensity*np.conjugate(exp_intensity)))
+        exp_intensity = exp_intensity * np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
+
+        test_pulse_ = np_to_complex_pt(exp_intensity, device = device, dtype = dtype)
+        test_phase_ = None
+
+    else:
+        raise Exception("Pulse_type not defined.")
+
+    return test_pulse_.clone(), test_phase_
+
+
+def create_test_set(initial_pulse, phase_len, device, dtype):
+    '''
+    ## Returns a list with predefined test intensities.
+
+    initial_pulse - a spectrum class object containing the initial spectrum that is - possibly - transformed into test_pulse.
+
+    phase_len - the length of significant part of the Fourier transformed initial_pulse
+    '''
+    test_set = []
+    for pulse_type in ["hermite", "chirp"]:
+        test_set.append(create_test_pulse(pulse_type = pulse_type, 
+                                          initial_pulse = initial_pulse.copy(),
+                                          phase_len = phase_len, 
+                                          device = device, 
+                                          dtype = dtype)[0])
+        
+    return test_set
