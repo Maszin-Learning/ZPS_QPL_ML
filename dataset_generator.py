@@ -3,15 +3,17 @@ import numpy as np
 import spectral_analysis as sa
 from utilities import np_to_complex_pt, evolve_pt, evolve_np
 import os
+import test
 from tqdm import tqdm
 import shutil
 from math import floor
 
 class Generator():
 
-    def __init__(self, data_num, initial_intensity, phase_len, device, dtype, max_order=10, max_value=np.pi):
+    def __init__(self, data_num, initial_intensity, FT_X, phase_len, device, dtype, max_order=10, max_value=np.pi):
         self.data_num = data_num
         self.initial_intensity = initial_intensity
+        self.FT_X = FT_X
         self.intensity_len = len(initial_intensity)
         self.phase_len = phase_len
         self.max_order = max_order
@@ -101,7 +103,7 @@ class Generator():
             Sum of the Hermite polynomials.
             '''
 
-            max_order = 10
+            max_order = 15
 
             Y = np.zeros(self.phase_len)
             for order in range(max_order):
@@ -110,13 +112,14 @@ class Generator():
                     bandwidth = [-1, 1],
                     centre = 0,
                     FWHM = 0.5,
-                    num = self.phase_len).Y
+                    num = self.phase_len,
+                    broad = False).Y
                 
             Y /= np.max(np.abs(Y))
             return Y*np.random.uniform(1, np.pi)
         
         # let's toss a coin, my friend
-        coin = np.random.choice(np.array([0,1,2,3,4,5]), size = 1, p = [0.75, 0.05, 0.05, 0.05, 0.05, 0.05])
+        coin = np.random.choice(np.array([0,1,2,3,4,5]), size = 1, p = [1, 0.00, 0.00, 0.00, 0.00, 0.00])
 
         if coin == 0:
             phase = hermite_like()
@@ -132,6 +135,9 @@ class Generator():
             phase = absolute_like_multi()
         else:
             raise Exception("Your multidimensional coin has more dimensions that one could expect.")
+        
+        shift = np.random.uniform(-1, 1) # just random shift from -1 up to 1 THz
+        phase += 2*np.pi*shift*self.FT_X
 
         return phase
 
@@ -143,9 +149,31 @@ class Generator():
 
         intensity = self.initial_intensity.copy()
         intensity = np.array([complex(intensity[i], 0) for i in range(len(intensity))])
-        
-        phase_significant = self.phase_gen()
-        
-        intensity = evolve_np(intensity, phase_significant, dtype = self.dtype)
+        probability = np.random.uniform()
+        if probability < 0.5:
+            phase_significant = self.phase_gen()
+            intensity = evolve_np(intensity, phase_significant, dtype = self.dtype)
+        elif 0.5 <= probability < 1:
+            intensity = np.exp(np.linspace(-3, 3, self.intensity_len)) - np.exp(-1.5)
+            for i in range(floor(len(intensity)*3/4), len(intensity)):
+                intensity[i] = 0
+            for i in range(0, floor(len(intensity)*1/4)):
+                intensity[i] = 0
+            intensity = intensity / np.sqrt(np.sum(intensity*np.conjugate(intensity)))
+            intensity = intensity * np.sqrt(np.sum(self.initial_intensity*np.conjugate(self.initial_intensity)))
+            phase_significant = np.ones(self.phase_len)
+
+        else:
+            order = np.random.randint(5)
+            correction = np.random.uniform(-0.5, 0.5)
+            intensity = sa.hermitian_pulse(pol_num = order,
+                                           bandwidth = [190, 196],
+                                           centre = 193,
+                                           FWHM = 1,
+                                           num = len(intensity)).Y
+            
+            intensity = intensity / np.sqrt(np.sum(intensity*np.conjugate(intensity)))
+            intensity = intensity * np.sqrt(np.sum(self.initial_intensity*np.conjugate(self.initial_intensity)))
+            phase_significant = np.ones(self.phase_len)
         
         return np.abs(intensity), phase_significant

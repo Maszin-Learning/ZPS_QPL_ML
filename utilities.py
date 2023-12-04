@@ -165,12 +165,54 @@ def plot_dataset(number, pulse, ft_pulse):
 
     print("Saving completed.\n")
 
+
 def np_to_complex_pt(array, device, dtype):
     '''
     Transform one-dimensional real-valued NumPy array into complex-valued PyTorch Tensor with shape [1, len(array)].
     '''
-    array = torch.tensor([[array[i], 0] for i in range(len(array))], requires_grad = True, device = device, dtype = dtype)
+    array = torch.tensor([[np.real(array[i]), 0] for i in range(len(array))], requires_grad = True, device = device, dtype = dtype)
     array = torch.view_as_complex(array)
     array = array.reshape(1, array.numel())
 
     return array
+
+
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+
+def comp_var(X, Y):
+    '''
+    Variance of the distribution.
+    '''
+    Y_2 = Y.copy()
+    Y_2 = np.abs(Y_2)
+    Y_2 /= np.sum(Y_2)
+    X_mean = np.mean(X)
+    var = np.sum(Y_2*(X-X_mean)**2)
+    return var
+
+
+def comp_std(X, Y):
+    '''
+    Standard deviation of the distribution.
+    '''
+    return np.sqrt(comp_var(X, Y))
+
+
+def comp_FWHM(std):
+    '''
+    Estimate Full Width at Half Maximum given the standard deviation of the distribution. For a gaussian the formula is precise.
+    '''
+    return 2*np.sqrt(2*np.log(2))*std
+
+
+def comp_mean_TBP(initial_X, initial_FWHM):
+    FWHMs = []
+    intensity_labels = os.listdir('data/train_intensity')
+    for label in tqdm(intensity_labels):
+        intensity = np.loadtxt("data/train_intensity/" + label)
+        FWHMs.append(comp_FWHM(comp_std(initial_X, intensity)))
+
+    TBPs = np.array(FWHMs)*initial_FWHM/2
+    return np.mean(TBPs), np.std(TBPs)
