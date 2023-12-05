@@ -2,6 +2,38 @@ import torch.nn as nn
 import torch
 import numpy as np
 
+'''
+Simple nonlinear networks
+'''
+
+
+### network_0, network in DEVELOPMENT
+class network_0(nn.Module):
+    def __init__(self, input_size, n, output_size):
+        super(network_0, self).__init__()
+        self.input = input_size
+        self.output = output_size
+
+        self.linear_1 = nn.Linear(input_size, n)
+        self.linear_2 = nn.Linear(n, n)
+        self.linear_3 = nn.Linear(n, output_size)
+        
+        self.leakyrelu = nn.LeakyReLU(0.1, inplace = True)
+        self.sigmoid = nn.Sigmoid()
+        self.tanh = nn.Tanh()
+        
+        self.normal_1 = nn.LayerNorm(n)
+        self.bn_1 = nn.BatchNorm1d(n) #wont work on cpu
+        self.dropout = nn.Dropout(0.25)
+
+    def forward(self,x):
+        #print(x.shape)
+        x = self.tanh(self.linear_1(x))
+        x = self.bn_1(x)
+        x = self.dropout(x)
+        x = self.linear_3(x)
+        return self.sigmoid(x)* np.pi*2
+
 
 ### network_1
 class network_1(nn.Module):
@@ -18,8 +50,6 @@ class network_1(nn.Module):
         self.sigmoid = nn.Sigmoid()
         
         self.normal_1 = nn.LayerNorm(n)
-        self.normal_3 = nn.LayerNorm(output_size)
-        self.tanh = nn.Tanh()
         self.bn_1 = nn.BatchNorm1d(n) #wont work on cpu
         self.dropout = nn.Dropout(0.25)
 
@@ -45,25 +75,17 @@ class network_2(nn.Module):
         self.linear_3 = nn.Linear(n, output_size)
         
         self.leakyrelu = nn.LeakyReLU(0.1, inplace = True)
-        
-        self.normal_1 = nn.LayerNorm(n)
-        self.normal_3 = nn.LayerNorm(output_size)
-        self.tanh = nn.Tanh()
-        self.bn_1 = nn.BatchNorm1d(n) #wont work on cpu
         self.dropout = nn.Dropout(0.25)
 
     def forward(self,x):
-        #print(x.shape)
         x = self.leakyrelu(self.linear_1(x))
-        #x = self.bn_1(x)
-        #x = self.bn_1(x)
         x = self.dropout(x)
         x = self.linear_3(x)
-        return self.sigmoid(x)* np.pi*2
+        return self.sigmoid(x) * np.pi*2
     
 
 ### network_3
-class network_3(nn.Module):
+class network_3(nn.Module): #X
     def __init__(self, input_size, n, output_size):
         super(network_3, self).__init__()
         self.input = input_size
@@ -95,7 +117,7 @@ class network_3(nn.Module):
     
 
 ### network_4
-class network_4(nn.Module):
+class network_4(nn.Module): 
     def __init__(self, input_size, n, output_size):
         super(network_4, self).__init__()
         self.input = input_size
@@ -106,6 +128,7 @@ class network_4(nn.Module):
         self.linear_3 = nn.Linear(n, output_size)
         
         self.leakyrelu = nn.LeakyReLU(0.1, inplace = True)
+        self.sigmoid = nn.Sigmoid()
         
         self.normal_1 = nn.LayerNorm(n)
         self.normal_3 = nn.LayerNorm(output_size)
@@ -123,67 +146,35 @@ class network_4(nn.Module):
         x = self.linear_3(x)
         return self.sigmoid(x)* np.pi*2
     
-### network_5 4 with relu
-class network_5(nn.Module):
-    def __init__(self, input_size, n, output_size):
-        super(network_5, self).__init__()
-        self.input = input_size
-        self.output = output_size
-
-        self.linear_1 = nn.Linear(input_size, n)
-        self.linear_2 = nn.Linear(n, n)
-        self.linear_3 = nn.Linear(n, output_size)
-        
-        self.leakyrelu = nn.LeakyReLU(0.1, inplace = True)
-        
-        self.normal_1 = nn.LayerNorm(n)
-        self.normal_3 = nn.LayerNorm(output_size)
-        self.tanh = nn.Tanh()
-        self.relu = nn.ReLU()
-        self.bn_1 = nn.BatchNorm1d(n) #wont work on cpu
-        self.dropout = nn.Dropout(0.25)
-
-    def forward(self,x):
-        #print(x.shape)
-        x = self.relu(self.linear_1(x))
-        x = self.bn_1(x)
-        x = self.relu(self.linear_2(x))
-        x = self.bn_1(x)
-        x = self.dropout(x)
-        x = self.linear_3(x)
-        return self.sigmoid(x)* np.pi*2
     
-### network_6 4 with tanh
-class network_6(nn.Module):
-    def __init__(self, input_size, n, output_size):
-        super(network_6, self).__init__()
-        self.input = input_size
-        self.output = output_size
-
-        self.linear_1 = nn.Linear(input_size, n)
-        self.linear_2 = nn.Linear(n, n)
-        self.linear_3 = nn.Linear(n, output_size)
-        
-        self.leakyrelu = nn.LeakyReLU(0.1, inplace = True)
-        
-        self.normal_1 = nn.LayerNorm(n)
-        self.normal_3 = nn.LayerNorm(output_size)
-        self.tanh = nn.Tanh()
-        self.relu = nn.ReLU()
-        self.bn_1 = nn.BatchNorm1d(n) #wont work on cpu
-        self.dropout = nn.Dropout(0.25)
-
-    def forward(self,x):
-        #print(x.shape)
-        x = self.tanh(self.linear_1(x))
-        x = self.bn_1(x)
-        x = self.tanh(self.linear_2(x))
-        x = self.bn_1(x)
-        x = self.dropout(x)
-        x = self.linear_3(x)
-        return self.sigmoid(x)* np.pi*2
     
-    ### network_7 with convolutionas
+'''
+Convolution networks
+'''  
+    
+class Conv_Block(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size, stride, padding):
+        self._in_channels=in_channels
+        self._out_channels=out_channels
+        self._kernel_size=kernel_size
+        self._stride=stride
+        self._padding=padding
+        self.conv1d = nn.Conv1d(in_channels=self._in_channels,
+                                  out_channels=self._out_channels,
+                                  kernel_size=self._kernel_size,
+                                  stride=self._stride,
+                                  padding=self._padding)
+        
+        self.avg_pool1d = nn.AvgPool1d(kernel_size=3,
+                                         stride=None,
+                                         padding=0)
+
+    def forward(self, x):
+        x = self.avg_pool1d(self.conv1d(x))
+        return x
+
+
+### network_7 with convolutionas
 class network_7(nn.Module): #do not work on cpu
     def __init__(self, input_size, n, output_size):
         super(network_7, self).__init__()
@@ -254,7 +245,7 @@ class network_7(nn.Module): #do not work on cpu
 
     
     
-    ### network_8 with convolutionas
+### network_8 with convolutionas
 class network_8(nn.Module): #do not work on cpu
     def __init__(self, input_size, n, output_size):
         super(network_8, self).__init__()
@@ -327,26 +318,7 @@ class network_8(nn.Module): #do not work on cpu
     
     ### network_9 with convolutionas, BIG BOY
     
-class Conv_Block(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size, stride, padding):
-        self._in_channels=in_channels
-        self._out_channels=out_channels
-        self._kernel_size=kernel_size
-        self._stride=stride
-        self._padding=padding
-        self.conv1d = nn.Conv1d(in_channels=self._in_channels,
-                                  out_channels=self._out_channels,
-                                  kernel_size=self._kernel_size,
-                                  stride=self._stride,
-                                  padding=self._padding)
-        
-        self.avg_pool1d = nn.AvgPool1d(kernel_size=3,
-                                         stride=None,
-                                         padding=0)
 
-    def forward(self, x):
-        x = self.avg_pool1d(self.conv1d(x))
-        return x
     
 
 class network_9(nn.Module): #do not work on cpu
@@ -432,27 +404,5 @@ class network_9(nn.Module): #do not work on cpu
         x = self.bn_fc_1(x)
         x = self.dropout(x)
         x = self.linear_3(x)
-        return x
-        #return self.sigmoid(x)*3.1415927*2
-    
-class network_11(nn.Module):
-    def __init__(self, input_size, n, output_size):
-        # super function. It inherits from nn.Module and we can access everything in nn.Module
-        super(network_11, self).__init__()
-        self.input = input_size
-        self.output = output_size
-        self.linear_1 = nn.Linear(input_size,n)
-        #self.linear_2 = nn.Linear(n,n)
-        self.linear_3 = nn.Linear(n,output_size)
-        self.sigmoid = nn.Sigmoid()
-        self.leakyrelu=nn.LeakyReLU(1, inplace=True)
-        
-        self.normal_1 = nn.LayerNorm(input_size)
-        self.normal_3 = nn.LayerNorm(output_size)
-
-    def forward(self,x):
-        x = self.normal_1(x)
-        x = self.leakyrelu(self.linear_1(x))
-        x = self.linear_3(x)
-
         return self.sigmoid(x)* np.pi*2
+        
