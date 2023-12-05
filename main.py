@@ -219,6 +219,8 @@ def main(_learning_rate,
     if _criterion =='L1':
         criterion = torch.nn.L1Loss()
     
+    # create dataset and dataloader
+    
     dataset_train = Dataset_train(root='', transform=True, device = my_device)
     dataloader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size=_batch_size, num_workers=0, shuffle=True)
     
@@ -238,7 +240,7 @@ def main(_learning_rate,
             initial_intensity = np_to_complex_pt(long_pulse_2.Y.copy(), device = my_device, dtype = my_dtype)
             reconstructed_intensity = evolve_pt(initial_intensity, predicted_phase, device = my_device, dtype = my_dtype)
 
-            # a bit of calculus
+            # a bit of calculus, calculating backpropagation
             loss = criterion(reconstructed_intensity.abs()[:,zeroes_num: input_dim + zeroes_num], pulse) # pulse intensity
             loss.backward()
             optimizer.step()
@@ -284,6 +286,7 @@ def main(_learning_rate,
             print('test_set_loss', np.mean(test_set_losses))
 
             model.train()
+
 
 if __name__ == "__main__":
     warnings.simplefilter("ignore", UserWarning) # ignore warnings from plotly
