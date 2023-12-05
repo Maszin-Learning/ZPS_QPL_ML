@@ -59,7 +59,7 @@ class network_2(nn.Module):
         #x = self.bn_1(x)
         x = self.dropout(x)
         x = self.linear_3(x)
-        return x
+        return self.sigmoid(x)* np.pi*2
     
 
 ### network_3
@@ -91,7 +91,7 @@ class network_3(nn.Module):
         x = self.bn_1(x)
         x = self.dropout(x)
         x = self.linear_3(x)
-        return x
+        return self.sigmoid(x)* np.pi*2
     
 
 ### network_4
@@ -121,7 +121,7 @@ class network_4(nn.Module):
         x = self.bn_1(x)
         x = self.dropout(x)
         x = self.linear_3(x)
-        return x
+        return self.sigmoid(x)* np.pi*2
     
 ### network_5 4 with relu
 class network_5(nn.Module):
@@ -151,7 +151,7 @@ class network_5(nn.Module):
         x = self.bn_1(x)
         x = self.dropout(x)
         x = self.linear_3(x)
-        return x
+        return self.sigmoid(x)* np.pi*2
     
 ### network_6 4 with tanh
 class network_6(nn.Module):
@@ -181,7 +181,7 @@ class network_6(nn.Module):
         x = self.bn_1(x)
         x = self.dropout(x)
         x = self.linear_3(x)
-        return x
+        return self.sigmoid(x)* np.pi*2
     
     ### network_7 with convolutionas
 class network_7(nn.Module): #do not work on cpu
@@ -249,7 +249,7 @@ class network_7(nn.Module): #do not work on cpu
         x = self.dropout(x)
         x = self.linear_3(x)
         
-        return x
+        return self.sigmoid(x)* np.pi*2
     
 
     
@@ -323,7 +323,7 @@ class network_8(nn.Module): #do not work on cpu
         x = self.dropout(x)
         x = self.linear_3(x)
         
-        return x
+        return self.sigmoid(x)* np.pi*2
     
     ### network_9 with convolutionas, BIG BOY
     
