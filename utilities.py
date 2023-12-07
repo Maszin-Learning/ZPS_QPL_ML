@@ -2,6 +2,7 @@ import torch
 import numpy as np
 from math import floor
 import matplotlib.pyplot as plt
+import spectral_analysis as sa
 import os
 import shutil
 from tqdm import tqdm
@@ -142,8 +143,8 @@ def plot_dataset(number, pulse, ft_pulse):
         pulse_safe.Y *= np.max(np.abs(phase))
 
         plt.subplot(2, 1, 2)
-        plt.fill_between(pulse_safe.X, pulse_safe.Y, color = "orange", alpha = 0.4)
-        plt.scatter(pulse_safe.X, phase, color = "red", s = 9)
+        plt.fill_between(pulse_safe.X, np.real(pulse_safe.Y), color = "orange", alpha = 0.4)
+        plt.scatter(pulse_safe.X, np.real(phase), color = "red", s = 9)
         plt.grid()
         plt.legend(["Temporal intensity", "Temporal phase"])
         plt.title("Train phase")
@@ -216,3 +217,22 @@ def comp_mean_TBP(initial_X, initial_FWHM):
 
     TBPs = np.array(FWHMs)*initial_FWHM/2
     return np.mean(TBPs), np.std(TBPs)
+
+
+def shift_to_centre(intensity_to_shift, intensity_ref):
+    '''
+    Return the \"intensity_to_shift\" shifted in such a way that its center of mass is on the same index as in the case of the \"intensity_ref\".
+    '''
+    if len(intensity_to_shift) != len(intensity_ref):
+        raise Exception("Both intensities must be of equal length.")
+    num = len(intensity_ref)
+
+    x_axis = np.linspace(1, 2, num) # doesn't matter what we take here; I just want to create spectrum
+    spectrum_to_shift = sa.spectrum(x_axis, intensity_to_shift, "freq", "intensity")
+    spectrum_ref = sa.spectrum(x_axis, intensity_ref, "freq", "intensity")
+
+    com_s = spectrum_to_shift.comp_center()
+    com_r = spectrum_ref.comp_center()
+
+    spectrum_to_shift.very_smart_shift(com_s-com_r, inplace = True)
+    return np.real(spectrum_to_shift.Y)

@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 import spectral_analysis as sa
-from utilities import np_to_complex_pt, evolve_pt, evolve_np
+from utilities import np_to_complex_pt, evolve_pt, evolve_np, shift_to_centre
 import os
 import test
 from tqdm import tqdm
@@ -113,10 +113,10 @@ class Generator():
                     centre = 0,
                     FWHM = 0.5,
                     num = self.phase_len,
-                    broad = False).Y
+                    broad = True).Y
                 
             Y /= np.max(np.abs(Y))
-            return Y*np.random.uniform(1, np.pi)
+            return Y*np.random.uniform(1, 5*np.pi)
         
         # let's toss a coin, my friend
         coin = np.random.choice(np.array([0,1,2,3,4,5]), size = 1, p = [1, 0.00, 0.00, 0.00, 0.00, 0.00])
@@ -136,8 +136,10 @@ class Generator():
         else:
             raise Exception("Your multidimensional coin has more dimensions that one could expect.")
         
+        '''
         shift = np.random.uniform(-1, 1) # just random shift from -1 up to 1 THz
         phase += 2*np.pi*shift*self.FT_X
+        '''
 
         return phase
 
@@ -149,12 +151,15 @@ class Generator():
 
         intensity = self.initial_intensity.copy()
         intensity = np.array([complex(intensity[i], 0) for i in range(len(intensity))])
-        probability = np.random.uniform()
-        if probability < 0.5:
+        probability = np.random.uniform(0, 1)
+
+        if probability < 0.5: # phases from the phase generator
             phase_significant = self.phase_gen()
             intensity = evolve_np(intensity, phase_significant, dtype = self.dtype)
-        elif 0.5 <= probability < 1:
-            intensity = np.exp(np.linspace(-3, 3, self.intensity_len)) - np.exp(-1.5)
+
+        elif True:    # exponential
+            parameter = np.random.uniform(1, 20)
+            intensity = np.exp(np.linspace(-3, parameter, self.intensity_len)) - np.exp(-1.5)
             for i in range(floor(len(intensity)*3/4), len(intensity)):
                 intensity[i] = 0
             for i in range(0, floor(len(intensity)*1/4)):
@@ -163,7 +168,7 @@ class Generator():
             intensity = intensity * np.sqrt(np.sum(self.initial_intensity*np.conjugate(self.initial_intensity)))
             phase_significant = np.ones(self.phase_len)
 
-        else:
+        elif False: # hermite intensities
             order = np.random.randint(5)
             correction = np.random.uniform(-0.5, 0.5)
             intensity = sa.hermitian_pulse(pol_num = order,
@@ -175,5 +180,23 @@ class Generator():
             intensity = intensity / np.sqrt(np.sum(intensity*np.conjugate(intensity)))
             intensity = intensity * np.sqrt(np.sum(self.initial_intensity*np.conjugate(self.initial_intensity)))
             phase_significant = np.ones(self.phase_len)
+
+        elif False: # gauss intensities
+            
+            correction_1 = np.random.uniform(-0.5, 0.5)
+            correction_2 = np.random.uniform(-0.5, 0.5)
+
+            intensity = sa.hermitian_pulse(pol_num = 0,
+                                bandwidth = [190, 196],
+                                centre = 193,
+                                FWHM = 1 + correction_2,
+                                num = len(intensity)).Y
+            
+            intensity = intensity / np.sqrt(np.sum(intensity*np.conjugate(intensity)))
+            intensity = intensity * np.sqrt(np.sum(self.initial_intensity*np.conjugate(self.initial_intensity)))
+            phase_significant = np.ones(self.phase_len)
+
+        intensity = shift_to_centre(intensity_to_shift = intensity,
+                                    intensity_ref = self.initial_intensity)
         
-        return np.abs(intensity), phase_significant
+        return np.abs(intensity), phase_significant ### phase_significant is now wrong up to the linear phase

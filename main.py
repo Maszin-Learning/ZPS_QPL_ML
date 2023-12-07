@@ -13,7 +13,7 @@ from math import floor
 from utilities import evolve_pt, np_to_complex_pt, evolve_np, plot_dataset, comp_FWHM, comp_std, comp_mean_TBP
 from dataset import Dataset
 from torch.utils.data import DataLoader #Dataloader module
-from test import create_test_pulse, test, create_test_set
+from test import create_test_pulse, test, create_test_set, create_initial_pulse
 import torchvision.transforms as transforms  # Transformations and augmentations
 from dataset import Dataset_train
 from dataset_generator import Generator
@@ -36,6 +36,7 @@ def main(_learning_rate,
          _criterion,
          _optimalizer,
          _test_signal,
+         _initial_signal,
          _weight_decay):
     
     # hyperparameters
@@ -52,6 +53,7 @@ def main(_learning_rate,
           'criterion:', _criterion, '\n',
           'optimalizer:', _optimalizer, '\n',
           'test_signal:', _test_signal, '\n',
+          'initial_signal:', _initial_signal, '\n',
           'weight_decay:', _weight_decay, '\n')
     
     # Choose architecture 
@@ -106,18 +108,18 @@ def main(_learning_rate,
     # initial pulse (that is to be transformed by some phase)
 
     input_dim = 5000    # number of points in a single pulse
-    zeroes_num = 10000   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
+    zeroes_num = 20000   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
 
     bandwidth = [190, 196]
     centre = 193
     width = 0.4
 
-    initial_pulse = sa.hermitian_pulse(pol_num = 0, # 0 for gauss signal
-                                    bandwidth = bandwidth,
-                                    centre = centre,
-                                    FWHM = width,
-                                    num = input_dim)
-        
+    initial_pulse = create_initial_pulse(bandwidth = bandwidth,
+                                         centre = centre,
+                                         FWHM = width,
+                                         num = input_dim,
+                                         pulse_type = _initial_signal)
+
     # this serves only to generate FT pulse
 
     long_pulse = initial_pulse.zero_padding(length = zeroes_num, inplace = False)
@@ -128,13 +130,13 @@ def main(_learning_rate,
 
     long_pulse.fourier()
     fwhm_init_F = comp_FWHM(comp_std(initial_pulse.fourier(inplace = False).X, initial_pulse.fourier(inplace = False).Y))
-    x_start = long_pulse.quantile(0.001)
-    x_end = long_pulse.quantile(0.999)
+    x_start = long_pulse.quantile(0.05)
+    x_end = long_pulse.quantile(0.95)
     idx_start = np.searchsorted(long_pulse.X, x_start)
     idx_end = np.searchsorted(long_pulse.X, x_end)
+    if (idx_end - idx_start) % 2 == 1:
+        idx_end += 1
     output_dim = idx_end - idx_start    # number of points of non-zero FT-intensity
-    if output_dim % 2 == 1:
-        output_dim += 1
 
     print("\ninput_dim (spectrum length) = {}".format(input_dim))  
     print("output_dim (phase length) = {}".format(output_dim))
@@ -150,7 +152,7 @@ def main(_learning_rate,
     # test pulse
 
     test_pulse, test_phase = create_test_pulse(_test_signal, initial_pulse, output_dim, my_device, my_dtype)
-
+    test_pulse = test_pulse * 0.975
     fwhm_test = comp_FWHM(comp_std(initial_pulse.X.copy(), test_pulse.clone().detach().cpu().numpy().ravel()))
     print("\nTime-bandwidth product of the test pulse is equal to {}.\n".format(round(fwhm_test*fwhm_init_F/2, 5)))   # WARNING: This "/2" is just empirical correction
     if fwhm_test*fwhm_init_F/2 < 0.44:
@@ -298,6 +300,7 @@ if __name__ == "__main__":
     parser.add_argument('-cr', '--criterion', default='MSE', type=str)
     parser.add_argument('-op', '--optimalizer', default='Adam', type=str,)
     parser.add_argument('-ts', '--test_signal', default='hermite', type=str,)
+    parser.add_argument('-is', '--initial_signal', default='gauss', type=str,)
     parser.add_argument('-wd', '--weight_decay', default=0, type=float)
     args = parser.parse_args()
     config={}
@@ -324,6 +327,7 @@ if __name__ == "__main__":
         "dataset": "defalut",
         "node_number": args.node_number,
         "test_signal": args.test_signal,
+        "initial_signal": args.initial_signal,
         "weight_decay": args.weight_decay
         }
         )
@@ -340,4 +344,5 @@ if __name__ == "__main__":
          args.criterion,
          args.optimalizer,
          args.test_signal,
+         args.initial_signal,
          args.weight_decay)
