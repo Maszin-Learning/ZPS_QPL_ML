@@ -159,7 +159,7 @@ class Generator():
 
         elif True:    # exponential
             parameter = np.random.uniform(1, 20)
-            intensity = np.exp(np.linspace(-3, parameter, self.intensity_len)) - np.exp(-1.5)
+            intensity = np.flip(np.exp(np.linspace(-3, parameter, self.intensity_len)) - np.exp(-1.5))
             for i in range(floor(len(intensity)*3/4), len(intensity)):
                 intensity[i] = 0
             for i in range(0, floor(len(intensity)*1/4)):

@@ -111,7 +111,7 @@ def main(_learning_rate,
     # initial pulse (that is to be transformed by some phase)
 
     input_dim = 5000    # number of points in a single pulse
-    zeroes_num = 20000   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
+    zeroes_num = 10000   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
 
     bandwidth = [190, 196]
     centre = 193
@@ -137,8 +137,8 @@ def main(_learning_rate,
 
     long_pulse.fourier()
     fwhm_init_F = comp_FWHM(comp_std(initial_pulse.fourier(inplace = False).X, initial_pulse.fourier(inplace = False).Y))
-    x_start = long_pulse.quantile(0.001)
-    x_end = long_pulse.quantile(0.999)
+    x_start = long_pulse.quantile(0.2)
+    x_end = long_pulse.quantile(0.80)
     idx_start = np.searchsorted(long_pulse.X, x_start)
     idx_end = np.searchsorted(long_pulse.X, x_end)
     if (idx_end - idx_start) % 2 == 1:
@@ -161,7 +161,7 @@ def main(_learning_rate,
     test_pulse, test_phase = create_test_pulse(_test_signal, initial_pulse, output_dim, my_device, my_dtype)
     test_pulse = test_pulse * 0.95
     fwhm_test = comp_FWHM(comp_std(initial_pulse.X.copy(), test_pulse.clone().detach().cpu().numpy().ravel()))
-    print("\nTime-bandwidth product of the test pulse is equal to {}.\n".format(round(fwhm_test*fwhm_init_F/2, 5)))   # WARNING: This "/2" is just empirical correction
+    print("\nTime-bandwidth product of the transformation from initial pulse test pulse is equal to {}.\n".format(round(fwhm_test*fwhm_init_F/2, 5)))   # WARNING: This "/2" is just empirical correction
     if fwhm_test*fwhm_init_F/2 < 0.44:
         print("TRANSFORMATION IMPOSSIBLE\n")
     test_set = create_test_set(initial_pulse, output_dim, my_device, my_dtype)
@@ -186,7 +186,7 @@ def main(_learning_rate,
 
         print("Calculating mean Time-Bandwidth Product of the training set...")
         TBP_mean, TBP_std = comp_mean_TBP(initial_pulse.X, fwhm_init_F)
-        print("Mean TBP of the training dataset is equal to {} +- {}.\n".format(round(TBP_mean, 5), round(TBP_std, 5)))   
+        print("Mean TBP of the transformation from initial pulse to a spectrum from dataset is equal to {} +- {}.\n".format(round(TBP_mean, 5), round(TBP_std, 5)))   
 
         exit()
 
@@ -201,8 +201,8 @@ def main(_learning_rate,
     # create NN
 
     model = network(input_size = input_dim, 
-                    n = _node_number, 
-                    output_size = output_dim)
+                n = _node_number, 
+                output_size = output_dim)
     model.to(device = my_device, dtype = my_dtype)
 
     print("Model parameters: {}\n".format(utilities.count_parameters(model)))

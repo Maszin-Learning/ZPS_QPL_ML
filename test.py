@@ -265,7 +265,7 @@ def create_initial_pulse(bandwidth, centre, FWHM, num, pulse_type):
         return pulse
     
     elif pulse_type == "exponential":
-        Y = np.exp(np.linspace(-3, 3, num)) - np.exp(-1.5)
+        Y = np.flip(np.exp(np.linspace(-3, 3, num)) - np.exp(-1.5))
         for i in range(floor(num*3/4), num):
             Y[i] = 0
         for i in range(0, floor(num*1/4)):
