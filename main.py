@@ -120,6 +120,10 @@ def main(_learning_rate,
                                          num = input_dim,
                                          pulse_type = _initial_signal)
 
+    # normalize it in L2
+
+    #initial_pulse.Y / np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
+
     # this serves only to generate FT pulse
 
     long_pulse = initial_pulse.zero_padding(length = zeroes_num, inplace = False)
@@ -130,8 +134,8 @@ def main(_learning_rate,
 
     long_pulse.fourier()
     fwhm_init_F = comp_FWHM(comp_std(initial_pulse.fourier(inplace = False).X, initial_pulse.fourier(inplace = False).Y))
-    x_start = long_pulse.quantile(0.05)
-    x_end = long_pulse.quantile(0.95)
+    x_start = long_pulse.quantile(0.001)
+    x_end = long_pulse.quantile(0.999)
     idx_start = np.searchsorted(long_pulse.X, x_start)
     idx_end = np.searchsorted(long_pulse.X, x_end)
     if (idx_end - idx_start) % 2 == 1:
@@ -152,7 +156,7 @@ def main(_learning_rate,
     # test pulse
 
     test_pulse, test_phase = create_test_pulse(_test_signal, initial_pulse, output_dim, my_device, my_dtype)
-    test_pulse = test_pulse * 0.975
+    test_pulse = test_pulse * 0.95
     fwhm_test = comp_FWHM(comp_std(initial_pulse.X.copy(), test_pulse.clone().detach().cpu().numpy().ravel()))
     print("\nTime-bandwidth product of the test pulse is equal to {}.\n".format(round(fwhm_test*fwhm_init_F/2, 5)))   # WARNING: This "/2" is just empirical correction
     if fwhm_test*fwhm_init_F/2 < 0.44:
