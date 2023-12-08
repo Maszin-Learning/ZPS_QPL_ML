@@ -195,8 +195,8 @@ def main(_learning_rate,
     # create NN
 
     model = network(input_size = input_dim, 
-                n = _node_number, 
-                output_size = output_dim)
+                    n = _node_number, 
+                    output_size = output_dim)
     model.to(device = my_device, dtype = my_dtype)
 
     print("Model parameters: {}\n".format(utilities.count_parameters(model)))
