@@ -427,6 +427,12 @@ class spectrum:
             self.Y = spectrum2.Y
         if inplace == False:
             return spectrum2
+        
+    def comp_center(self):
+        '''
+        Return center of mass of the spectrum in X-axis units.
+        '''
+        return np.sum(self.X*self.Y)/np.sum(self.Y)
 
     def zero_padding(self, length, inplace = True):
         '''

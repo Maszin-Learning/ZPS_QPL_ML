@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from math import floor
 import os
 import spectral_analysis as sa
-from utilities import np_to_complex_pt, evolve_np, evolve_pt
+from utilities import np_to_complex_pt, evolve_np, evolve_pt, shift_to_centre
 from torch.nn import MSELoss
 import torch
 
@@ -163,6 +163,7 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
         test_pulse_.Y = test_pulse_.Y / np.sqrt(np.sum(test_pulse_.Y*np.conjugate(test_pulse_.Y)))
         test_pulse_.Y = test_pulse_.Y * np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
         
+        test_pulse_.very_smart_shift(test_pulse_.comp_center()-initial_pulse.comp_center())
         test_pulse_ = np_to_complex_pt(test_pulse_.Y, device = device, dtype = dtype)
         test_phase_ = None
 
@@ -175,6 +176,8 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
         chirp = 100
         test_phase_ = chirp*np.linspace(-1, 1, phase_len, dtype = new_dtype)**2
         test_pulse_ = evolve_np(initial_intensity, test_phase_, dtype = new_dtype)
+
+        test_pulse_ = shift_to_centre(test_pulse_, initial_pulse.Y)
         test_pulse_ = np_to_complex_pt(test_pulse_, device = device, dtype = torch.float32)
 
     elif pulse_type == "two_pulses":
@@ -187,6 +190,8 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
         pulses.Y = pulses.Y + pulses.very_smart_shift(-0.5, inplace = False).Y + pulses.very_smart_shift(0.5, inplace = False).Y
         pulses.Y = pulses.Y / np.sqrt(np.sum(pulses.Y*np.conjugate(pulses.Y)))
         pulses.Y = pulses.Y * np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
+
+        test_pulse_.very_smart_shift(test_pulse_.comp_center()-initial_pulse.comp_center())
         test_pulse_ = np_to_complex_pt(pulses.Y, device = device, dtype = dtype)
         test_phase_ = None
 
@@ -203,6 +208,7 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
         test_phase_ = np.loadtxt('data/train_phase/' + phase_name,
                  delimiter = " ", dtype = np.float32)
         
+        test_pulse_ = shift_to_centre(test_pulse_, initial_pulse.Y)
         test_pulse_ = np_to_complex_pt(test_pulse_, device = device, dtype = dtype)
 
     elif pulse_type == "exponential":
@@ -214,13 +220,65 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
         exp_intensity = exp_intensity / np.sqrt(np.sum(exp_intensity*np.conjugate(exp_intensity)))
         exp_intensity = exp_intensity * np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
 
+        exp_intensity = shift_to_centre(exp_intensity, initial_pulse.Y)
         test_pulse_ = np_to_complex_pt(exp_intensity, device = device, dtype = dtype)
+        test_phase_ = None
+
+    elif pulse_type == "gauss":
+        test_pulse_ = sa.hermitian_pulse(pol_num = 0,
+                                    bandwidth = (initial_pulse.X[0], initial_pulse.X[-1]),
+                                    centre = 193,
+                                    FWHM = 0.5,
+                                    num = len(initial_pulse))
+
+        test_pulse_.Y = test_pulse_.Y / np.sqrt(np.sum(test_pulse_.Y*np.conjugate(test_pulse_.Y)))
+        test_pulse_.Y = test_pulse_.Y * np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
+
+        test_pulse_.very_smart_shift(test_pulse_.comp_center()-initial_pulse.comp_center())
+        test_pulse_ = np_to_complex_pt(test_pulse_.Y, device = device, dtype = dtype)
         test_phase_ = None
 
     else:
         raise Exception("Pulse_type not defined.")
 
     return test_pulse_.clone(), test_phase_
+
+
+def create_initial_pulse(bandwidth, centre, FWHM, num, pulse_type):
+
+    if pulse_type == "gauss":
+        pulse = sa.hermitian_pulse(pol_num = 0,
+                                    bandwidth = bandwidth,
+                                    centre = centre,
+                                    FWHM = FWHM,
+                                    num = num)
+        pulse.Y = np.abs(pulse.Y)
+        return pulse
+    
+    elif pulse_type == "hermite":
+        pulse = sa.hermitian_pulse(pol_num = 1,
+                                    bandwidth = bandwidth,
+                                    centre = centre,
+                                    FWHM = FWHM,
+                                    num = num)
+        pulse.Y = np.abs(pulse.Y)
+        return pulse
+    
+    elif pulse_type == "exponential":
+        Y = np.exp(np.linspace(-3, 3, num)) - np.exp(-1.5)
+        for i in range(floor(num*3/4), num):
+            Y[i] = 0
+        for i in range(0, floor(num*1/4)):
+            Y[i] = 0
+        X = np.linspace(bandwidth[0], bandwidth[1], num)
+        spectrum_out = sa.spectrum(X = X, Y = Y, x_type ="freq", y_type ="intensity")
+        spectrum_out.very_smart_shift(centre-(bandwidth[1]+bandwidth[0])/2, inplace = True)
+        spectrum_out.Y = np.abs(spectrum_out.Y)
+        return spectrum_out
+    
+    else:
+        raise Exception("Pulse_type must be either \"gauss\", \"hermite\" or \"exponential\".")
+    
 
 
 def create_test_set(initial_pulse, phase_len, device, dtype):
@@ -232,7 +290,7 @@ def create_test_set(initial_pulse, phase_len, device, dtype):
     phase_len - the length of significant part of the Fourier transformed initial_pulse
     '''
     test_set = []
-    for pulse_type in ["hermite", "chirp"]:
+    for pulse_type in ["hermite", "chirp", "exponential", "gauss"]:
         test_set.append(create_test_pulse(pulse_type = pulse_type, 
                                           initial_pulse = initial_pulse.copy(),
                                           phase_len = phase_len, 
