@@ -1,6 +1,7 @@
 *.pdf
 *.jpg
 *.jpg
+*.csv
 
 # exclude everything
 pics/*
