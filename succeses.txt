@@ -1,0 +1,4 @@
+python main.py -tr -ar network_1 -bs 1000 -lr 1e-2 -ts exponential -en 30 -nn 150
+Epoch no. 27. Loss 5.201019666856155e-05.
+test_loss 6.450597e-05
+test_set_loss 0.000117335745

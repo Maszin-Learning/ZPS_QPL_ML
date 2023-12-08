@@ -58,6 +58,9 @@ def main(_learning_rate,
     
     # Choose architecture 
 
+    if _net_architecture == 'network_0':
+        from nets import network_0 as network #DEVELOPMENT ARCHITECTURE
+
     if _net_architecture == 'network_1':
         from nets import network_1 as network
     if _net_architecture == 'network_2':
@@ -198,8 +201,8 @@ def main(_learning_rate,
     # create NN
 
     model = network(input_size = input_dim, 
-                n = _node_number, 
-                output_size = output_dim)
+                    n = _node_number, 
+                    output_size = output_dim)
     model.to(device = my_device, dtype = my_dtype)
 
     print("Model parameters: {}\n".format(utilities.count_parameters(model)))
@@ -222,6 +225,8 @@ def main(_learning_rate,
     if _criterion =='L1':
         criterion = torch.nn.L1Loss()
     
+    # create dataset and dataloader
+    
     dataset_train = Dataset_train(root='', transform=True, device = my_device)
     dataloader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size=_batch_size, num_workers=0, shuffle=True)
     
@@ -241,7 +246,7 @@ def main(_learning_rate,
             initial_intensity = np_to_complex_pt(long_pulse_2.Y.copy(), device = my_device, dtype = my_dtype)
             reconstructed_intensity = evolve_pt(initial_intensity, predicted_phase, device = my_device, dtype = my_dtype)
 
-            # a bit of calculus
+            # a bit of calculus, calculating backpropagation
             loss = criterion(reconstructed_intensity.abs()[:,zeroes_num: input_dim + zeroes_num], pulse) # pulse intensity
             loss.backward()
             optimizer.step()
@@ -288,10 +293,11 @@ def main(_learning_rate,
 
             model.train()
 
+
 if __name__ == "__main__":
     warnings.simplefilter("ignore", UserWarning) # ignore warnings from plotly
     parser = argparse.ArgumentParser()
-    parser.add_argument('-lr', '--learning_rate', default=1e-5, type=float)
+    parser.add_argument('-lr', '--learning_rate', default=1e-4, type=float) #designed for network_1
     parser.add_argument('-en', '--epoch_num', default=10, type=int)
     parser.add_argument('-bs', '--batch_size', default=50, type=int)
     parser.add_argument('-pf', '--plot_freq', default=3, type=int)
