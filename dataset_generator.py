@@ -32,7 +32,7 @@ class Generator():
         if not os.path.isdir("data/train_phase"):
             os.mkdir("data/train_phase")
 
-        for example_num in tqdm(range(self.data_num)):
+        for example_num in tqdm(range(1, self.data_num + 1)):
             intensity, phase = self.pulse_gen()
             np.savetxt("data/train_intensity/" + str(example_num) + ".csv", intensity)
             np.savetxt("data/train_phase/" + str(example_num) + ".csv", phase)
