@@ -61,18 +61,18 @@ def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = Non
     plt.title("The intensity")
 
     plt.scatter(initial_pulse_short.X[plot_from:plot_to], 
-                np.abs(np.reshape(reconstructed.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to]), 
+                np.reshape(reconstructed.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to]*np.conjugate(np.reshape(reconstructed.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to]), 
                 color = "green", 
                 s = 1,
                 zorder = 10)
     plt.plot(initial_pulse_short.X[plot_from:plot_to], 
-                np.abs(initial_pulse_short.Y[plot_from:plot_to]), 
+                initial_pulse_short.Y[plot_from:plot_to]*np.conjugate(initial_pulse_short.Y[plot_from:plot_to]), 
                 linestyle = "dashed", 
                 color = "black", 
                 lw = 1,
                 zorder = 5)
     plt.plot(initial_pulse_short.X[plot_from:plot_to], 
-                        np.abs(np.reshape(test_pulse.clone().cpu().detach().numpy(), input_dim))[plot_from:plot_to], 
+                        np.reshape(test_pulse.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to]*np.conjugate(np.reshape(test_pulse.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to]), 
                         color = "darkviolet")
     plt.xlabel("THz")
     plt.legend(["Reconstructed intensity", "Initial intensity", "Target intensity"], bbox_to_anchor = [0.95, -0.15])
@@ -92,6 +92,7 @@ def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = Non
     FT_intensity = np.fft.fftshift(FT_intensity)
     FT_intensity = np.fft.fft(FT_intensity)
     FT_intensity = np.fft.fftshift(FT_intensity)
+    FT_intensity = FT_intensity*np.conjugate(FT_intensity)
 
     plt.scatter(range(idx_end - idx_start), 
                 reconstructed_phase, 
@@ -163,7 +164,7 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
         test_pulse_.Y = test_pulse_.Y / np.sqrt(np.sum(test_pulse_.Y*np.conjugate(test_pulse_.Y)))
         test_pulse_.Y = test_pulse_.Y * np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
         
-        test_pulse_.very_smart_shift(test_pulse_.comp_center()-initial_pulse.comp_center())
+        test_pulse_.very_smart_shift(test_pulse_.comp_center(norm = "L2")-initial_pulse.comp_center(norm = "L2"))
         test_pulse_ = np_to_complex_pt(test_pulse_.Y, device = device, dtype = dtype)
         test_phase_ = None
 
@@ -177,7 +178,7 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
         test_phase_ = chirp*np.linspace(-1, 1, phase_len, dtype = new_dtype)**2
         test_pulse_ = evolve_np(initial_intensity, test_phase_, dtype = new_dtype)
 
-        test_pulse_ = shift_to_centre(test_pulse_, initial_pulse.Y)
+        test_pulse_ = shift_to_centre(test_pulse_, initial_pulse.Y, norm = "L2")
         test_pulse_ = np_to_complex_pt(test_pulse_, device = device, dtype = torch.float32)
 
     elif pulse_type == "two_pulses":
@@ -191,7 +192,7 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
         pulses.Y = pulses.Y / np.sqrt(np.sum(pulses.Y*np.conjugate(pulses.Y)))
         pulses.Y = pulses.Y * np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
 
-        test_pulse_.very_smart_shift(test_pulse_.comp_center()-initial_pulse.comp_center())
+        test_pulse_.very_smart_shift(test_pulse_.comp_center("L2")-initial_pulse.comp_center("L2"))
         test_pulse_ = np_to_complex_pt(pulses.Y, device = device, dtype = dtype)
         test_phase_ = None
 
@@ -208,7 +209,7 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
         test_phase_ = np.loadtxt('data/train_phase/' + phase_name,
                  delimiter = " ", dtype = np.float32)
         
-        test_pulse_ = shift_to_centre(test_pulse_, initial_pulse.Y)
+        test_pulse_ = shift_to_centre(test_pulse_, initial_pulse.Y, norm = "L2")
         test_pulse_ = np_to_complex_pt(test_pulse_, device = device, dtype = dtype)
 
     elif pulse_type == "exponential":
@@ -220,7 +221,7 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
         exp_intensity = exp_intensity / np.sqrt(np.sum(exp_intensity*np.conjugate(exp_intensity)))
         exp_intensity = exp_intensity * np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
 
-        exp_intensity = shift_to_centre(exp_intensity, initial_pulse.Y)
+        exp_intensity = shift_to_centre(exp_intensity, initial_pulse.Y, norm = "L2")
         test_pulse_ = np_to_complex_pt(exp_intensity, device = device, dtype = dtype)
         test_phase_ = None
 
@@ -234,7 +235,7 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
         test_pulse_.Y = test_pulse_.Y / np.sqrt(np.sum(test_pulse_.Y*np.conjugate(test_pulse_.Y)))
         test_pulse_.Y = test_pulse_.Y * np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
 
-        test_pulse_.very_smart_shift(test_pulse_.comp_center()-initial_pulse.comp_center())
+        test_pulse_.very_smart_shift(test_pulse_.comp_center(norm = "L2")-initial_pulse.comp_center(norm = "L2"))
         test_pulse_ = np_to_complex_pt(test_pulse_.Y, device = device, dtype = dtype)
         test_phase_ = None
 

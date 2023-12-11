@@ -197,6 +197,7 @@ class Generator():
             phase_significant = np.ones(self.phase_len)
 
         intensity = shift_to_centre(intensity_to_shift = intensity,
-                                    intensity_ref = self.initial_intensity)
+                                    intensity_ref = self.initial_intensity,
+                                    norm = "L2")
         
         return np.abs(intensity), phase_significant ### phase_significant is now wrong up to the linear phase

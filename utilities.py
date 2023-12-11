@@ -26,6 +26,7 @@ def evolve_np(intensity, phase, dtype, abs = True):
     If the phase is shorter than the intensity, only the middle part of FT(intensity) is multiplied by exp(i*phase),
     outside that area phase is assumed to be zero.
     '''
+
     input_dim = intensity.shape[-1]
     output_dim = phase.shape[-1]
 
@@ -33,9 +34,8 @@ def evolve_np(intensity, phase, dtype, abs = True):
     intensity = np.fft.fft(intensity)
     intensity = np.fft.fftshift(intensity)
     
-    zeroes_shape = np.array(phase.shape)
-    zeroes_shape[-1] = floor((input_dim-output_dim)/2)
-    zeroes_shape = tuple(zeroes_shape)
+    zeroes_shape = floor((input_dim-output_dim)/2)
+    
     long_phase = np.concatenate([np.zeros(shape = zeroes_shape, dtype = dtype), 
                           phase,
                           np.zeros(shape = zeroes_shape, dtype = dtype)], axis=phase.ndim-1)
@@ -130,6 +130,7 @@ def plot_dataset(number, pulse, ft_pulse):
     # and plot them
 
     pulse_safe = ft_pulse.copy()
+    pulse_safe.Y = pulse_safe.Y*np.conjugate(pulse_safe.Y)
 
     print("Saving example phases and intensities...")
 
@@ -139,12 +140,14 @@ def plot_dataset(number, pulse, ft_pulse):
         phase = np.loadtxt("data/train_phase/" + phase_labels[i])
         intensity = np.loadtxt("data/train_intensity/" + intensity_labels[i])
 
+        intensity = intensity*np.conjugate(intensity)
+
         pulse_safe.Y /= np.max(np.abs(pulse_safe.Y))
         pulse_safe.Y *= np.max(np.abs(phase))
 
         plt.subplot(2, 1, 2)
-        plt.fill_between(pulse_safe.X, np.real(pulse_safe.Y), color = "orange", alpha = 0.4)
-        plt.scatter(pulse_safe.X, np.real(phase), color = "red", s = 9)
+        plt.fill_between(pulse_safe.X, pulse_safe.Y, color = "orange", alpha = 0.4)
+        plt.scatter(pulse_safe.X, phase, color = "red", s = 9)
         plt.grid()
         plt.legend(["Temporal intensity", "Temporal phase"])
         plt.title("Train phase")
@@ -153,7 +156,7 @@ def plot_dataset(number, pulse, ft_pulse):
 
         plt.subplot(2, 1, 1)
         plt.plot(pulse.X, intensity, color = "darkorange")
-        plt.plot(pulse.X, pulse.Y, color = "black", linestyle = "dashed")
+        plt.plot(pulse.X, pulse.Y*np.conjugate(pulse.Y), color = "black", linestyle = "dashed")
         plt.grid()
         plt.legend(["Evolved intensity", "Initial intensity"])
         plt.title("Spectral intensity")
@@ -219,7 +222,7 @@ def comp_mean_TBP(initial_X, initial_FWHM):
     return np.mean(TBPs), np.std(TBPs)
 
 
-def shift_to_centre(intensity_to_shift, intensity_ref):
+def shift_to_centre(intensity_to_shift, intensity_ref, norm):
     '''
     Return the \"intensity_to_shift\" shifted in such a way that its center of mass is on the same index as in the case of the \"intensity_ref\".
     '''
@@ -231,8 +234,8 @@ def shift_to_centre(intensity_to_shift, intensity_ref):
     spectrum_to_shift = sa.spectrum(x_axis, intensity_to_shift, "freq", "intensity")
     spectrum_ref = sa.spectrum(x_axis, intensity_ref, "freq", "intensity")
 
-    com_s = spectrum_to_shift.comp_center()
-    com_r = spectrum_ref.comp_center()
+    com_s = spectrum_to_shift.comp_center(norm = norm)
+    com_r = spectrum_ref.comp_center(norm = norm)
 
     spectrum_to_shift.very_smart_shift(com_s-com_r, inplace = True)
     return np.real(spectrum_to_shift.Y)

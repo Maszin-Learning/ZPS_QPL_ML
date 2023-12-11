@@ -111,7 +111,7 @@ def main(_learning_rate,
     # initial pulse (that is to be transformed by some phase)
 
     input_dim = 5000    # number of points in a single pulse
-    zeroes_num = 10000   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
+    zeroes_num = 40000   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
 
     bandwidth = [190, 196]
     centre = 193
@@ -123,9 +123,7 @@ def main(_learning_rate,
                                          num = input_dim,
                                          pulse_type = _initial_signal)
 
-    # normalize it in L2
-
-    #initial_pulse.Y / np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
+    initial_pulse.normalize(norm = "L2", shift_to_zero = False)
 
     # this serves only to generate FT pulse
 
@@ -135,10 +133,12 @@ def main(_learning_rate,
 
     # we want to find what is the bandwidth of intensity after FT, to estimate output dimension of NN
 
+    trash_FT = 0.01      # fraction of fourier transformed intensity that you DON'T want to find phase for 
+
     long_pulse.fourier()
     fwhm_init_F = comp_FWHM(comp_std(initial_pulse.fourier(inplace = False).X, initial_pulse.fourier(inplace = False).Y))
-    x_start = long_pulse.quantile(0.2)
-    x_end = long_pulse.quantile(0.80)
+    x_start = long_pulse.quantile(q = trash_FT/2, norm = "L2")
+    x_end = long_pulse.quantile(q = 1 - trash_FT/2, norm = "L2")
     idx_start = np.searchsorted(long_pulse.X, x_start)
     idx_end = np.searchsorted(long_pulse.X, x_end)
     if (idx_end - idx_start) % 2 == 1:
@@ -158,8 +158,10 @@ def main(_learning_rate,
 
     # test pulse
 
+    reserve = 0.05 # additional fraction of the initial intensity
+
     test_pulse, test_phase = create_test_pulse(_test_signal, initial_pulse, output_dim, my_device, my_dtype)
-    test_pulse = test_pulse * 0.95
+    test_pulse = test_pulse * np.sqrt(1-reserve)
     fwhm_test = comp_FWHM(comp_std(initial_pulse.X.copy(), test_pulse.clone().detach().cpu().numpy().ravel()))
     print("\nTime-bandwidth product of the transformation from initial pulse test pulse is equal to {}.\n".format(round(fwhm_test*fwhm_init_F/2, 5)))   # WARNING: This "/2" is just empirical correction
     if fwhm_test*fwhm_init_F/2 < 0.44:
