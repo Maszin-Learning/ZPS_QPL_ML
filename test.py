@@ -163,7 +163,7 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
         test_pulse_.Y = test_pulse_.Y / np.sqrt(np.sum(test_pulse_.Y*np.conjugate(test_pulse_.Y)))
         test_pulse_.Y = test_pulse_.Y * np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
         
-        test_pulse_.very_smart_shift(test_pulse_.comp_center()-initial_pulse.comp_center())
+        test_pulse_.very_smart_shift(test_pulse_.comp_center(norm = "L1")-initial_pulse.comp_center(norm = "L1"))
         test_pulse_ = np_to_complex_pt(test_pulse_.Y, device = device, dtype = dtype)
         test_phase_ = None
 
@@ -187,7 +187,7 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
                                     FWHM = initial_pulse.FWHM(),
                                     num = len(initial_pulse),
                                     x_type = initial_pulse.x_type)
-        pulses.Y = pulses.Y + pulses.very_smart_shift(-0.5, inplace = False).Y + pulses.very_smart_shift(0.5, inplace = False).Y
+        pulses.Y = pulses.Y + pulses.very_smart_shift(-0.5, inplace = False, norm = "L1").Y + pulses.very_smart_shift(0.5, inplace = False, norm = "L1").Y
         pulses.Y = pulses.Y / np.sqrt(np.sum(pulses.Y*np.conjugate(pulses.Y)))
         pulses.Y = pulses.Y * np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
 
@@ -212,7 +212,7 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
         test_pulse_ = np_to_complex_pt(test_pulse_, device = device, dtype = dtype)
 
     elif pulse_type == "exponential":
-        exp_intensity = np.exp(np.linspace(-3, 3, len(initial_pulse))) - np.exp(-1.5)
+        exp_intensity = np.flip(np.exp(np.linspace(-3, 3, len(initial_pulse))) - np.exp(-1.5))
         for i in range(floor(len(exp_intensity)*3/4), len(exp_intensity)):
             exp_intensity[i] = 0
         for i in range(0, floor(len(exp_intensity)*1/4)):
@@ -234,7 +234,7 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
         test_pulse_.Y = test_pulse_.Y / np.sqrt(np.sum(test_pulse_.Y*np.conjugate(test_pulse_.Y)))
         test_pulse_.Y = test_pulse_.Y * np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
 
-        test_pulse_.very_smart_shift(test_pulse_.comp_center()-initial_pulse.comp_center())
+        test_pulse_.very_smart_shift(test_pulse_.comp_center(norm = "L1")-initial_pulse.comp_center(norm = "L1"))
         test_pulse_ = np_to_complex_pt(test_pulse_.Y, device = device, dtype = dtype)
         test_phase_ = None
 

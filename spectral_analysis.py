@@ -428,11 +428,16 @@ class spectrum:
         if inplace == False:
             return spectrum2
         
-    def comp_center(self):
+    def comp_center(self, norm):
         '''
-        Return center of mass of the spectrum in X-axis units.
+        Return center of mass of the spectrum in X-axis units. \"norm\" is either \"L1\" or \"L2\".
         '''
-        return np.sum(self.X*self.Y)/np.sum(self.Y)
+        if norm == "L1":
+            return np.sum(self.X*np.abs(self.Y))/np.sum(np.abs(self.Y))
+        elif norm == "L2":
+            return np.sum(self.X*self.Y*np.conjugate(self.Y))/np.sum(self.Y*np.conjugate(self.Y))
+        else:
+            raise Exception("The \"norm\" must be either \"L1\" or \"L2\".")
 
     def zero_padding(self, length, inplace = True):
         '''
@@ -481,16 +486,25 @@ class spectrum:
             return spectrum(new_X, new_Y, self.x_type, self.y_type)
 
 
-    def quantile(self, q):
+    def quantile(self, q, norm):
         '''
-        Finds x in X axis such that integral of intensity to x is fraction of value q of whole intensity.
+        Finds x in X axis such that integral of intensity to x is fraction of value \"q\" of whole intensity. 
+        The\"norm\" is either \"L1\" or \"L2\".
         '''
+        if norm not in ["L1", "L2"]:
+            raise Exception("The norm must be either \"L1\" or \"L2\".")
+        
+        integral = 0
+        if norm == "L1":
+            integral_infinite = np.sum(np.abs(self.Y))
+        if norm == "L2":
+            integral_infinite = np.sum(self.Y*np.conjugate(self.Y))
 
-        sum = 0
-        all = np.sum(np.abs(self.Y))
         for i in range(self.__len__()):
-            sum += np.abs(self.Y[i])
-            if sum >= all*q:
+            if norm == "L1": integral += np.abs(self.Y[i])
+            if norm == "L2": integral += self.Y[i]*np.conjugate(self.Y[i])
+
+            if integral >= integral_infinite*q:
                 x = self.X[i]
                 break
 
@@ -536,8 +550,8 @@ class spectrum:
                 X_safe = np.roll(X_safe, shift_idx)
 
         if norm == "L2":
-            integral = np.sum(Y_safe**2)/(X_safe[-1]-X_safe[0])
-            median = safe_spectrum.quantile(1/2)
+            integral = np.sum(Y_safe*np.conjugate(Y_safe))/(X_safe[-1]-X_safe[0])
+            median = safe_spectrum.quantile(1/2, norm = "L2")
             max_idx = np.searchsorted(np.abs(Y_safe), median)
             Y_safe /= np.sqrt(integral)
             if shift_to_zero:

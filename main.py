@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm import tqdm
 from math import floor
-from utilities import evolve_pt, np_to_complex_pt, evolve_np, plot_dataset, comp_FWHM, comp_std, comp_mean_TBP
+from utilities import evolve_pt, np_to_complex_pt, evolve_np, plot_dataset, comp_FWHM, comp_std, comp_mean_TBP, integrate
 from dataset import Dataset
 from torch.utils.data import DataLoader #Dataloader module
 from test import create_test_pulse, test, create_test_set, create_initial_pulse
@@ -111,7 +111,7 @@ def main(_learning_rate,
     # initial pulse (that is to be transformed by some phase)
 
     input_dim = 5000    # number of points in a single pulse
-    zeroes_num = 10000   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
+    zeroes_num = 20000   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
 
     bandwidth = [190, 196]
     centre = 193
@@ -137,8 +137,8 @@ def main(_learning_rate,
 
     long_pulse.fourier()
     fwhm_init_F = comp_FWHM(comp_std(initial_pulse.fourier(inplace = False).X, initial_pulse.fourier(inplace = False).Y))
-    x_start = long_pulse.quantile(0.2)
-    x_end = long_pulse.quantile(0.80)
+    x_start = long_pulse.quantile(0.001, norm = "L1")
+    x_end = long_pulse.quantile(0.999, norm = "L1")
     idx_start = np.searchsorted(long_pulse.X, x_start)
     idx_end = np.searchsorted(long_pulse.X, x_end)
     if (idx_end - idx_start) % 2 == 1:
@@ -159,7 +159,7 @@ def main(_learning_rate,
     # test pulse
 
     test_pulse, test_phase = create_test_pulse(_test_signal, initial_pulse, output_dim, my_device, my_dtype)
-    test_pulse = test_pulse * 0.95
+    test_pulse = test_pulse * 1
     fwhm_test = comp_FWHM(comp_std(initial_pulse.X.copy(), test_pulse.clone().detach().cpu().numpy().ravel()))
     print("\nTime-bandwidth product of the transformation from initial pulse test pulse is equal to {}.\n".format(round(fwhm_test*fwhm_init_F/2, 5)))   # WARNING: This "/2" is just empirical correction
     if fwhm_test*fwhm_init_F/2 < 0.44:
@@ -235,8 +235,8 @@ def main(_learning_rate,
     loss_list = []
     wandb.watch(model, criterion, log="all", log_freq=400)
 
-    for epoch in tqdm(range(_epoch_num)):
-        for pulse, _ in dataloader_train:
+    for epoch in range(_epoch_num):
+        for pulse, _ in tqdm(dataloader_train):
             # pulse = pulse.to(my_device) # the pulse is already created on device by dataset, uncomment if not using designated dataset for this problem
             
             # predict phase that will transform gauss into this pulse

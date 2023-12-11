@@ -157,7 +157,7 @@ class Generator():
             phase_significant = self.phase_gen()
             intensity = evolve_np(intensity, phase_significant, dtype = self.dtype)
 
-        elif True:    # exponential
+        elif False:    # exponential
             parameter = np.random.uniform(1, 20)
             intensity = np.flip(np.exp(np.linspace(-3, parameter, self.intensity_len)) - np.exp(-1.5))
             for i in range(floor(len(intensity)*3/4), len(intensity)):
@@ -168,9 +168,8 @@ class Generator():
             intensity = intensity * np.sqrt(np.sum(self.initial_intensity*np.conjugate(self.initial_intensity)))
             phase_significant = np.ones(self.phase_len)
 
-        elif False: # hermite intensities
+        elif True: # hermite intensities
             order = np.random.randint(5)
-            correction = np.random.uniform(-0.5, 0.5)
             intensity = sa.hermitian_pulse(pol_num = order,
                                            bandwidth = [190, 196],
                                            centre = 193,

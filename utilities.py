@@ -231,8 +231,11 @@ def shift_to_centre(intensity_to_shift, intensity_ref):
     spectrum_to_shift = sa.spectrum(x_axis, intensity_to_shift, "freq", "intensity")
     spectrum_ref = sa.spectrum(x_axis, intensity_ref, "freq", "intensity")
 
-    com_s = spectrum_to_shift.comp_center()
-    com_r = spectrum_ref.comp_center()
+    com_s = spectrum_to_shift.comp_center(norm = "L1")
+    com_r = spectrum_ref.comp_center(norm = "L1")
 
     spectrum_to_shift.very_smart_shift(com_s-com_r, inplace = True)
-    return np.real(spectrum_to_shift.Y)
+    return np.abs(spectrum_to_shift.Y)
+
+def integrate(intensity):
+    return np.sum(intensity*np.conjugate(intensity))
