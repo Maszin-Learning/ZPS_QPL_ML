@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm import tqdm
 from math import floor
-from utilities import evolve_pt, np_to_complex_pt, evolve_np, plot_dataset, comp_FWHM, comp_std, comp_mean_TBP
+from utilities import evolve_pt, np_to_complex_pt, evolve_np, plot_dataset, comp_FWHM, comp_std, comp_mean_TBP, integrate
 from dataset import Dataset
 from torch.utils.data import DataLoader #Dataloader module
 from test import create_test_pulse, test, create_test_set, create_initial_pulse
@@ -81,6 +81,8 @@ def main(_learning_rate,
         from nets import network_9 as network
     if _net_architecture == 'network_11':
         from nets import network_11 as network
+    if _net_architecture == 'network_12':
+        from nets import network_12 as network
 
     # Choose device, disclaimer! on cpu network will not run due to batch normalization
 
@@ -111,7 +113,7 @@ def main(_learning_rate,
     # initial pulse (that is to be transformed by some phase)
 
     input_dim = 5000    # number of points in a single pulse
-    zeroes_num = 10000   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
+    zeroes_num = 20000   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
 
     bandwidth = [190, 196]
     centre = 193
@@ -125,7 +127,7 @@ def main(_learning_rate,
 
     # normalize it in L2
 
-    #initial_pulse.Y / np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
+    initial_pulse.Y / np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
 
     # this serves only to generate FT pulse
 
@@ -135,10 +137,12 @@ def main(_learning_rate,
 
     # we want to find what is the bandwidth of intensity after FT, to estimate output dimension of NN
 
+    trash_fraction = 0.001 # percent of FT transformed to be cut off - it will contribute to the noise
+
     long_pulse.fourier()
     fwhm_init_F = comp_FWHM(comp_std(initial_pulse.fourier(inplace = False).X, initial_pulse.fourier(inplace = False).Y))
-    x_start = long_pulse.quantile(0.2)
-    x_end = long_pulse.quantile(0.80)
+    x_start = long_pulse.quantile(trash_fraction/2, norm = "L1")
+    x_end = long_pulse.quantile(1-trash_fraction/2, norm = "L1")
     idx_start = np.searchsorted(long_pulse.X, x_start)
     idx_end = np.searchsorted(long_pulse.X, x_end)
     if (idx_end - idx_start) % 2 == 1:
@@ -161,7 +165,7 @@ def main(_learning_rate,
     test_pulse, test_phase = create_test_pulse(_test_signal, initial_pulse, output_dim, my_device, my_dtype)
     test_pulse = test_pulse * 0.95
     fwhm_test = comp_FWHM(comp_std(initial_pulse.X.copy(), test_pulse.clone().detach().cpu().numpy().ravel()))
-    print("\nTime-bandwidth product of the transformation from initial pulse test pulse is equal to {}.\n".format(round(fwhm_test*fwhm_init_F/2, 5)))   # WARNING: This "/2" is just empirical correction
+    print("\nTime-bandwidth product of the transformation from the initial pulse to the test pulse is equal to {}.\n".format(round(fwhm_test*fwhm_init_F/2, 5)))   # WARNING: This "/2" is just empirical correction
     if fwhm_test*fwhm_init_F/2 < 0.44:
         print("TRANSFORMATION IMPOSSIBLE\n")
     test_set = create_test_set(initial_pulse, output_dim, my_device, my_dtype)
@@ -176,7 +180,8 @@ def main(_learning_rate,
                                 FT_X = pulse_ft.X,
                                 phase_len = output_dim,
                                 device = my_device,
-                                dtype = np.float32
+                                dtype = np.float32,
+                                target_type = _test_signal
                                 )
 
         the_generator.generate_and_save()
@@ -235,8 +240,8 @@ def main(_learning_rate,
     loss_list = []
     wandb.watch(model, criterion, log="all", log_freq=400)
 
-    for epoch in tqdm(range(_epoch_num)):
-        for pulse, _ in dataloader_train:
+    for epoch in range(_epoch_num):
+        for pulse, _ in tqdm(dataloader_train):
             # pulse = pulse.to(my_device) # the pulse is already created on device by dataset, uncomment if not using designated dataset for this problem
             
             # predict phase that will transform gauss into this pulse

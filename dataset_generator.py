@@ -10,7 +10,7 @@ from math import floor
 
 class Generator():
 
-    def __init__(self, data_num, initial_intensity, FT_X, phase_len, device, dtype, max_order=10, max_value=np.pi):
+    def __init__(self, data_num, initial_intensity, FT_X, phase_len, device, dtype, max_order = 10, max_value = np.pi, target_type = "hermite"):
         self.data_num = data_num
         self.initial_intensity = initial_intensity
         self.FT_X = FT_X
@@ -20,6 +20,7 @@ class Generator():
         self.max_value = max_value
         self.device = device
         self.dtype = dtype
+        self.target_type = target_type
 
 
     def generate_and_save(self):
@@ -157,39 +158,39 @@ class Generator():
             phase_significant = self.phase_gen()
             intensity = evolve_np(intensity, phase_significant, dtype = self.dtype)
 
-        elif True:    # exponential
+        elif self.target_type == "exponential":
             parameter = np.random.uniform(1, 20)
-            intensity = np.flip(np.exp(np.linspace(-3, parameter, self.intensity_len)) - np.exp(-1.5))
-            for i in range(floor(len(intensity)*3/4), len(intensity)):
-                intensity[i] = 0
-            for i in range(0, floor(len(intensity)*1/4)):
+            intensity = np.flip(np.exp(np.linspace(-3, parameter, self.intensity_len)) - np.exp(-3))
+
+            for i in range(0, floor(len(intensity)*1/3)):
                 intensity[i] = 0
             intensity = intensity / np.sqrt(np.sum(intensity*np.conjugate(intensity)))
             intensity = intensity * np.sqrt(np.sum(self.initial_intensity*np.conjugate(self.initial_intensity)))
             phase_significant = np.ones(self.phase_len)
 
-        elif False: # hermite intensities
-            order = np.random.randint(5)
-            correction = np.random.uniform(-0.5, 0.5)
-            intensity = sa.hermitian_pulse(pol_num = order,
+        elif self.target_type == "hermite":
+
+            order = np.random.randint(1, 2)
+            correction = np.random.uniform(-0.4, 0.4)
+
+            intensity = sa.hermitian_pulse(pol_num = 1,
                                            bandwidth = [190, 196],
                                            centre = 193,
-                                           FWHM = 1,
+                                           FWHM = 1 + correction,
                                            num = len(intensity)).Y
             
             intensity = intensity / np.sqrt(np.sum(intensity*np.conjugate(intensity)))
             intensity = intensity * np.sqrt(np.sum(self.initial_intensity*np.conjugate(self.initial_intensity)))
             phase_significant = np.ones(self.phase_len)
 
-        elif False: # gauss intensities
+        elif self.target_type == "gauss":
             
-            correction_1 = np.random.uniform(-0.5, 0.5)
-            correction_2 = np.random.uniform(-0.5, 0.5)
+            correction = np.random.uniform(-0.3, 0.3)
 
             intensity = sa.hermitian_pulse(pol_num = 0,
                                 bandwidth = [190, 196],
                                 centre = 193,
-                                FWHM = 1 + correction_2,
+                                FWHM = 1 + correction,
                                 num = len(intensity)).Y
             
             intensity = intensity / np.sqrt(np.sum(intensity*np.conjugate(intensity)))
