@@ -5,17 +5,17 @@ metric:
   goal: minimize
 parameters:
     learning_rate:
-      min: 1e-6
-      max: 1e-3
+      min: 0.000001
+      max: 0.01
     epoch_num:
       distribution: constant
-      value: 50
+      value: 15
     batch_size:
-      min: 32
-      max: 1024
+      min: 100
+      max: 5000
     plot_freq:
       distribution: constant
-      value: 1
+      value: 3
     architecture:
       values: ['network_1', 'network_11']
     node_number:
@@ -27,6 +27,8 @@ parameters:
       values: ['NAdam','Adam']
     test_signal:
       values: ['gauss']
+    initial_signal:
+      values: ['exponential']
     weight_decay:
       min: 0.0
       max: 0.1
