@@ -81,6 +81,8 @@ def main(_learning_rate,
         from nets import network_9 as network
     if _net_architecture == 'network_11':
         from nets import network_11 as network
+    if _net_architecture == 'network_12':
+        from nets import network_12 as network
 
     # Choose device, disclaimer! on cpu network will not run due to batch normalization
 
@@ -125,7 +127,7 @@ def main(_learning_rate,
 
     # normalize it in L2
 
-    #initial_pulse.Y / np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
+    initial_pulse.Y / np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
 
     # this serves only to generate FT pulse
 
@@ -135,10 +137,12 @@ def main(_learning_rate,
 
     # we want to find what is the bandwidth of intensity after FT, to estimate output dimension of NN
 
+    trash_fraction = 0.001 # percent of FT transformed to be cut off - it will contribute to the noise
+
     long_pulse.fourier()
     fwhm_init_F = comp_FWHM(comp_std(initial_pulse.fourier(inplace = False).X, initial_pulse.fourier(inplace = False).Y))
-    x_start = long_pulse.quantile(0.001, norm = "L1")
-    x_end = long_pulse.quantile(0.999, norm = "L1")
+    x_start = long_pulse.quantile(trash_fraction/2, norm = "L1")
+    x_end = long_pulse.quantile(1-trash_fraction/2, norm = "L1")
     idx_start = np.searchsorted(long_pulse.X, x_start)
     idx_end = np.searchsorted(long_pulse.X, x_end)
     if (idx_end - idx_start) % 2 == 1:
@@ -159,9 +163,9 @@ def main(_learning_rate,
     # test pulse
 
     test_pulse, test_phase = create_test_pulse(_test_signal, initial_pulse, output_dim, my_device, my_dtype)
-    test_pulse = test_pulse * 1
+    test_pulse = test_pulse * 0.95
     fwhm_test = comp_FWHM(comp_std(initial_pulse.X.copy(), test_pulse.clone().detach().cpu().numpy().ravel()))
-    print("\nTime-bandwidth product of the transformation from initial pulse test pulse is equal to {}.\n".format(round(fwhm_test*fwhm_init_F/2, 5)))   # WARNING: This "/2" is just empirical correction
+    print("\nTime-bandwidth product of the transformation from the initial pulse to the test pulse is equal to {}.\n".format(round(fwhm_test*fwhm_init_F/2, 5)))   # WARNING: This "/2" is just empirical correction
     if fwhm_test*fwhm_init_F/2 < 0.44:
         print("TRANSFORMATION IMPOSSIBLE\n")
     test_set = create_test_set(initial_pulse, output_dim, my_device, my_dtype)
@@ -176,7 +180,8 @@ def main(_learning_rate,
                                 FT_X = pulse_ft.X,
                                 phase_len = output_dim,
                                 device = my_device,
-                                dtype = np.float32
+                                dtype = np.float32,
+                                target_type = _test_signal
                                 )
 
         the_generator.generate_and_save()

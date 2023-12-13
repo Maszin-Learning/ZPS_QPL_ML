@@ -6,6 +6,7 @@ import spectral_analysis as sa
 import os
 import shutil
 from tqdm import tqdm
+from torch.fft import fft, fftshift
     
 def evolve_np(intensity, phase, dtype, abs = True):
     '''
@@ -231,11 +232,21 @@ def shift_to_centre(intensity_to_shift, intensity_ref):
     spectrum_to_shift = sa.spectrum(x_axis, intensity_to_shift, "freq", "intensity")
     spectrum_ref = sa.spectrum(x_axis, intensity_ref, "freq", "intensity")
 
-    com_s = spectrum_to_shift.comp_center(norm = "L1")
-    com_r = spectrum_ref.comp_center(norm = "L1")
-
+    com_s = spectrum_to_shift.comp_center(norm = "L2")
+    com_r = spectrum_ref.comp_center(norm = "L2")
     spectrum_to_shift.very_smart_shift(com_s-com_r, inplace = True)
     return np.abs(spectrum_to_shift.Y)
 
 def integrate(intensity):
     return np.sum(intensity*np.conjugate(intensity))
+
+def low_pass_filter(signal, frac_pass):
+    '''
+    Using FFT implement filter out high frequencies from the \"signal\" that is a Pytorch tensor. 
+    \"frac_pass\" is the fraction of the FT spectrum to be passed through the filter.
+    '''
+
+    signal_filtered = signal.clone()
+    signal_filtered = fftshift(signal_filtered)
+    signal_filtered = fft(signal_filtered)
+    signal_filtered = fftshift(signal_filtered)
