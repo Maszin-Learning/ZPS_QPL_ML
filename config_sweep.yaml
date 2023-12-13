@@ -5,26 +5,28 @@ metric:
   goal: minimize
 parameters:
     learning_rate:
-      min: 0.0000001
-      max: 0.0001
+      min: 1e-6
+      max: 1e-3
     epoch_num:
       distribution: constant
-      value: 35
+      value: 50
     batch_size:
-      values: [50]
+      min: 32
+      max: 1024
     plot_freq:
       distribution: constant
       value: 1
     architecture:
-      values: ['network_9']
+      values: ['network_1', 'network_11']
     node_number:
-      values: [5000]
+      min: 50
+      max: 500
     criterion:
       values: ['MSE']
     optimalizer:
       values: ['NAdam','Adam']
     test_signal:
-      values: ['chirp']
+      values: ['gauss']
     weight_decay:
       min: 0.0
       max: 0.1

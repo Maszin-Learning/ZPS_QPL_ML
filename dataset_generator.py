@@ -48,7 +48,7 @@ class Generator():
             X = np.linspace(-1, 1, self.phase_len)
             Y = np.zeros(self.phase_len)
 
-            max_order = 5
+            max_order = 10
             
             for order in range(max_order):
                 coef = np.random.uniform(low = -1, high = 1)

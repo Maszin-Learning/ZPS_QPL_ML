@@ -113,7 +113,7 @@ def main(_learning_rate,
     # initial pulse (that is to be transformed by some phase)
 
     input_dim = 5000    # number of points in a single pulse
-    zeroes_num = 20000   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
+    zeroes_num = 10000   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
 
     bandwidth = [190, 196]
     centre = 193
@@ -137,12 +137,12 @@ def main(_learning_rate,
 
     # we want to find what is the bandwidth of intensity after FT, to estimate output dimension of NN
 
-    trash_fraction = 0.001 # percent of FT transformed to be cut off - it will contribute to the noise
+    trash_fraction = 0.01 # percent of FT transformed to be cut off - it will contribute to the noise
 
     long_pulse.fourier()
     fwhm_init_F = comp_FWHM(comp_std(initial_pulse.fourier(inplace = False).X, initial_pulse.fourier(inplace = False).Y))
-    x_start = long_pulse.quantile(trash_fraction/2, norm = "L1")
-    x_end = long_pulse.quantile(1-trash_fraction/2, norm = "L1")
+    x_start = long_pulse.quantile(trash_fraction/2, norm = "L2")
+    x_end = long_pulse.quantile(1-trash_fraction/2, norm = "L2")
     idx_start = np.searchsorted(long_pulse.X, x_start)
     idx_end = np.searchsorted(long_pulse.X, x_end)
     if (idx_end - idx_start) % 2 == 1:
