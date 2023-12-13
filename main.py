@@ -107,8 +107,16 @@ def main(_learning_rate,
             print (f"Using {my_device}")
 
     # data type
-
     my_dtype = torch.float32
+    
+    #saving model
+    if os.path.isdir("saved_models"):
+        shutil.rmtree('saved_models')
+        os.mkdir("saved_models")
+    else:
+        os.mkdir("saved_models")
+        
+    model_save_PATH_dir='saved_models'
 
     # initial pulse (that is to be transformed by some phase)
 
@@ -238,6 +246,7 @@ def main(_learning_rate,
     # learning loop
 
     loss_list = []
+    test_loss_global = 10000
     wandb.watch(model, criterion, log="all", log_freq=400)
 
     for epoch in range(_epoch_num):
@@ -274,7 +283,10 @@ def main(_learning_rate,
                     dtype = my_dtype,
                     iter_num = epoch,
                     save = True)
-            
+            if test_loss < test_loss_global:
+                #shutil.rmtree(model_save_PATH_dir)
+                torch.save(model.state_dict(), os.path.join(model_save_PATH_dir, f'{_net_architecture}_ep{epoch}.pt'))
+            test_loss_global = test_loss
             wandb.log({"chart": fig})
             print('test_loss',test_loss)
             wandb.log({"test_loss": test_loss})
