@@ -2,11 +2,13 @@
 *.jpg
 *.jpg
 *.csv
+*.pt
 
 # exclude everything
 pics/*
 data/*
 wandb/*
+saved_models/*
 dataset_sample/*
 .vscode/*
 __pycache__
