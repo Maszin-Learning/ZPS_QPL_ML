@@ -253,8 +253,9 @@ def low_pass_filter(signal, frac_pass):
     signal_filtered = fftshift(signal_filtered)
     
 def unwrap(x):  
-    x_1=0 
-    for b in range(x.shape[0]):              
+
+    for b in range(x.shape[0]):  
+        x_1 = x[b,0]         
         for i in range(x.shape[-1]):
             _x_1 = x[b,i]
             if _x_1 - x_1> np.pi:
@@ -263,3 +264,6 @@ def unwrap(x):
                 x[b,i] +=2*np.pi
             x_1 = _x_1
     return x
+
+def cal_conv():
+    return [i + 2*p - k - (k-1)*(d-1)]/s + 1
