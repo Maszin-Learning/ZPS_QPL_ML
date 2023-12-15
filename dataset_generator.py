@@ -48,7 +48,7 @@ class Generator():
             X = np.linspace(-1, 1, self.phase_len)
             Y = np.zeros(self.phase_len)
 
-            max_order = 5
+            max_order = 10
             
             for order in range(max_order):
                 coef = np.random.uniform(low = -1, high = 1)
@@ -154,13 +154,13 @@ class Generator():
         intensity = np.array([complex(intensity[i], 0) for i in range(len(intensity))])
         probability = np.random.uniform(0, 1)
 
-        if probability < 0.5: # phases from the phase generator
+        if probability < 0: # phases from the phase generator
             phase_significant = self.phase_gen()
             intensity = evolve_np(intensity, phase_significant, dtype = self.dtype)
 
         elif self.target_type == "exponential":
             parameter = np.random.uniform(1, 20)
-            intensity = np.flip(np.exp(np.linspace(-3, parameter, self.intensity_len)) - np.exp(-3))
+            intensity = np.flip(np.exp(np.linspace(-10, parameter, self.intensity_len)) - np.exp(-10))
 
             for i in range(0, floor(len(intensity)*1/3)):
                 intensity[i] = 0
@@ -171,7 +171,7 @@ class Generator():
         elif self.target_type == "hermite":
 
             order = np.random.randint(1, 2)
-            correction = np.random.uniform(-0.4, 0.4)
+            correction = 0#np.random.uniform(-0.4, 0.4)
 
             intensity = sa.hermitian_pulse(pol_num = 1,
                                            bandwidth = [190, 196],
@@ -185,12 +185,12 @@ class Generator():
 
         elif self.target_type == "gauss":
             
-            correction = np.random.uniform(-0.3, 0.3)
+            correction = 0#np.random.uniform(-0.3, 0.3)
 
             intensity = sa.hermitian_pulse(pol_num = 0,
                                 bandwidth = [190, 196],
                                 centre = 193,
-                                FWHM = 1 + correction,
+                                FWHM = 1.5 + correction,
                                 num = len(intensity)).Y
             
             intensity = intensity / np.sqrt(np.sum(intensity*np.conjugate(intensity)))

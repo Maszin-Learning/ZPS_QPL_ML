@@ -125,7 +125,7 @@ def main(_learning_rate,
 
     bandwidth = [190, 196]
     centre = 193
-    width = 0.4
+    width = 0.5
 
     initial_pulse = create_initial_pulse(bandwidth = bandwidth,
                                          centre = centre,
@@ -149,8 +149,8 @@ def main(_learning_rate,
 
     long_pulse.fourier()
     fwhm_init_F = comp_FWHM(comp_std(initial_pulse.fourier(inplace = False).X, initial_pulse.fourier(inplace = False).Y))
-    x_start = long_pulse.quantile(trash_fraction/2, norm = "L1")
-    x_end = long_pulse.quantile(1-trash_fraction/2, norm = "L1")
+    x_start = long_pulse.quantile(trash_fraction/2, norm = "L2")
+    x_end = long_pulse.quantile(1-trash_fraction/2, norm = "L2")
     idx_start = np.searchsorted(long_pulse.X, x_start)
     idx_end = np.searchsorted(long_pulse.X, x_end)
     if (idx_end - idx_start) % 2 == 1:
@@ -171,7 +171,7 @@ def main(_learning_rate,
     # test pulse
 
     test_pulse, test_phase = create_test_pulse(_test_signal, initial_pulse, output_dim, my_device, my_dtype)
-    test_pulse = test_pulse * 0.95
+    #test_pulse = test_pulse * 0.96
     fwhm_test = comp_FWHM(comp_std(initial_pulse.X.copy(), test_pulse.clone().detach().cpu().numpy().ravel()))
     print("\nTime-bandwidth product of the transformation from the initial pulse to the test pulse is equal to {}.\n".format(round(fwhm_test*fwhm_init_F/2, 5)))   # WARNING: This "/2" is just empirical correction
     if fwhm_test*fwhm_init_F/2 < 0.44:

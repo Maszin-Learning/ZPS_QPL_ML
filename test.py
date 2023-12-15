@@ -226,7 +226,7 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
         test_pulse_ = sa.hermitian_pulse(pol_num = 0,
                                     bandwidth = (initial_pulse.X[0], initial_pulse.X[-1]),
                                     centre = 193,
-                                    FWHM = 1,
+                                    FWHM = 1.5,
                                     num = len(initial_pulse))
 
         test_pulse_.Y = test_pulse_.Y / np.sqrt(np.sum(test_pulse_.Y*np.conjugate(test_pulse_.Y)))
@@ -263,7 +263,7 @@ def create_initial_pulse(bandwidth, centre, FWHM, num, pulse_type):
         return pulse
     
     elif pulse_type == "exponential":
-        Y = np.flip(np.exp(np.linspace(-3, 3, num)) - np.exp(-3))
+        Y = np.flip(np.exp(np.linspace(-10, 3, num)) - np.exp(-10))
         for i in range(0, floor(1/3*num)):
             Y[i] = 0
 
