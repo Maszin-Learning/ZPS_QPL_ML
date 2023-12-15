@@ -8,11 +8,45 @@ Simple nonlinear networks
 '''
 
 
-### network_0, network in DEVELOPMENT
 class network_0(nn.Module):
     def __init__(self, input_size, n, output_size):
         # super function. It inherits from nn.Module and we can access everything in nn.Module
         super(network_0, self).__init__()
+        self.input = input_size
+        self.output = output_size
+        self.linear_1 = nn.Linear(input_size,n)
+        #self.linear_2 = nn.Linear(n,n)
+        self.linear_3 = nn.Linear(777,output_size)
+        self.sigmoid = nn.Sigmoid()
+        self.leakyrelu=nn.LeakyReLU(1, inplace=True)
+        
+        self.normal_1 = nn.LayerNorm(input_size)
+        self.normal_3 = nn.LayerNorm(output_size)
+        
+        self.conv1d_1 = nn.Conv1d(in_channels=1,
+                            out_channels=37,
+                            kernel_size=7,
+                            stride=4,
+                            padding=5)
+
+    def forward(self,x):
+        x = torch.unsqueeze(x, 1)
+        x = self.normal_1(x)
+        x = self.leakyrelu(self.linear_1(x))
+        x = self.conv1d_1(x)
+        #print(x.shape)
+        
+        x = torch.flatten(x, start_dim=1, end_dim=-1)
+        x = self.linear_3(x)
+        x = torch.squeeze(x)
+        return self.sigmoid(x)* np.pi*2
+    
+    
+### network_1_5, network for gauss
+class network_1_5(nn.Module):
+    def __init__(self, input_size, n, output_size):
+        # super function. It inherits from nn.Module and we can access everything in nn.Module
+        super(network_1_5, self).__init__()
         self.input = input_size
         self.output = output_size
         self.linear_1 = nn.Linear(input_size,n)
@@ -447,6 +481,7 @@ class network_9(nn.Module): #do not work on cpu
         x = self.bn_fc_1(x)
         x = self.dropout(x)
         x = self.linear_3(x)
+        x = torch.squeeze(x)
         return self.sigmoid(x)* np.pi*2
         
 

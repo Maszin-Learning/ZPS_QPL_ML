@@ -265,5 +265,5 @@ def unwrap(x):
             x_1 = _x_1
     return x
 
-def cal_conv():
-    return [i + 2*p - k - (k-1)*(d-1)]/s + 1
+def cal_conv(i=5000., p=10., k=20., d=1., s=5.):
+    return (i + 2*p - k - (k-1)*(d-1))/s + 1
