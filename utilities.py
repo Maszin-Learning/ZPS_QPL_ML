@@ -250,3 +250,7 @@ def low_pass_filter(signal, frac_pass):
     signal_filtered = fftshift(signal_filtered)
     signal_filtered = fft(signal_filtered)
     signal_filtered = fftshift(signal_filtered)
+    
+def unwrap(x):
+    y = x % (2 * np.pi)
+    return torch.where(y > np.pi, 2*np.pi - y, y)
