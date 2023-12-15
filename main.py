@@ -255,8 +255,12 @@ def main(_learning_rate,
             # pulse = pulse.to(my_device) # the pulse is already created on device by dataset, uncomment if not using designated dataset for this problem
             
             # predict phase that will transform gauss into this pulse
-            predicted_phase = utilities.unwrap(model(pulse))
-            predicted_phase = torchaudio.functional.lowpass_biquad(waveform=predicted_phase, sample_rate=1, cutoff_freq=10000.0, Q=1)
+            predicted_phase = utilities.unwrap(model(pulse)) % (2*np.pi)
+            #predicted_phase = model(pulse)
+            #print(predicted_phase_t)
+            #print(pulse.shape)
+            #utilities.unwrap(model(pulse))
+            #predicted_phase = torchaudio.functional.lowpass_biquad(waveform=predicted_phase, sample_rate=1, cutoff_freq=200)
 
             # transform gauss into something using this phase
             initial_intensity = np_to_complex_pt(long_pulse_2.Y.copy(), device = my_device, dtype = my_dtype)

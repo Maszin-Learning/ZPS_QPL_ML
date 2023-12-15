@@ -7,6 +7,7 @@ import os
 import shutil
 from tqdm import tqdm
 from torch.fft import fft, fftshift
+from numba import jit
     
 def evolve_np(intensity, phase, dtype, abs = True):
     '''
@@ -251,6 +252,14 @@ def low_pass_filter(signal, frac_pass):
     signal_filtered = fft(signal_filtered)
     signal_filtered = fftshift(signal_filtered)
     
-def unwrap(x):
-    y = x % (2 * np.pi)
-    return torch.where(y > np.pi, 2*np.pi - y, y)
+def unwrap(x):  
+    x_1=0 
+    for b in range(x.shape[0]):              
+        for i in range(x.shape[-1]):
+            _x_1 = x[b,i]
+            if _x_1 - x_1> np.pi:
+                x[b,i] -=2*np.pi 
+            if _x_1 - x_1< -np.pi:
+                x[b,i] +=2*np.pi
+            x_1 = _x_1
+    return x
