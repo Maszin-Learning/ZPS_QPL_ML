@@ -145,7 +145,7 @@ def main(_learning_rate,
 
     # we want to find what is the bandwidth of intensity after FT, to estimate output dimension of NN
 
-    trash_fraction = 0.001 # percent of FT transformed to be cut off - it will contribute to the noise
+    trash_fraction = 0.01 # percent of FT transformed to be cut off - it will contribute to the noise
 
     long_pulse.fourier()
     fwhm_init_F = comp_FWHM(comp_std(initial_pulse.fourier(inplace = False).X, initial_pulse.fourier(inplace = False).Y))
