@@ -1,0 +1,46 @@
+entity: zps_qpl_ml
+method: bayes
+metric:
+  goal: minimize
+  name: test_loss
+parameters:
+  architecture:
+    values:
+      - network_1
+      - network_11
+  batch_size:
+    distribution: constant
+    value: 1500
+  criterion:
+    values:
+      - MSE
+  epoch_num:
+    distribution: constant
+    value: 15
+  initial_signal:
+    values:
+      - exponential
+  learning_rate:
+    distribution: uniform
+    max: 0.01
+    min: 1e-06
+  node_number:
+    distribution: int_uniform
+    max: 500
+    min: 50
+  optimalizer:
+    values:
+      - NAdam
+      - Adam
+  plot_freq:
+    distribution: constant
+    value: 3
+  test_signal:
+    values:
+      - gauss
+  weight_decay:
+    distribution: uniform
+    max: 0.1
+    min: 0
+program: main.py
+project: platypus
