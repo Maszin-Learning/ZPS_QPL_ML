@@ -16,7 +16,7 @@ class network_0(nn.Module):
         self.output = output_size
         self.linear_1 = nn.Linear(input_size,n)
         #self.linear_2 = nn.Linear(n,n)
-        self.linear_3 = nn.Linear(777,output_size)
+        self.linear_3 = nn.Linear(666,output_size)
         self.sigmoid = nn.Sigmoid()
         self.leakyrelu=nn.LeakyReLU(1, inplace=True)
         
@@ -25,7 +25,7 @@ class network_0(nn.Module):
         
         self.conv1d_1 = nn.Conv1d(in_channels=1,
                             out_channels=37,
-                            kernel_size=7,
+                            kernel_size=20,
                             stride=4,
                             padding=5)
 
