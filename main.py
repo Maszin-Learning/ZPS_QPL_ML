@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm import tqdm
 from math import floor
-from utilities import evolve_pt, np_to_complex_pt, evolve_np, plot_dataset, comp_FWHM, comp_std, comp_mean_TBP, integrate
+import utilities as u
 from dataset import Dataset
 from torch.utils.data import DataLoader #Dataloader module
 from test import create_test_pulse, test, create_test_set, create_initial_pulse
@@ -22,7 +22,7 @@ import argparse
 import wandb
 import shutil
 import warnings
-
+from utilities import MSEsmooth
 
 def main(_learning_rate,
          _epoch_num,
@@ -121,11 +121,11 @@ def main(_learning_rate,
     # initial pulse (that is to be transformed by some phase)
 
     input_dim = 5000    # number of points in a single pulse
-    zeroes_num = 5000   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
+    zeroes_num = 2500   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
 
     bandwidth = [190, 196]
     centre = 193
-    width = 0.5
+    width = 0.3
 
     initial_pulse = create_initial_pulse(bandwidth = bandwidth,
                                          centre = centre,
@@ -148,7 +148,7 @@ def main(_learning_rate,
     trash_fraction = 0.01 # percent of FT transformed to be cut off - it will contribute to the noise
 
     long_pulse.fourier()
-    fwhm_init_F = comp_FWHM(comp_std(initial_pulse.fourier(inplace = False).X, initial_pulse.fourier(inplace = False).Y))
+    fwhm_init_F = u.comp_FWHM(u.comp_std(initial_pulse.fourier(inplace = False).X, initial_pulse.fourier(inplace = False).Y))
     x_start = long_pulse.quantile(trash_fraction/2, norm = "L2")
     x_end = long_pulse.quantile(1-trash_fraction/2, norm = "L2")
     idx_start = np.searchsorted(long_pulse.X, x_start)
@@ -172,7 +172,7 @@ def main(_learning_rate,
 
     test_pulse, test_phase = create_test_pulse(_test_signal, initial_pulse, output_dim, my_device, my_dtype)
     #test_pulse = test_pulse * 0.96
-    fwhm_test = comp_FWHM(comp_std(initial_pulse.X.copy(), test_pulse.clone().detach().cpu().numpy().ravel()))
+    fwhm_test = u.comp_FWHM(u.comp_std(initial_pulse.X.copy(), test_pulse.clone().detach().cpu().numpy().ravel()))
     print("\nTime-bandwidth product of the transformation from the initial pulse to the test pulse is equal to {}.\n".format(round(fwhm_test*fwhm_init_F/2, 5)))   # WARNING: This "/2" is just empirical correction
     if fwhm_test*fwhm_init_F/2 < 0.44:
         print("TRANSFORMATION IMPOSSIBLE\n")
@@ -195,10 +195,10 @@ def main(_learning_rate,
         the_generator.generate_and_save()
         print("Successfully created training set containing {} spectra.\n".format(len(os.listdir('data/train_intensity'))))
 
-        plot_dataset(100, pulse = initial_pulse, ft_pulse = pulse_ft)
+        u.plot_dataset(100, pulse = initial_pulse, ft_pulse = pulse_ft)
 
         print("Calculating mean Time-Bandwidth Product of the training set...")
-        TBP_mean, TBP_std = comp_mean_TBP(initial_pulse.X, fwhm_init_F)
+        TBP_mean, TBP_std = u.comp_mean_TBP(initial_pulse.X, fwhm_init_F)
         print("Mean TBP of the transformation from initial pulse to a spectrum from dataset is equal to {} +- {}.\n".format(round(TBP_mean, 5), round(TBP_std, 5)))   
 
         exit()
@@ -237,6 +237,8 @@ def main(_learning_rate,
         criterion = torch.nn.MSELoss()
     if _criterion =='L1':
         criterion = torch.nn.L1Loss()
+    if _criterion =='MSEsmooth':
+        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.8)
     
     # create dataset and dataloader
     
@@ -257,18 +259,22 @@ def main(_learning_rate,
             predicted_phase = model(pulse)
 
             # transform gauss into something using this phase
-            initial_intensity = np_to_complex_pt(long_pulse_2.Y.copy(), device = my_device, dtype = my_dtype)
-            reconstructed_intensity = evolve_pt(initial_intensity, predicted_phase, device = my_device, dtype = my_dtype)
+            initial_intensity = u.np_to_complex_pt(long_pulse_2.Y.copy(), device = my_device, dtype = my_dtype)
+            reconstructed_intensity = u.evolve_pt(initial_intensity, predicted_phase, device = my_device, dtype = my_dtype)
 
-            # a bit of calculus, calculating backpropagation
-            loss = criterion(reconstructed_intensity.abs()[:,zeroes_num: input_dim + zeroes_num], pulse) # pulse intensity
+            # calculating back-propagation
+            if _criterion == "MSEsmooth":
+                loss = criterion((predicted_phase, reconstructed_intensity.abs()[:,zeroes_num: input_dim + zeroes_num]), pulse)
+            else:
+                loss = criterion(reconstructed_intensity.abs()[:,zeroes_num: input_dim + zeroes_num], pulse) # pulse intensity
+            
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
 
             # stats
             _loss = loss.clone().cpu().detach().numpy()
-            wandb.log({"loss": _loss}) #log loss to wandb
+            wandb.log({"loss": _loss}) # log loss to wandb
             loss_list.append(_loss)
 
         if epoch%_plot_freq == 0: # plot and test model
@@ -283,8 +289,12 @@ def main(_learning_rate,
                     dtype = my_dtype,
                     iter_num = epoch,
                     save = True)
+            
+            cont_penalty = torch.sqrt(torch.sum(torch.square(u.diff_pt(u.unwrap(predicted_phase), device = my_device, dtype = my_dtype))))
+            print("MSE of phase's variation is equal to {}.".format(cont_penalty))
+
             if test_loss < test_loss_global:
-                #shutil.rmtree(model_save_PATH_dir)
+                # shutil.rmtree(model_save_PATH_dir)
                 torch.save(model.state_dict(), os.path.join(model_save_PATH_dir, f'{_net_architecture}_ep{epoch}.pt'))
             test_loss_global = test_loss
             wandb.log({"chart": fig})
@@ -314,7 +324,7 @@ def main(_learning_rate,
 if __name__ == "__main__":
     warnings.simplefilter("ignore", UserWarning) # ignore warnings from plotly
     parser = argparse.ArgumentParser()
-    parser.add_argument('-lr', '--learning_rate', default=1e-4, type=float) #designed for network_1
+    parser.add_argument('-lr', '--learning_rate', default=1e-4, type=float) # designed for network_1
     parser.add_argument('-en', '--epoch_num', default=10, type=int)
     parser.add_argument('-bs', '--batch_size', default=50, type=int)
     parser.add_argument('-pf', '--plot_freq', default=3, type=int)
