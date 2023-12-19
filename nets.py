@@ -449,5 +449,3 @@ class network_9(nn.Module): #do not work on cpu
         x = self.dropout(x)
         x = self.linear_3(x)
         return self.sigmoid(x)* np.pi*2
-        
-
