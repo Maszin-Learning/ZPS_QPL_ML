@@ -62,13 +62,14 @@ def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = Non
     new_X = np.linspace(0, 1, len(test_phase_pred))
 
     #spline = CubicSpline(new_X, np.unwrap(test_phase_pred.clone().detach().cpu().numpy()))
-    spline = splrep(new_X, np.unwrap(test_phase_pred.clone().detach().cpu().numpy()), s=0.8*len(test_phase_pred))
+    spline = splrep(new_X, np.unwrap(test_phase_pred.clone().detach().cpu().numpy()), s=0.05*len(test_phase_pred))
     splined_phase = BSpline(*spline)(new_X)
     # evolve spline
     #initial_intensity = np_to_complex_pt(np.abs(initial_pulse.Y.copy()), device = device, dtype = dtype)
     test_intensity_splined = evolve_np(initial_pulse.Y.copy(), splined_phase, dtype=np.float32)
     reconstructed_splined = np.abs(test_intensity_splined)[zeros_num : zeros_num+input_dim] 
     
+    plt.figure(figsize=(10,5)) 
 
     plt.subplot(1, 2, 1)
     plt.title("The intensity")
@@ -150,6 +151,8 @@ def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = Non
     else:
         plt.legend(["Reconstructed phase", "FT intensity"], bbox_to_anchor = [0.95, -0.15])
     plt.grid()
+    
+
 
     if save:
         if not os.path.isdir("pics"):

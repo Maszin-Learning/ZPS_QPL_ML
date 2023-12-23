@@ -263,7 +263,7 @@ def diff_pt(vector, device, dtype):
 
 class MSEsmooth(nn.modules.loss._Loss):
 
-    def __init__(self, device, dtype, c_factor):
+    def __init__(self, device, dtype, c_factor = 0.9):
         super(MSEsmooth, self).__init__()
         self.c_factor = c_factor
         self.device = device
@@ -300,3 +300,11 @@ def unwrap(x):
                 x[batch,i] +=2*np.pi
             x_1 = _x_1
     return x
+
+def clear_folder(name:str):
+    #saving model
+    if os.path.isdir(name):
+        shutil.rmtree(name)
+        os.mkdir(name)
+    else:
+        os.mkdir(name)

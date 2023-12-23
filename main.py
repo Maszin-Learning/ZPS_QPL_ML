@@ -110,12 +110,10 @@ def main(_learning_rate,
     # data type
     my_dtype = torch.float32
     
-    #saving model
-    if os.path.isdir("saved_models"):
-        shutil.rmtree('saved_models')
-        os.mkdir("saved_models")
-    else:
-        os.mkdir("saved_models")
+    #clear data folders
+    utilities.clear_folder('saved_models')
+    utilities.clear_folder('pics')
+
         
     model_save_PATH_dir='saved_models'
 
@@ -204,14 +202,6 @@ def main(_learning_rate,
 
         exit()
 
-    # recreate pics folder if exists and create it otherwise
-
-    if os.path.isdir("pics"):
-        shutil.rmtree('pics') # clear pictures folder
-        os.mkdir("pics")
-    else:
-        os.mkdir("pics")
-
     # create NN
 
     model = network(input_size = input_dim, 
@@ -239,7 +229,7 @@ def main(_learning_rate,
     if _criterion =='L1':
         criterion = torch.nn.L1Loss()
     if _criterion =='MSEsmooth':
-        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.8)
+        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 1)
     
     # create dataset and dataloader
     
@@ -304,6 +294,7 @@ def main(_learning_rate,
 
             if test_loss < test_loss_global:
                 # shutil.rmtree(model_save_PATH_dir)
+                utilities.clear_folder('saved_models')
                 torch.save(model.state_dict(), os.path.join(model_save_PATH_dir, f'{_net_architecture}_ep{epoch}.pt'))
             test_loss_global = test_loss
             wandb.log({"chart": fig})
@@ -333,9 +324,9 @@ def main(_learning_rate,
 if __name__ == "__main__":
     warnings.simplefilter("ignore", UserWarning) # ignore warnings from plotly
     parser = argparse.ArgumentParser()
-    parser.add_argument('-lr', '--learning_rate', default=1e-4, type=float) # designed for network_1
+    parser.add_argument('-lr', '--learning_rate', default=5e-4, type=float) # designed for network_1
     parser.add_argument('-en', '--epoch_num', default=10, type=int)
-    parser.add_argument('-bs', '--batch_size', default=50, type=int)
+    parser.add_argument('-bs', '--batch_size', default=2, type=int)
     parser.add_argument('-pf', '--plot_freq', default=3, type=int)
     parser.add_argument('-ds', '--dataset_size', default=5000, type=int)
     parser.add_argument('-g', '--generate', action='store_true') # only generate, training will not run, wandb will be offline
@@ -374,6 +365,8 @@ if __name__ == "__main__":
         "node_number": args.node_number,
         "test_signal": args.test_signal,
         "initial_signal": args.initial_signal,
+        "criterion": args.criterion,
+        "optimizer": args.optimalizer,
         "weight_decay": args.weight_decay
         }
         )
