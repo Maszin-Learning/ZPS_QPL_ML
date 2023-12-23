@@ -8,6 +8,7 @@ import os
 import shutil
 from tqdm import tqdm
 from torch.fft import fft, fftshift
+from numba import jit
     
 def evolve_np(intensity, phase, dtype, abs = True):
     '''
@@ -252,7 +253,7 @@ def low_pass_filter(signal, frac_pass):
     signal_filtered = signal.clone()
     signal_filtered = fftshift(signal_filtered)
     signal_filtered = fft(signal_filtered)
-    signal_filtered = fftshift(signal_filtered)
+    signal_filtered = fftshift(signal_filtered)      
 
 def diff_pt(vector, device, dtype):
     zero_shape = np.array(torch.diff(vector).shape)
@@ -290,12 +291,12 @@ class MSEsmooth(nn.modules.loss._Loss):
     
 def unwrap(x):  
     x_1=0 
-    for b in range(x.shape[0]):              
+    for batch in range(x.shape[0]):              
         for i in range(x.shape[-1]):
-            _x_1 = x[b,i]
+            _x_1 = x[batch,i]
             if _x_1 - x_1> np.pi:
-                x[b,i] -=2*np.pi 
+                x[batch,i] -=2*np.pi 
             if _x_1 - x_1< -np.pi:
-                x[b,i] +=2*np.pi
+                x[batch,i] +=2*np.pi
             x_1 = _x_1
     return x

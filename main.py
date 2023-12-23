@@ -13,6 +13,7 @@ from math import floor
 import utilities as u
 from dataset import Dataset
 from torch.utils.data import DataLoader #Dataloader module
+import torchaudio
 from test import create_test_pulse, test, create_test_set, create_initial_pulse
 import torchvision.transforms as transforms  # Transformations and augmentations
 from dataset import Dataset_train
@@ -121,7 +122,7 @@ def main(_learning_rate,
     # initial pulse (that is to be transformed by some phase)
 
     input_dim = 5000    # number of points in a single pulse
-    zeroes_num = 2500   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
+    zeroes_num = 5000   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
 
     bandwidth = [190, 196]
     centre = 193
@@ -256,7 +257,15 @@ def main(_learning_rate,
             # pulse = pulse.to(my_device) # the pulse is already created on device by dataset, uncomment if not using designated dataset for this problem
             
             # predict phase that will transform gauss into this pulse
+            #predicted_phase = utilities.unwrap(model(pulse))
             predicted_phase = model(pulse)
+            #print(predicted_phase_t)
+            #print(pulse.shape)
+            #utilities.unwrap(model(pulse))
+            #if epoch > 0.5*_epoch_num:
+            #    print('FILTERING')
+            #    predicted_phase = torchaudio.functional.lowpass_biquad(waveform=predicted_phase, sample_rate=1, cutoff_freq=200)
+            #predicted_phase = predicted_phase  % (2*np.pi)
 
             # transform gauss into something using this phase
             initial_intensity = u.np_to_complex_pt(long_pulse_2.Y.copy(), device = my_device, dtype = my_dtype)

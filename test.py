@@ -6,6 +6,8 @@ import spectral_analysis as sa
 from utilities import np_to_complex_pt, evolve_np, evolve_pt, shift_to_centre
 from torch.nn import MSELoss
 import torch
+from scipy.interpolate import CubicSpline
+from scipy.interpolate import splrep, BSpline
 
 def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = None, iter_num = 0, ):
     '''
@@ -57,6 +59,17 @@ def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = Non
     test_intensity = evolve_pt(initial_intensity, test_phase_pred, device = device, dtype = dtype)
     reconstructed = test_intensity.abs()[:,zeros_num : zeros_num+input_dim] 
 
+    new_X = np.linspace(0, 1, len(test_phase_pred))
+
+    #spline = CubicSpline(new_X, np.unwrap(test_phase_pred.clone().detach().cpu().numpy()))
+    spline = splrep(new_X, np.unwrap(test_phase_pred.clone().detach().cpu().numpy()), s=0.8*len(test_phase_pred))
+    splined_phase = BSpline(*spline)(new_X)
+    # evolve spline
+    #initial_intensity = np_to_complex_pt(np.abs(initial_pulse.Y.copy()), device = device, dtype = dtype)
+    test_intensity_splined = evolve_np(initial_pulse.Y.copy(), splined_phase, dtype=np.float32)
+    reconstructed_splined = np.abs(test_intensity_splined)[zeros_num : zeros_num+input_dim] 
+    
+
     plt.subplot(1, 2, 1)
     plt.title("The intensity")
 
@@ -74,6 +87,13 @@ def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = Non
     plt.plot(initial_pulse_short.X[plot_from:plot_to], 
                         np.abs(np.reshape(test_pulse.clone().cpu().detach().numpy(), input_dim))[plot_from:plot_to], 
                         color = "darkviolet")
+    
+    plt.scatter(initial_pulse_short.X[plot_from:plot_to], 
+            np.abs(np.reshape(reconstructed_splined, input_dim)[plot_from:plot_to]), 
+            color = "blue", 
+            s = 1,
+            zorder = 10)
+    
     plt.xlabel("THz")
     plt.legend(["Reconstructed intensity", "Initial intensity", "Target intensity"], bbox_to_anchor = [0.95, -0.15])
     plt.grid()
@@ -101,7 +121,7 @@ def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = Non
 
     if type(test_phase) == type(np.array([])):
         test_phase_np = test_phase.copy()
-        test_phase_np -= test_phase_np[floor(output_dim/2)]
+        #test_phase_np -= test_phase_np[floor(output_dim/2)]
         plt.plot(range(idx_end - idx_start),
                     np.real(test_phase_np),
                     color = "black",
@@ -119,6 +139,10 @@ def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = Non
                         np.abs(FT_intensity[idx_start: idx_end]),
                         color='orange',
                         alpha = 0.5)
+    
+    plt.plot(range(idx_end - idx_start), 
+                splined_phase, 
+                color = "blue")
     
     plt.xlabel("Quasi-time (unitless)")
     if type(test_phase) == type(np.array([])):
