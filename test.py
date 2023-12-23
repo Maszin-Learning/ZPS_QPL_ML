@@ -135,9 +135,10 @@ def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = Non
     else:
         FT_intensity *= np.max(np.abs(reconstructed_phase))
 
-    plt.plot(range(idx_end - idx_start), 
+    plt.fill_between(range(idx_end - idx_start), 
                         np.abs(FT_intensity[idx_start: idx_end]),
-                        color='red')
+                        color='orange',
+                        alpha = 0.5)
     
     plt.plot(range(idx_end - idx_start), 
                 splined_phase, 
@@ -250,7 +251,7 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
         test_pulse_ = sa.hermitian_pulse(pol_num = 0,
                                     bandwidth = (initial_pulse.X[0], initial_pulse.X[-1]),
                                     centre = 193,
-                                    FWHM = 1.5,
+                                    FWHM = 1,
                                     num = len(initial_pulse))
 
         test_pulse_.Y = test_pulse_.Y / np.sqrt(np.sum(test_pulse_.Y*np.conjugate(test_pulse_.Y)))

@@ -481,7 +481,6 @@ class network_9(nn.Module): #do not work on cpu
         x = self.bn_fc_1(x)
         x = self.dropout(x)
         x = self.linear_3(x)
+        
         x = torch.squeeze(x)
         return self.sigmoid(x)* np.pi*2
-        
-

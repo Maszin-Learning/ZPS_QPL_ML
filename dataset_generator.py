@@ -190,7 +190,7 @@ class Generator():
             intensity = sa.hermitian_pulse(pol_num = 0,
                                 bandwidth = [190, 196],
                                 centre = 193,
-                                FWHM = 1.5 + correction,
+                                FWHM = 1 + correction,
                                 num = len(intensity)).Y
             
             intensity = intensity / np.sqrt(np.sum(intensity*np.conjugate(intensity)))

@@ -1,4 +1,5 @@
 import torch
+from torch import nn
 import numpy as np
 from math import floor
 import matplotlib.pyplot as plt
@@ -238,8 +239,10 @@ def shift_to_centre(intensity_to_shift, intensity_ref):
     spectrum_to_shift.very_smart_shift(com_s-com_r, inplace = True)
     return np.abs(spectrum_to_shift.Y)
 
+
 def integrate(intensity):
     return np.sum(intensity*np.conjugate(intensity))
+
 
 def low_pass_filter(signal, frac_pass):
     '''
@@ -250,20 +253,50 @@ def low_pass_filter(signal, frac_pass):
     signal_filtered = signal.clone()
     signal_filtered = fftshift(signal_filtered)
     signal_filtered = fft(signal_filtered)
-    signal_filtered = fftshift(signal_filtered)
+    signal_filtered = fftshift(signal_filtered)      
+
+def diff_pt(vector, device, dtype):
+    zero_shape = np.array(torch.diff(vector).shape)
+    zero_shape[-1] = 1
+    zero_shape = tuple(zero_shape)
+    return torch.cat([torch.zeros(zero_shape, device = device, dtype = dtype),torch.diff(vector)], dim=torch.diff(vector).ndim-1)
+
+class MSEsmooth(nn.modules.loss._Loss):
+
+    def __init__(self, device, dtype, c_factor):
+        super(MSEsmooth, self).__init__()
+        self.c_factor = c_factor
+        self.device = device
+        self.dtype = dtype
+
+    def forward(self, results, target):
+        '''
+        Classical MSE loss function with penalty for rapid changes of the \"pred\".
+        \"c_factor\" denotes ratio of the penalty to the MSE.
+        '''
+
+        pred_phase, pred_intensity = results
+
+        MSE_sum = torch.sum(torch.square(pred_intensity - target))
+
+        zero_shape = np.array(torch.diff(pred_phase).shape)
+        zero_shape[-1] = 1
+        zero_shape = tuple(zero_shape)
+
+        cont_penalty = torch.mean(torch.square(diff_pt(unwrap(pred_phase), device = self.device, dtype = self.dtype)))
+        cont_penalty = cont_penalty/(cont_penalty.clone().detach())
+        cont_penalty = self.c_factor*cont_penalty*(MSE_sum.clone().detach())
+
+        return MSE_sum + cont_penalty
     
 def unwrap(x):  
-
-    for b in range(x.shape[0]):  
-        x_1 = x[b,0]         
+    x_1=0 
+    for batch in range(x.shape[0]):              
         for i in range(x.shape[-1]):
-            _x_1 = x[b,i]
+            _x_1 = x[batch,i]
             if _x_1 - x_1> np.pi:
-                x[b,i] -=2*np.pi 
+                x[batch,i] -=2*np.pi 
             if _x_1 - x_1< -np.pi:
-                x[b,i] +=2*np.pi
+                x[batch,i] +=2*np.pi
             x_1 = _x_1
     return x
-
-def cal_conv(i=5000., p=10., k=20., d=1., s=5.):
-    return (i + 2*p - k - (k-1)*(d-1))/s + 1
