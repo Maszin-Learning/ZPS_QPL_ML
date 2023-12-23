@@ -120,10 +120,13 @@ class network_3(nn.Module):
         x = self.normal_1(x)
         x = self.leakyrelu(self.linear_1(x))
         x = self.sigmoid(self.conv1d_1(x))
+        
         #print(x.shape)
         
         x = torch.flatten(x, start_dim=1, end_dim=-1)
+        
         x = self.linear_3(x)
+        #x = self.normal_3(x)
         x = torch.squeeze(x)
         return self.sigmoid(x)* np.pi*2
     

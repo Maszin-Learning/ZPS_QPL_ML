@@ -73,6 +73,12 @@ def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = Non
 
     plt.subplot(1, 2, 1)
     plt.title("The intensity")
+    
+    plt.scatter(initial_pulse_short.X[plot_from:plot_to], 
+                np.abs(np.reshape(reconstructed_splined, input_dim)[plot_from:plot_to]), 
+                color = "blue", 
+                s = 1,
+                zorder = 10)
 
     plt.scatter(initial_pulse_short.X[plot_from:plot_to], 
                 np.abs(np.reshape(reconstructed.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to]), 
@@ -89,11 +95,7 @@ def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = Non
                         np.abs(np.reshape(test_pulse.clone().cpu().detach().numpy(), input_dim))[plot_from:plot_to], 
                         color = "darkviolet")
     
-    plt.scatter(initial_pulse_short.X[plot_from:plot_to], 
-            np.abs(np.reshape(reconstructed_splined, input_dim)[plot_from:plot_to]), 
-            color = "blue", 
-            s = 1,
-            zorder = 10)
+
     
     plt.xlabel("THz")
     plt.legend(["Reconstructed intensity", "Initial intensity", "Target intensity"], bbox_to_anchor = [0.95, -0.15])
@@ -113,6 +115,10 @@ def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = Non
     FT_intensity = np.fft.fftshift(FT_intensity)
     FT_intensity = np.fft.fft(FT_intensity)
     FT_intensity = np.fft.fftshift(FT_intensity)
+
+    plt.plot(range(idx_end - idx_start), 
+                splined_phase, 
+                color = "blue")
 
     plt.scatter(range(idx_end - idx_start), 
                 reconstructed_phase, 
@@ -141,9 +147,7 @@ def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = Non
                         color='orange',
                         alpha = 0.5)
     
-    plt.plot(range(idx_end - idx_start), 
-                splined_phase, 
-                color = "blue")
+
     
     plt.xlabel("Quasi-time (unitless)")
     if type(test_phase) == type(np.array([])):
