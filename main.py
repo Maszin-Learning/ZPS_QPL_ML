@@ -300,7 +300,7 @@ def main(_learning_rate,
                     save = True)
             
             cont_penalty = torch.sqrt(torch.sum(torch.square(u.diff_pt(u.unwrap(predicted_phase), device = my_device, dtype = my_dtype))))
-            print("MSE of phase's variation is equal to {}.".format(cont_penalty))
+            print("phase's variation MSE: {}.".format(cont_penalty))
 
             if test_loss < test_loss_global:
                 # shutil.rmtree(model_save_PATH_dir)
@@ -337,16 +337,16 @@ if __name__ == "__main__":
     parser.add_argument('-en', '--epoch_num', default=10, type=int)
     parser.add_argument('-bs', '--batch_size', default=50, type=int)
     parser.add_argument('-pf', '--plot_freq', default=3, type=int)
-    parser.add_argument('-ds', '--dataset_size', default=10000, type=int)
+    parser.add_argument('-ds', '--dataset_size', default=5000, type=int)
     parser.add_argument('-g', '--generate', action='store_true') # only generate, training will not run, wandb will be offline
     parser.add_argument('-fc', '--force_cpu', action='store_true')
     parser.add_argument('-tr', '--test_run', action='store_true')
     parser.add_argument('-nn', '--node_number', default=100, type=int)
     parser.add_argument('-ar', '--architecture', default='network_1', type=str)
-    parser.add_argument('-cr', '--criterion', default='MSE', type=str)
+    parser.add_argument('-cr', '--criterion', default='MSEsmooth', type=str)
     parser.add_argument('-op', '--optimalizer', default='Adam', type=str,)
-    parser.add_argument('-ts', '--test_signal', default='hermite', type=str,)
-    parser.add_argument('-is', '--initial_signal', default='gauss', type=str,)
+    parser.add_argument('-ts', '--test_signal', default='gauss', type=str,)
+    parser.add_argument('-is', '--initial_signal', default='exponential', type=str,)
     parser.add_argument('-wd', '--weight_decay', default=0, type=float)
     args = parser.parse_args()
     config={}

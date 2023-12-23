@@ -61,7 +61,7 @@ class network_1_5(nn.Module):
     def forward(self,x):
         x = self.normal_1(x)
         x = self.leakyrelu(self.linear_1(x))
-        #x1 = torchaudio.functional.lowpass_biquad(waveform=x.clone(), sample_rate=1, cutoff_freq=1000)
+        
         x = self.leakyrelu(self.linear_2(x))
         x = self.linear_3(x)
 
