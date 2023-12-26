@@ -62,7 +62,7 @@ def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = Non
     new_X = np.linspace(0, 1, len(test_phase_pred))
 
     #spline = CubicSpline(new_X, np.unwrap(test_phase_pred.clone().detach().cpu().numpy()))
-    spline = splrep(new_X, np.unwrap(test_phase_pred.clone().detach().cpu().numpy()), s=0.05*len(test_phase_pred))
+    spline = splrep(new_X, np.unwrap(test_phase_pred.clone().detach().cpu().numpy()), s=0.001*len(test_phase_pred))
     splined_phase = BSpline(*spline)(new_X)
     # evolve spline
     #initial_intensity = np_to_complex_pt(np.abs(initial_pulse.Y.copy()), device = device, dtype = dtype)

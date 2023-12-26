@@ -229,7 +229,7 @@ def main(_learning_rate,
     if _criterion =='L1':
         criterion = torch.nn.L1Loss()
     if _criterion =='MSEsmooth':
-        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 1.5)
+        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 1)
     
     # create dataset and dataloader
     
