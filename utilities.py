@@ -101,7 +101,7 @@ def evolve_pt(intensity, phase, device, dtype, abs = True):
         return complex_intensity
     
     
-def plot_dataset(number, pulse, ft_pulse):
+def plot_dataset(number, pulse, ft_pulse, flag = ""):
     '''
     # Plot \"number\" of phases and intensities that are saved as .csv files in \"data\" folder.
     \"pulse\" is a spectrum class object representing the initial - not transformed - pulse. 
@@ -111,14 +111,14 @@ def plot_dataset(number, pulse, ft_pulse):
 
     # prepare place for saving plots
 
-    if os.path.isdir("dataset_sample"):
-        shutil.rmtree('dataset_sample')
-    os.mkdir("dataset_sample")
+    if os.path.isdir("dataset_sample" + flag):
+        shutil.rmtree('dataset_sample' + flag)
+    os.mkdir("dataset_sample" + flag)
 
     # check how the dataset looks like
 
-    intensity_labels = os.listdir('data/train_intensity')
-    phase_labels = os.listdir('data/train_intensity')
+    intensity_labels = os.listdir('data'+ flag + '/train_intensity')
+    phase_labels = os.listdir('data' + flag + '/train_intensity')
     dataset_size = len(intensity_labels)
 
     if len(intensity_labels) != len(phase_labels):
@@ -139,8 +139,8 @@ def plot_dataset(number, pulse, ft_pulse):
     for n in tqdm(range(len(plot_indices))):
         i = plot_indices[n]
 
-        phase = np.loadtxt("data/train_phase/" + phase_labels[i])
-        intensity = np.loadtxt("data/train_intensity/" + intensity_labels[i])
+        phase = np.loadtxt("data" + flag + "/train_phase/" + phase_labels[i])
+        intensity = np.loadtxt("data" + flag + "/train_intensity/" + intensity_labels[i])
 
         pulse_safe.Y /= np.max(np.abs(pulse_safe.Y))
         pulse_safe.Y *= np.max(np.abs(phase))
@@ -164,7 +164,7 @@ def plot_dataset(number, pulse, ft_pulse):
         plt.ylabel("Intensity (a.u.)")
 
         plt.tight_layout()
-        plt.savefig("dataset_sample/{}.jpg".format(i + 1))
+        plt.savefig("dataset_sample" + flag + "/{}.jpg".format(i + 1))
         plt.close()
 
     print("Saving completed.\n")

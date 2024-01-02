@@ -10,7 +10,7 @@ from math import floor
 
 class Generator():
 
-    def __init__(self, data_num, initial_intensity, FT_X, phase_len, device, dtype, max_order = 10, max_value = np.pi, target_type = "hermite"):
+    def __init__(self, data_num, initial_intensity, FT_X, phase_len, device, dtype, max_order = 10, max_value = np.pi, target_type = "hermite", flag = ""):
         self.data_num = data_num
         self.initial_intensity = initial_intensity
         self.FT_X = FT_X
@@ -21,22 +21,23 @@ class Generator():
         self.device = device
         self.dtype = dtype
         self.target_type = target_type
+        self.flag = flag
 
 
     def generate_and_save(self):
-        shutil.rmtree('data')
+        shutil.rmtree('data' + self.flag)
 
-        if not os.path.isdir("data"):
-            os.mkdir("data")
-        if not os.path.isdir("data/train_intensity"):
-            os.mkdir("data/train_intensity")
-        if not os.path.isdir("data/train_phase"):
-            os.mkdir("data/train_phase")
+        if not os.path.isdir("data"+ self.flag):
+            os.mkdir("data"+ self.flag)
+        if not os.path.isdir("data" + self.flag + "/train_intensity"):
+            os.mkdir("data" + self.flag + "/train_intensity")
+        if not os.path.isdir("data" + self.flag + "/train_phase"):
+            os.mkdir("data" + self.flag + "/train_phase")
 
         for example_num in tqdm(range(1, self.data_num + 1)):
             intensity, phase = self.pulse_gen()
-            np.savetxt("data/train_intensity/" + str(example_num) + ".csv", intensity)
-            np.savetxt("data/train_phase/" + str(example_num) + ".csv", phase)
+            np.savetxt("data" + self.flag + "/train_intensity/" + str(example_num) + ".csv", intensity)
+            np.savetxt("data" + self.flag + "/train_phase/" + str(example_num) + ".csv", phase)
 
 
     def phase_gen(self):

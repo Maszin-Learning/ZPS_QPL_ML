@@ -9,7 +9,7 @@ import torch
 from scipy.interpolate import CubicSpline
 from scipy.interpolate import splrep, BSpline
 
-def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = None, iter_num = 0, ):
+def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = None, iter_num = 0, flag = ""):
     '''
     ## Test the model with a given test pulse.
 
@@ -73,12 +73,6 @@ def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = Non
 
     plt.subplot(1, 2, 1)
     plt.title("The intensity")
-    
-    plt.scatter(initial_pulse_short.X[plot_from:plot_to], 
-                np.abs(np.reshape(reconstructed_splined, input_dim)[plot_from:plot_to]), 
-                color = "blue", 
-                s = 1,
-                zorder = 10)
 
     plt.scatter(initial_pulse_short.X[plot_from:plot_to], 
                 np.abs(np.reshape(reconstructed.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to]), 
@@ -116,10 +110,6 @@ def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = Non
     FT_intensity = np.fft.fft(FT_intensity)
     FT_intensity = np.fft.fftshift(FT_intensity)
 
-    plt.plot(range(idx_end - idx_start), 
-                splined_phase, 
-                color = "blue")
-
     plt.scatter(range(idx_end - idx_start), 
                 reconstructed_phase, 
                 s = 1, 
@@ -156,12 +146,10 @@ def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = Non
         plt.legend(["Reconstructed phase", "FT intensity"], bbox_to_anchor = [0.95, -0.15])
     plt.grid()
     
-
-
     if save:
-        if not os.path.isdir("pics"):
-            os.mkdir("pics")
-        plt.savefig("pics/reconstructed_{}.jpg".format(iter_num), bbox_inches = "tight", dpi = 200)
+        if not os.path.isdir("pics" + flag):
+            os.mkdir("pics" + flag)
+        plt.savefig("pics" + flag + "/reconstructed_{}.jpg".format(iter_num), bbox_inches = "tight", dpi = 200)
 
     return plt, mse(test_pulse.abs(), reconstructed.abs()).clone().cpu().detach().numpy()
     
@@ -299,6 +287,18 @@ def create_initial_pulse(bandwidth, centre, FWHM, num, pulse_type):
         for i in range(0, floor(1/3*num)):
             Y[i] = 0
 
+        X = np.linspace(bandwidth[0], bandwidth[1], num)
+        spectrum_out = sa.spectrum(X = X, Y = Y, x_type ="freq", y_type ="intensity")
+        spectrum_out.very_smart_shift(centre-(bandwidth[1]+bandwidth[0])/2, inplace = True)
+        spectrum_out.Y = np.abs(spectrum_out.Y)
+        return spectrum_out
+    
+    elif pulse_type == "exponential_r":
+        Y = np.flip(np.exp(np.linspace(-10, 3, num)) - np.exp(-10))
+        for i in range(0, floor(1/3*num)):
+            Y[i] = 0
+
+        Y = np.flip(Y)
         X = np.linspace(bandwidth[0], bandwidth[1], num)
         spectrum_out = sa.spectrum(X = X, Y = Y, x_type ="freq", y_type ="intensity")
         spectrum_out.very_smart_shift(centre-(bandwidth[1]+bandwidth[0])/2, inplace = True)
