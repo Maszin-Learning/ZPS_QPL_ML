@@ -5,10 +5,10 @@ import torch
 
 
 class Dataset_train(Dataset):
-    def __init__(self, root ,transform, device):
+    def __init__(self, root, transform, device, flag = ''):
         self.labels = []
-        self.dirName_1 = os.path.join('data','train_intensity') # path to training data with intensity of spectrum
-        self.dirName_2 = os.path.join('data','train_phase') # path to training data with pahse used to transformate gause of spectrum
+        self.dirName_1 = os.path.join('data'+ flag,'train_intensity') # path to training data with intensity of spectrum
+        self.dirName_2 = os.path.join('data' + flag,'train_phase') # path to training data with pahse used to transformate gause of spectrum
         self.files_names_intensity = []
         self.files_names_phase = []
         self._device = device

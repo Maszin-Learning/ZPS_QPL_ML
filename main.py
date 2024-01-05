@@ -123,7 +123,7 @@ def main(_learning_rate,
     # initial pulse (that is to be transformed by some phase)
 
     input_dim = 5000    # number of points in a single pulse
-    zeroes_num = 5000   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
+    zeroes_num = 7500   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
 
     bandwidth = [190, 196]
     centre = 193
@@ -139,13 +139,15 @@ def main(_learning_rate,
                                         centre = centre,
                                         FWHM = width,
                                         num = input_dim,
-                                        pulse_type = "exponential_r")
+                                        pulse_type = "hermite_1")
 
     # normalize it in L2
 
     initial_pulse_1.Y / np.sqrt(np.sum(initial_pulse_1.Y*np.conjugate(initial_pulse_1.Y)))
     initial_pulse_2.Y / np.sqrt(np.sum(initial_pulse_2.Y*np.conjugate(initial_pulse_2.Y)))
 
+    initial_pulse_1.Y *= 1.1
+    initial_pulse_2.Y *= 1.1
 
     # this serves only to generate FT pulse
 
@@ -171,8 +173,8 @@ def main(_learning_rate,
         idx_end += 1
     '''
 
-    idx_start = 4700
-    idx_end = 5300
+    idx_start = 9600
+    idx_end = 10400
 
     output_dim = idx_end - idx_start    # number of points of non-zero FT-intensity
 
@@ -196,7 +198,8 @@ def main(_learning_rate,
     # test pulse
 
     test_pulse_1, test_phase_1 = create_test_pulse("gauss", initial_pulse_1, output_dim, my_device, my_dtype)
-    test_pulse_2, test_phase_2 = create_test_pulse("gauss", initial_pulse_2, output_dim, my_device, my_dtype)
+    test_pulse_2, test_phase_2 = create_test_pulse("hermite_1", initial_pulse_2, output_dim, my_device, my_dtype)
+
     '''
     #test_pulse = test_pulse * 0.96
     fwhm_test = u.comp_FWHM(u.comp_std(initial_pulse_1.X.copy(), test_pulse_1.clone().detach().cpu().numpy().ravel()))
@@ -238,7 +241,7 @@ def main(_learning_rate,
                                 phase_len = output_dim,
                                 device = my_device,
                                 dtype = np.float32,
-                                target_type = "hermite",
+                                target_type = "hermite_1",
                                 flag = "_2"
                                 )
 
@@ -280,14 +283,14 @@ def main(_learning_rate,
     if _criterion =='L1':
         criterion = torch.nn.L1Loss()
     if _criterion =='MSEsmooth':
-        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 1)
+        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.1)
     
     # create dataset and dataloader
     
-    dataset_train_1 = Dataset_train(root='', transform=True, device = my_device)
+    dataset_train_1 = Dataset_train(root='', transform=True, device = my_device, flag = '_1/')
     dataloader_train_1 = torch.utils.data.DataLoader(dataset=dataset_train_1, batch_size=_batch_size, num_workers=0, shuffle=True)
     
-    dataset_train_2 = Dataset_train(root='', transform=True, device = my_device)
+    dataset_train_2 = Dataset_train(root='', transform=True, device = my_device, flag = '_2/')
     dataloader_train_2 = torch.utils.data.DataLoader(dataset=dataset_train_2, batch_size=_batch_size, num_workers=0, shuffle=True)
     
     # learning loop
@@ -297,9 +300,9 @@ def main(_learning_rate,
     wandb.watch(model, criterion, log="all", log_freq=400)
 
     for epoch in range(_epoch_num):
-        dataloader_iter = iter(dataloader_train_2)
-        for pulse_1, _1 in tqdm(dataloader_train_1):
-            pulse_2, _2 = next(dataloader_iter)
+        dataloader_iter = iter(dataloader_train_1)
+        for pulse_2, _2 in tqdm(dataloader_train_2):
+            pulse_1, _1 = next(dataloader_iter)
 
             # pulse = pulse.to(my_device) # the pulse is already created on device by dataset, uncomment if not using designated dataset for this problem
             
@@ -330,7 +333,7 @@ def main(_learning_rate,
                 loss_1 = criterion(reconstructed_intensity_1.abs()[:,zeroes_num: input_dim + zeroes_num], pulse_1) # pulse intensity
                 loss_2 = criterion(reconstructed_intensity_2.abs()[:,zeroes_num: input_dim + zeroes_num], pulse_2) # pulse intensity
 
-            loss = loss_2# + loss_2
+            loss = loss_1 + loss_2
 
             loss.backward()
             optimizer.step()
@@ -352,7 +355,8 @@ def main(_learning_rate,
                     dtype = my_dtype,
                     iter_num = epoch,
                     save = True,
-                    flag = "_1")
+                    flag = "_1",
+                    reconst_phase = predicted_phase)
             
             fig_2, test_loss_2 = test(model = model,
                     test_pulse = test_pulse_2,
@@ -362,7 +366,8 @@ def main(_learning_rate,
                     dtype = my_dtype,
                     iter_num = epoch,
                     save = True,
-                    flag = "_2")
+                    flag = "_2",
+                    reconst_phase = predicted_phase)
             
             #cont_penalty = torch.sqrt(torch.sum(torch.square(u.diff_pt(u.unwrap(predicted_phase), device = my_device, dtype = my_dtype))))
             #print("phase's variation MSE: {}.".format(cont_penalty))

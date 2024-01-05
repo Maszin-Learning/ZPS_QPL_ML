@@ -9,7 +9,7 @@ import torch
 from scipy.interpolate import CubicSpline
 from scipy.interpolate import splrep, BSpline
 
-def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = None, iter_num = 0, flag = ""):
+def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = None, iter_num = 0, flag = "", reconst_phase = None):
     '''
     ## Test the model with a given test pulse.
 
@@ -53,14 +53,15 @@ def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = Non
 
     test_phase_pred = model(test_pulse.abs())
     test_phase_pred = test_phase_pred.reshape([output_dim])
-
+    if reconst_phase != None:
+        test_phase_pred = reconst_phase[0, :]
     # evolve
     initial_intensity = np_to_complex_pt(np.abs(initial_pulse.Y.copy()), device = device, dtype = dtype)
     test_intensity = evolve_pt(initial_intensity, test_phase_pred, device = device, dtype = dtype)
     reconstructed = test_intensity.abs()[:,zeros_num : zeros_num+input_dim] 
 
     new_X = np.linspace(0, 1, len(test_phase_pred))
-
+    '''
     #spline = CubicSpline(new_X, np.unwrap(test_phase_pred.clone().detach().cpu().numpy()))
     spline = splrep(new_X, np.unwrap(test_phase_pred.clone().detach().cpu().numpy()), s=0.001*len(test_phase_pred))
     splined_phase = BSpline(*spline)(new_X)
@@ -68,7 +69,7 @@ def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = Non
     #initial_intensity = np_to_complex_pt(np.abs(initial_pulse.Y.copy()), device = device, dtype = dtype)
     test_intensity_splined = evolve_np(initial_pulse.Y.copy(), splined_phase, dtype=np.float32)
     reconstructed_splined = np.abs(test_intensity_splined)[zeros_num : zeros_num+input_dim] 
-    
+    '''
     plt.figure(figsize=(10,5)) 
 
     plt.subplot(1, 2, 1)
@@ -173,8 +174,22 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
      real NumPy Array or None, if the phase needed to transform initial_pulse to the test_pulse is not known.
     '''
 
-    if pulse_type == "hermite":
+    if pulse_type == "hermite_1":
         test_pulse_ = sa.hermitian_pulse(pol_num = 1,
+                                        bandwidth = (initial_pulse.X[0], initial_pulse.X[-1]),
+                                        centre = 193,
+                                        FWHM = 0.3,
+                                        num = len(initial_pulse))
+
+        test_pulse_.Y = test_pulse_.Y / np.sqrt(np.sum(test_pulse_.Y*np.conjugate(test_pulse_.Y)))
+        test_pulse_.Y = test_pulse_.Y * np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
+        
+        test_pulse_.very_smart_shift(test_pulse_.comp_center(norm = "L2")-initial_pulse.comp_center(norm = "L2"))
+        test_pulse_ = np_to_complex_pt(test_pulse_.Y, device = device, dtype = dtype)
+        test_phase_ = None
+
+    elif pulse_type == "hermite_2":
+        test_pulse_ = sa.hermitian_pulse(pol_num = 2,
                                         bandwidth = (initial_pulse.X[0], initial_pulse.X[-1]),
                                         centre = 193,
                                         FWHM = 1,
@@ -273,7 +288,7 @@ def create_initial_pulse(bandwidth, centre, FWHM, num, pulse_type):
         pulse.Y = np.abs(pulse.Y)
         return pulse
     
-    elif pulse_type == "hermite":
+    elif pulse_type == "hermite_1":
         pulse = sa.hermitian_pulse(pol_num = 1,
                                     bandwidth = bandwidth,
                                     centre = centre,

@@ -169,12 +169,27 @@ class Generator():
             intensity = intensity * np.sqrt(np.sum(self.initial_intensity*np.conjugate(self.initial_intensity)))
             phase_significant = np.ones(self.phase_len)
 
-        elif self.target_type == "hermite":
+        elif self.target_type == "hermite_1":
 
             order = np.random.randint(1, 2)
             correction = 0#np.random.uniform(-0.4, 0.4)
 
             intensity = sa.hermitian_pulse(pol_num = 1,
+                                           bandwidth = [190, 196],
+                                           centre = 193,
+                                           FWHM = 0.3 + correction,
+                                           num = len(intensity)).Y
+            
+            intensity = intensity / np.sqrt(np.sum(intensity*np.conjugate(intensity)))
+            intensity = intensity * np.sqrt(np.sum(self.initial_intensity*np.conjugate(self.initial_intensity)))
+            phase_significant = np.ones(self.phase_len)
+
+        elif self.target_type == "hermite_2":
+
+            order = np.random.randint(1, 2)
+            correction = 0#np.random.uniform(-0.4, 0.4)
+
+            intensity = sa.hermitian_pulse(pol_num = 2,
                                            bandwidth = [190, 196],
                                            centre = 193,
                                            FWHM = 1 + correction,
