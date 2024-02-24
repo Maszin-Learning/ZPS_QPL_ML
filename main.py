@@ -131,6 +131,13 @@ def main(_learning_rate,
                                          FWHM = width,
                                          num = input_dim,
                                          pulse_type = _initial_signal)
+    
+    # additional pulse to add to exp (gauss) so it makes it more physical
+    signal_correction = create_initial_pulse(bandwidth = bandwidth,
+                                         centre = centre,
+                                         FWHM = width,
+                                         num = input_dim,
+                                         pulse_type = 'gauss')
 
     # normalize it in L2
 
@@ -138,7 +145,7 @@ def main(_learning_rate,
 
     # this serves only to generate FT pulse
 
-    long_pulse = initial_pulse.zero_padding(length = zeroes_num, inplace = False)
+    long_pulse = initial_pulse.zero_padding(length = zeroes_num, inplace = False) + signal_correction
     long_pulse_2 = long_pulse.copy()    
     Y_initial = initial_pulse.Y.copy()
 
