@@ -308,3 +308,6 @@ def clear_folder(name:str):
         os.mkdir(name)
     else:
         os.mkdir(name)
+
+def wl_to_freq(wl):
+    return 299792458/wl/1000
