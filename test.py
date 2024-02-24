@@ -60,25 +60,11 @@ def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = Non
     reconstructed = test_intensity.abs()[:,zeros_num : zeros_num+input_dim] 
 
     new_X = np.linspace(0, 1, len(test_phase_pred))
-
-    #spline = CubicSpline(new_X, np.unwrap(test_phase_pred.clone().detach().cpu().numpy()))
-    spline = splrep(new_X, np.unwrap(test_phase_pred.clone().detach().cpu().numpy()), s=0.001*len(test_phase_pred))
-    splined_phase = BSpline(*spline)(new_X)
-    # evolve spline
-    #initial_intensity = np_to_complex_pt(np.abs(initial_pulse.Y.copy()), device = device, dtype = dtype)
-    test_intensity_splined = evolve_np(initial_pulse.Y.copy(), splined_phase, dtype=np.float32)
-    reconstructed_splined = np.abs(test_intensity_splined)[zeros_num : zeros_num+input_dim] 
     
     plt.figure(figsize=(10,5)) 
 
     plt.subplot(1, 2, 1)
     plt.title("The intensity")
-    
-    plt.scatter(initial_pulse_short.X[plot_from:plot_to], 
-                np.abs(np.reshape(reconstructed_splined, input_dim)[plot_from:plot_to]), 
-                color = "blue", 
-                s = 1,
-                zorder = 10)
 
     plt.scatter(initial_pulse_short.X[plot_from:plot_to], 
                 np.abs(np.reshape(reconstructed.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to]), 
@@ -115,10 +101,6 @@ def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = Non
     FT_intensity = np.fft.fftshift(FT_intensity)
     FT_intensity = np.fft.fft(FT_intensity)
     FT_intensity = np.fft.fftshift(FT_intensity)
-
-    plt.plot(range(idx_end - idx_start), 
-                splined_phase, 
-                color = "blue")
 
     plt.scatter(range(idx_end - idx_start), 
                 reconstructed_phase, 

@@ -262,7 +262,11 @@ def diff_pt(vector, device, dtype):
     return torch.cat([torch.zeros(zero_shape, device = device, dtype = dtype),torch.diff(vector)], dim=torch.diff(vector).ndim-1)
 
 class MSEsmooth(nn.modules.loss._Loss):
-
+    '''
+    Classical MSE loss function with penalty for rapid changes of the \"pred\".
+    \"c_factor\" denotes ratio of the penalty to the MSE.
+    '''
+    
     def __init__(self, device, dtype, c_factor = 0.9):
         super(MSEsmooth, self).__init__()
         self.c_factor = c_factor
@@ -270,10 +274,6 @@ class MSEsmooth(nn.modules.loss._Loss):
         self.dtype = dtype
 
     def forward(self, results, target):
-        '''
-        Classical MSE loss function with penalty for rapid changes of the \"pred\".
-        \"c_factor\" denotes ratio of the penalty to the MSE.
-        '''
 
         pred_phase, pred_intensity = results
 
