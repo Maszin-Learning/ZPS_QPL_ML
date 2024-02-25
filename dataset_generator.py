@@ -10,7 +10,7 @@ from math import floor
 
 class Generator():
 
-    def __init__(self, data_num, initial_intensity, FT_X, phase_len, device, dtype, max_order = 10, max_value = np.pi, target_type = "hermite"):
+    def __init__(self, data_num, initial_intensity, FT_X, phase_len, device, dtype, max_order = 10, max_value = np.pi, target_type = "hermite", target_metadata = None):
         self.data_num = data_num
         self.initial_intensity = initial_intensity
         self.FT_X = FT_X
@@ -21,6 +21,7 @@ class Generator():
         self.device = device
         self.dtype = dtype
         self.target_type = target_type
+        self.target_metadata = target_metadata
 
 
     def generate_and_save(self):
@@ -188,9 +189,9 @@ class Generator():
             correction = 0#np.random.uniform(-0.3, 0.3)
 
             intensity = sa.hermitian_pulse(pol_num = 0,
-                                bandwidth = [190, 196],
-                                centre = 193,
-                                FWHM = 1 + correction,
+                                bandwidth = [self.target_metadata[2], self.target_metadata[3]],
+                                centre = self.target_metadata[0],
+                                FWHM = self.target_metadata[1] + correction,
                                 num = len(intensity)).Y
             
             intensity = intensity / np.sqrt(np.sum(intensity*np.conjugate(intensity)))

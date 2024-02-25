@@ -38,7 +38,8 @@ def main(_learning_rate,
          _optimalizer,
          _test_signal,
          _initial_signal,
-         _weight_decay):
+         _weight_decay,
+         _axis_type):
     
     # hyperparameters
 
@@ -55,7 +56,8 @@ def main(_learning_rate,
           'optimalizer:', _optimalizer, '\n',
           'test_signal:', _test_signal, '\n',
           'initial_signal:', _initial_signal, '\n',
-          'weight_decay:', _weight_decay, '\n')
+          'weight_decay:', _weight_decay, '\n',
+          'axis_type:', _axis_type, '\n')
     
     # Choose architecture 
 
@@ -120,11 +122,11 @@ def main(_learning_rate,
     # initial pulse (that is to be transformed by some phase)
 
     input_dim = 5000    # number of points in a single pulse
-    zeroes_num = 0   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
+    zeroes_num = 2500   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
 
-    bandwidth = [190, 196]
-    centre = 193
-    width = 0.3
+    bandwidth = [0, 1000]
+    centre = 500
+    width = 100
 
     initial_pulse = create_initial_pulse(bandwidth = bandwidth,
                                          centre = centre,
@@ -136,7 +138,7 @@ def main(_learning_rate,
 
     # normalize it in L2
 
-    initial_pulse.Y / np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
+    initial_pulse.Y = initial_pulse.Y / np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
 
     # this serves only to generate FT pulse
 
@@ -184,7 +186,7 @@ def main(_learning_rate,
     # test pulse
 
     test_pulse, test_phase = create_test_pulse(_test_signal, initial_pulse, output_dim, my_device, my_dtype)
-    test_pulse = test_pulse * 0.98
+    #test_pulse = test_pulse * 1.05
     fwhm_test = u.comp_FWHM(u.comp_std(initial_pulse.X.copy(), test_pulse.clone().detach().cpu().numpy().ravel()))
     print("\nTime-bandwidth product of the transformation from the initial pulse to the test pulse is equal to {}.\n".format(round(fwhm_test*fwhm_init_F/2, 5)))   # WARNING: This "/2" is just empirical correction
     if fwhm_test*fwhm_init_F/2 < 0.44:
@@ -202,7 +204,8 @@ def main(_learning_rate,
                                 phase_len = output_dim,
                                 device = my_device,
                                 dtype = np.float32,
-                                target_type = _test_signal
+                                target_type = _test_signal,
+                                target_metadata = [500, 100, bandwidth[0], bandwidth[1]]
                                 )
 
         the_generator.generate_and_save()
@@ -243,7 +246,7 @@ def main(_learning_rate,
     if _criterion =='L1':
         criterion = torch.nn.L1Loss()
     if _criterion =='MSEsmooth':
-        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 1)
+        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.6)
     
     # create dataset and dataloader
     
@@ -301,7 +304,8 @@ def main(_learning_rate,
                     device = my_device, 
                     dtype = my_dtype,
                     iter_num = epoch,
-                    save = True)
+                    save = True,
+                    x_type = _axis_type)
             
             cont_penalty = torch.sqrt(torch.sum(torch.square(u.diff_pt(u.unwrap(predicted_phase), device = my_device, dtype = my_dtype))))
             print("phase's variation MSE: {}.".format(cont_penalty))
@@ -353,6 +357,7 @@ if __name__ == "__main__":
     parser.add_argument('-ts', '--test_signal', default='gauss', type=str,)
     parser.add_argument('-is', '--initial_signal', default='exponential', type=str,)
     parser.add_argument('-wd', '--weight_decay', default=0, type=float)
+    parser.add_argument('-ax', '--axis_type', default="freq", type=str)
     args = parser.parse_args()
     config={}
     
@@ -381,7 +386,8 @@ if __name__ == "__main__":
         "initial_signal": args.initial_signal,
         "criterion": args.criterion,
         "optimizer": args.optimalizer,
-        "weight_decay": args.weight_decay
+        "weight_decay": args.weight_decay,
+        "axis_type": args.axis_type
         }
         )
     
@@ -398,4 +404,5 @@ if __name__ == "__main__":
          args.optimalizer,
          args.test_signal,
          args.initial_signal,
-         args.weight_decay)
+         args.weight_decay,
+         args.axis_type)

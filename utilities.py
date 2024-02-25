@@ -146,21 +146,21 @@ def plot_dataset(number, pulse, ft_pulse):
         pulse_safe.Y *= np.max(np.abs(phase))
 
         plt.subplot(2, 1, 2)
-        plt.fill_between(pulse_safe.X, np.real(pulse_safe.Y), color = "orange", alpha = 0.4)
-        plt.scatter(pulse_safe.X, np.real(phase), color = "red", s = 9)
+        plt.fill_between(pulse_safe.X + 375, np.real(pulse_safe.Y), color = "orange", alpha = 0.4)
+        plt.scatter(pulse_safe.X + 375, np.real(phase), color = "red", s = 9)
         plt.grid()
-        plt.legend(["Temporal intensity", "Temporal phase"])
+        plt.legend(["Spectral intensity", "Spectral phase"])
         plt.title("Train phase")
-        plt.xlabel("Quasitime (ps)")
-        plt.ylabel("Temporal phase (rad)")
+        plt.xlabel("Frequency (THz)")
+        plt.ylabel("Spectral phase (rad)")
 
         plt.subplot(2, 1, 1)
         plt.plot(pulse.X, intensity, color = "darkorange")
         plt.plot(pulse.X, pulse.Y, color = "black", linestyle = "dashed")
         plt.grid()
         plt.legend(["Evolved intensity", "Initial intensity"])
-        plt.title("Spectral intensity")
-        plt.xlabel("Frequency (THz)")
+        plt.title("Temporal intensity")
+        plt.xlabel("Time (ps)")
         plt.ylabel("Intensity (a.u.)")
 
         plt.tight_layout()
@@ -308,3 +308,15 @@ def clear_folder(name:str):
         os.mkdir(name)
     else:
         os.mkdir(name)
+
+def wl_to_freq(wl):
+    if type(wl) == type(np.array([])):
+        return 299792458/np.flip(wl)/1000
+    else:
+        return 299792458/wl/1000
+
+def freq_to_wl(freq):
+    if type(freq) == type(np.array([])):
+        return 299792458/np.flip(freq)/1000
+    else:
+        return 299792458/freq/1000
