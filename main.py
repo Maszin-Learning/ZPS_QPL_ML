@@ -193,7 +193,7 @@ def main(_learning_rate,
                                 device = my_device,
                                 dtype = np.float32,
                                 target_type = _test_signal,
-                                target_metadata = [374.7405725, 15, bandwidth[0], bandwidth[1]]
+                                target_metadata = [374.7405725, 20, bandwidth[0], bandwidth[1]]
                                 )
 
         the_generator.generate_and_save()
@@ -234,7 +234,7 @@ def main(_learning_rate,
     if _criterion =='L1':
         criterion = torch.nn.L1Loss()
     if _criterion =='MSEsmooth':
-        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.7)
+        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.6)
     
     # create dataset and dataloader
     
