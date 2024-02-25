@@ -9,7 +9,7 @@ import torch
 from scipy.interpolate import CubicSpline
 from scipy.interpolate import splrep, BSpline
 
-def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = None, iter_num = 0, ):
+def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = None, iter_num = 0):
     '''
     ## Test the model with a given test pulse.
 
@@ -56,40 +56,52 @@ def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = Non
 
     # evolve
     initial_intensity = np_to_complex_pt(np.abs(initial_pulse.Y.copy()), device = device, dtype = dtype)
-    test_intensity = evolve_pt(initial_intensity, test_phase_pred, device = device, dtype = dtype)
-    reconstructed = test_intensity.abs()[:,zeros_num : zeros_num+input_dim] 
-
-    new_X = np.linspace(0, 1, len(test_phase_pred))
+    test_intensity = evolve_pt(initial_intensity, test_phase_pred, device = device, dtype = dtype, abs = False)
+    reconstructed = test_intensity.abs()[:, zeros_num: zeros_num+input_dim]
+    temporal_phase = torch.angle(test_intensity)[:, zeros_num: zeros_num+input_dim]
     
-    plt.figure(figsize=(10,5)) 
+    plt.figure(figsize=(10,5), constrained_layout=True )
 
     plt.subplot(1, 2, 1)
-    plt.title("The intensity")
+    plt.title("Frequency domain")
 
-    plt.scatter(initial_pulse_short.X[plot_from:plot_to], 
-                np.abs(np.reshape(reconstructed.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to]), 
-                color = "green", 
-                s = 1,
-                zorder = 10)
+    norm_const = max([np.max(np.abs(initial_pulse_short.Y[plot_from:plot_to])),
+                     np.max(np.abs(np.reshape(test_pulse.clone().cpu().detach().numpy(), input_dim))[plot_from:plot_to]),
+                     np.max(np.abs(np.reshape(reconstructed.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to]))])
+
     plt.plot(initial_pulse_short.X[plot_from:plot_to], 
-                np.abs(initial_pulse_short.Y[plot_from:plot_to]), 
-                linestyle = "dashed", 
-                color = "black", 
-                lw = 1,
+                np.abs(initial_pulse_short.Y[plot_from:plot_to])/norm_const, 
+                color = "blue", 
                 zorder = 5)
     plt.plot(initial_pulse_short.X[plot_from:plot_to], 
-                        np.abs(np.reshape(test_pulse.clone().cpu().detach().numpy(), input_dim))[plot_from:plot_to], 
-                        color = "darkviolet")
-    
-
-    
-    plt.xlabel("THz")
-    plt.legend(["Reconstructed intensity", "Initial intensity", "Target intensity"], bbox_to_anchor = [0.95, -0.15])
+                        np.abs(np.reshape(test_pulse.clone().cpu().detach().numpy(), input_dim))[plot_from:plot_to]/norm_const, 
+                        color = "red")
+    plt.scatter(initial_pulse_short.X[plot_from:plot_to], 
+            np.abs(np.reshape(reconstructed.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to])/norm_const, 
+            color = "green", 
+            s = 0.25,
+            zorder = 10)
+    plt.xlabel("Frequency (THz)")
+    plt.ylabel("Normalized intensity")
+    plt.legend(["Initial intensity", "Target intensity", "Transformed intensity"], bbox_to_anchor = [1, -0.12], ncol = 2)
     plt.grid()
 
+    ax = plt.gca()
+    ax2 = ax.twinx()
+    ax2.scatter(initial_pulse_short.X[plot_from:plot_to], 
+            np.unwrap(np.reshape(temporal_phase.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to]), 
+            color = "burlywood",
+            s = 0.25,
+            zorder = 0)
+    ax2.legend(["Phase of transformed spectrum"], bbox_to_anchor = [0.721, -0.25])
+    ax2.set_ylabel("Spectral phase (rad)")
+    
     plt.subplot(1, 2, 2)
 
-    plt.title("The phase")
+    plt.title("Time domain")
+    plt.xlabel("Quasi-time (ps)")
+    plt.ylabel("Normalized intensity")
+    plt.grid()
 
     reconstructed_phase = np.unwrap(test_phase_pred.clone().cpu().detach().numpy().reshape(output_dim))
     reconstructed_phase -= reconstructed_phase[floor(output_dim/2)]
@@ -97,49 +109,44 @@ def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = Non
     idx_start = floor(zeros_num + input_dim/2 - output_dim/2)
     idx_end = floor(zeros_num + input_dim/2 + output_dim/2)
 
-    FT_intensity = initial_pulse.Y.copy()
-    FT_intensity = np.fft.fftshift(FT_intensity)
-    FT_intensity = np.fft.fft(FT_intensity)
-    FT_intensity = np.fft.fftshift(FT_intensity)
+    FT_pulse = initial_pulse.fourier(inplace = False)
+    FT_Y = FT_pulse.Y.copy()
+    FT_X = FT_pulse.X.copy()
 
-    plt.scatter(range(idx_end - idx_start), 
+    FT_Y /= np.max(FT_Y[idx_start: idx_end])
+
+    plt.fill_between(FT_X[idx_start: idx_end], 
+                        np.abs(FT_Y[idx_start: idx_end]),
+                        color='orange',
+                        alpha = 0.5)
+    plt.legend(["FT initial intensity"], bbox_to_anchor = [0.665, -0.12])
+
+    ax3 = plt.gca()
+    ax4 = ax3.twinx()
+    ax4.scatter(FT_X[idx_start: idx_end], 
                 reconstructed_phase, 
                 s = 1, 
                 color = "red",
                 zorder = 10)
+    ax4.set_ylabel("Temporal phase (rad)")
+    ax4.legend(["Transforming phase (rad)"], bbox_to_anchor = [0.8, -0.19])
 
     if type(test_phase) == type(np.array([])):
         test_phase_np = test_phase.copy()
         #test_phase_np -= test_phase_np[floor(output_dim/2)]
-        plt.plot(range(idx_end - idx_start),
+        plt.plot(FT_X[idx_start: idx_end],
                     np.real(test_phase_np),
                     color = "black",
                     lw = 1,
                     linestyle = "dashed",
                     zorder = 5)
-
-    FT_intensity /= np.max(FT_intensity[idx_start: idx_end])
-    if type(test_phase) == type(np.array([])):
-        FT_intensity *= np.max(np.concatenate([np.abs(reconstructed_phase), np.abs(test_phase.copy())]))
-    else:
-        FT_intensity *= np.max(np.abs(reconstructed_phase))
-
-    plt.fill_between(range(idx_end - idx_start), 
-                        np.abs(FT_intensity[idx_start: idx_end]),
-                        color='orange',
-                        alpha = 0.5)
-    
-
-    
-    plt.xlabel("Quasi-time (unitless)")
+        
+    '''
     if type(test_phase) == type(np.array([])):
         plt.legend(["Reconstructed phase", "Initial phase", "FT intensity"], bbox_to_anchor = [0.95, -0.15])
     else:
         plt.legend(["Reconstructed phase", "FT intensity"], bbox_to_anchor = [0.95, -0.15])
-    plt.grid()
-    
-
-
+    '''
     if save:
         if not os.path.isdir("pics"):
             os.mkdir("pics")
@@ -170,8 +177,8 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
     if pulse_type == "hermite":
         test_pulse_ = sa.hermitian_pulse(pol_num = 1,
                                         bandwidth = (initial_pulse.X[0], initial_pulse.X[-1]),
-                                        centre = 193,
-                                        FWHM = 1,
+                                        centre = 374.7405725,
+                                        FWHM = 15,
                                         num = len(initial_pulse))
 
         test_pulse_.Y = test_pulse_.Y / np.sqrt(np.sum(test_pulse_.Y*np.conjugate(test_pulse_.Y)))
@@ -239,8 +246,8 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
     elif pulse_type == "gauss":
         test_pulse_ = sa.hermitian_pulse(pol_num = 0,
                                     bandwidth = (initial_pulse.X[0], initial_pulse.X[-1]),
-                                    centre = 193,
-                                    FWHM = 1,
+                                    centre = 374.7405725,
+                                    FWHM = 15,
                                     num = len(initial_pulse))
 
         test_pulse_.Y = test_pulse_.Y / np.sqrt(np.sum(test_pulse_.Y*np.conjugate(test_pulse_.Y)))

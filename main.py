@@ -23,7 +23,7 @@ import argparse
 import wandb
 import shutil
 import warnings
-from utilities import MSEsmooth
+from utilities import MSEsmooth, wl_to_freq
 
 def main(_learning_rate,
          _epoch_num,
@@ -120,13 +120,15 @@ def main(_learning_rate,
     # initial pulse (that is to be transformed by some phase)
 
     input_dim = 5000    # number of points in a single pulse
-    zeroes_num = 5000   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
+    zeroes_num = 2500   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
 
-    bandwidth_nm
+    bandwidth_nm = [700, 900] 
+    centre_nm = 800
+    width_nm = 10
 
-    bandwidth = [190, 196]
-    centre = 193
-    width = 0.3
+    bandwidth = [wl_to_freq(bandwidth_nm[1]), wl_to_freq(bandwidth_nm[0])]
+    centre = wl_to_freq(centre_nm)
+    width = wl_to_freq(width_nm)
 
     initial_pulse = create_initial_pulse(bandwidth = bandwidth,
                                          centre = centre,
@@ -136,7 +138,7 @@ def main(_learning_rate,
 
     # normalize it in L2
 
-    initial_pulse.Y / np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
+    initial_pulse.Y = initial_pulse.Y / np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
 
     # this serves only to generate FT pulse
 
@@ -146,7 +148,7 @@ def main(_learning_rate,
 
     # we want to find what is the bandwidth of intensity after FT, to estimate output dimension of NN
 
-    trash_fraction = 0.008 # percent of FT transformed to be cut off - it will contribute to the noise
+    trash_fraction = 0.005 # percent of FT transformed to be cut off - it will contribute to the noise
 
     long_pulse.fourier()
     fwhm_init_F = u.comp_FWHM(u.comp_std(initial_pulse.fourier(inplace = False).X, initial_pulse.fourier(inplace = False).Y))
@@ -190,7 +192,8 @@ def main(_learning_rate,
                                 phase_len = output_dim,
                                 device = my_device,
                                 dtype = np.float32,
-                                target_type = _test_signal
+                                target_type = _test_signal,
+                                target_metadata = [374.7405725, 15, bandwidth[0], bandwidth[1]]
                                 )
 
         the_generator.generate_and_save()
@@ -231,7 +234,7 @@ def main(_learning_rate,
     if _criterion =='L1':
         criterion = torch.nn.L1Loss()
     if _criterion =='MSEsmooth':
-        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.4)
+        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.7)
     
     # create dataset and dataloader
     
