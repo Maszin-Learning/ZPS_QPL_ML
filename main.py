@@ -148,7 +148,7 @@ def main(_learning_rate,
     # additional pulse to add to exp (gauss) so it makes it more physical
     signal_correction = create_initial_pulse(bandwidth = bandwidth,
                                          centre = centre,
-                                         FWHM = width/100,
+                                         FWHM = width/10,
                                          num = long_pulse.Y.shape[0],
                                          pulse_type = 'gauss')
     
@@ -156,6 +156,7 @@ def main(_learning_rate,
     
     long_pulse_2 = long_pulse.copy()    
     long_pulse_2.Y = np.convolve(long_pulse_2.Y, signal_correction.Y, mode='same')
+    long_pulse_2.Y = long_pulse_2.Y / np.sqrt(np.sum(long_pulse_2.Y*np.conjugate(long_pulse_2.Y)))
     Y_initial = initial_pulse.Y.copy()
 
     # we want to find what is the bandwidth of intensity after FT, to estimate output dimension of NN
