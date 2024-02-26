@@ -150,12 +150,12 @@ def main(_learning_rate,
                                          num = long_pulse.Y.shape[0],
                                          pulse_type = 'gauss')
      # normalize it in L2
-    signal_correction.Y = signal_correction.Y / np.sqrt(np.sum(signal_correction.Y*np.conjugate(signal_correction.Y)))
+    #signal_correction.Y = signal_correction.Y / np.sqrt(np.sum(signal_correction.Y*np.conjugate(signal_correction.Y)))
     
     long_pulse_2 = long_pulse.copy()    
-    long_pulse_2.Y = np.convolve(long_pulse_2.Y, signal_correction.Y, mode='same')
+    #long_pulse_2.Y = np.convolve(long_pulse_2.Y, signal_correction.Y, mode='same')
     # normalize it in L2
-    long_pulse_2.Y= long_pulse_2.Y / np.sqrt(np.sum(long_pulse_2.Y*np.conjugate(long_pulse_2.Y)))
+    #long_pulse_2.Y= long_pulse_2.Y / np.sqrt(np.sum(long_pulse_2.Y*np.conjugate(long_pulse_2.Y)))
     Y_initial = initial_pulse.Y.copy()
 
     # we want to find what is the bandwidth of intensity after FT, to estimate output dimension of NN
@@ -245,7 +245,7 @@ def main(_learning_rate,
     if _criterion =='L1':
         criterion = torch.nn.L1Loss()
     if _criterion =='MSEsmooth':
-        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.8)
+        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 1)
     
     # create dataset and dataloader
     
