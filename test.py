@@ -182,9 +182,9 @@ def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = Non
                     zorder = 10)
         
     elif x_type == "wl":
-        ax4.scatter(wl_to_freq(FT_X[idx_start: idx_end] + 375), 
+        ax4.plot(wl_to_freq(FT_X[idx_start: idx_end] + 375), 
                     np.flip(reconstructed_phase), 
-                    s = 1, 
+                    lw = 1, 
                     color = "red",
                     zorder = 10)
         
