@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm import tqdm
 from math import floor
-import utilities as u
+import utilities
 from dataset import Dataset
 from torch.utils.data import DataLoader #Dataloader module
 import torchaudio
@@ -18,12 +18,12 @@ from test import create_test_pulse, test, create_test_set, create_initial_pulse
 import torchvision.transforms as transforms  # Transformations and augmentations
 from dataset import Dataset_train
 from dataset_generator import Generator
-import utilities
+import utilities as u
 import argparse
 import wandb
 import shutil
 import warnings
-from utilities import MSEsmooth
+from utilities import MSEsmooth, MSEsmooth2
 
 def main(_learning_rate,
          _epoch_num,
@@ -133,8 +133,6 @@ def main(_learning_rate,
                                          FWHM = width,
                                          num = input_dim,
                                          pulse_type = _initial_signal)
-    
-
 
     # normalize it in L2
 
@@ -142,20 +140,8 @@ def main(_learning_rate,
 
     # this serves only to generate FT pulse
 
-    long_pulse = initial_pulse.zero_padding(length = zeroes_num, inplace = False) 
-
-    
-    # additional pulse to add to exp (gauss) so it makes it more physical
-    signal_correction = create_initial_pulse(bandwidth = bandwidth,
-                                         centre = centre,
-                                         FWHM = width/100,
-                                         num = long_pulse.Y.shape[0],
-                                         pulse_type = 'gauss')
-    
-    
-    
+    long_pulse = initial_pulse.zero_padding(length = zeroes_num, inplace = False)
     long_pulse_2 = long_pulse.copy()    
-    long_pulse_2.Y = np.convolve(long_pulse_2.Y, signal_correction.Y, mode='same')
     Y_initial = initial_pulse.Y.copy()
 
     # we want to find what is the bandwidth of intensity after FT, to estimate output dimension of NN
@@ -186,12 +172,14 @@ def main(_learning_rate,
     # test pulse
 
     test_pulse, test_phase = create_test_pulse(_test_signal, initial_pulse, output_dim, my_device, my_dtype)
-    #test_pulse = test_pulse * 1.05
+    #test_pulse = test_pulse * 1.10
     fwhm_test = u.comp_FWHM(u.comp_std(initial_pulse.X.copy(), test_pulse.clone().detach().cpu().numpy().ravel()))
     print("\nTime-bandwidth product of the transformation from the initial pulse to the test pulse is equal to {}.\n".format(round(fwhm_test*fwhm_init_F/2, 5)))   # WARNING: This "/2" is just empirical correction
     if fwhm_test*fwhm_init_F/2 < 0.44:
         print("TRANSFORMATION IMPOSSIBLE\n")
     test_set = create_test_set(initial_pulse, output_dim, my_device, my_dtype)
+
+    # 
 
     # create dataset and wrap it into dataloader
 
@@ -205,7 +193,7 @@ def main(_learning_rate,
                                 device = my_device,
                                 dtype = np.float32,
                                 target_type = _test_signal,
-                                target_metadata = [500, 100, bandwidth[0], bandwidth[1]]
+                                target_metadata = [500, 150, bandwidth[0], bandwidth[1]]
                                 )
 
         the_generator.generate_and_save()
@@ -246,7 +234,9 @@ def main(_learning_rate,
     if _criterion =='L1':
         criterion = torch.nn.L1Loss()
     if _criterion =='MSEsmooth':
-        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.6)
+        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.65)
+    if _criterion =='MSEsmooth2':
+        criterion = MSEsmooth2(device = my_device, dtype = my_dtype, c_factor = 0.5, s_factor = 0.5)
     
     # create dataset and dataloader
     
@@ -261,25 +251,17 @@ def main(_learning_rate,
 
     for epoch in range(_epoch_num):
         for pulse, _ in tqdm(dataloader_train):
+
             # pulse = pulse.to(my_device) # the pulse is already created on device by dataset, uncomment if not using designated dataset for this problem
             
-            # predict phase that will transform gauss into this pulse
-            #predicted_phase = utilities.unwrap(model(pulse))
             predicted_phase = model(pulse)
-            #print(predicted_phase_t)
-            #print(pulse.shape)
-            #utilities.unwrap(model(pulse))
-            #if epoch > 0.5*_epoch_num:
-            #    print('FILTERING')
-            #    predicted_phase = torchaudio.functional.lowpass_biquad(waveform=predicted_phase, sample_rate=1, cutoff_freq=200)
-            #predicted_phase = predicted_phase  % (2*np.pi)
 
             # transform gauss into something using this phase
             initial_intensity = u.np_to_complex_pt(long_pulse_2.Y.copy(), device = my_device, dtype = my_dtype)
             reconstructed_intensity = u.evolve_pt(initial_intensity, predicted_phase, device = my_device, dtype = my_dtype)
 
             # calculating back-propagation
-            if _criterion == "MSEsmooth":
+            if _criterion == "MSEsmooth" or _criterion == "MSEsmooth2":
                 loss = criterion((predicted_phase, reconstructed_intensity.abs()[:,zeroes_num: input_dim + zeroes_num]), pulse)
             else:
                 loss = criterion(reconstructed_intensity.abs()[:,zeroes_num: input_dim + zeroes_num], pulse) # pulse intensity
