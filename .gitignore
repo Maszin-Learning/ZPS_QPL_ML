@@ -3,6 +3,7 @@
 *.jpg
 *.csv
 *.pt
+*.pyc
 
 # exclude everything
 pics/*
