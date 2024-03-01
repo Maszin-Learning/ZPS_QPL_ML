@@ -178,7 +178,21 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
         test_pulse_ = sa.hermitian_pulse(pol_num = 1,
                                         bandwidth = (initial_pulse.X[0], initial_pulse.X[-1]),
                                         centre = 193,
-                                        FWHM = 0.3,
+                                        FWHM = 0.6,
+                                        num = len(initial_pulse))
+
+        test_pulse_.Y = test_pulse_.Y / np.sqrt(np.sum(test_pulse_.Y*np.conjugate(test_pulse_.Y)))
+        test_pulse_.Y = test_pulse_.Y * np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
+        
+        test_pulse_.very_smart_shift(test_pulse_.comp_center(norm = "L2")-initial_pulse.comp_center(norm = "L2"))
+        test_pulse_ = np_to_complex_pt(test_pulse_.Y, device = device, dtype = dtype)
+        test_phase_ = None
+
+    elif pulse_type == "hermite_3":
+        test_pulse_ = sa.hermitian_pulse(pol_num = 3,
+                                        bandwidth = (initial_pulse.X[0], initial_pulse.X[-1]),
+                                        centre = 193,
+                                        FWHM = 2,
                                         num = len(initial_pulse))
 
         test_pulse_.Y = test_pulse_.Y / np.sqrt(np.sum(test_pulse_.Y*np.conjugate(test_pulse_.Y)))
@@ -261,7 +275,7 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
         test_pulse_ = sa.hermitian_pulse(pol_num = 0,
                                     bandwidth = (initial_pulse.X[0], initial_pulse.X[-1]),
                                     centre = 193,
-                                    FWHM = 1,
+                                    FWHM = 0.6,
                                     num = len(initial_pulse))
 
         test_pulse_.Y = test_pulse_.Y / np.sqrt(np.sum(test_pulse_.Y*np.conjugate(test_pulse_.Y)))
@@ -290,6 +304,24 @@ def create_initial_pulse(bandwidth, centre, FWHM, num, pulse_type):
     
     elif pulse_type == "hermite_1":
         pulse = sa.hermitian_pulse(pol_num = 1,
+                                    bandwidth = bandwidth,
+                                    centre = centre,
+                                    FWHM = FWHM,
+                                    num = num)
+        pulse.Y = np.abs(pulse.Y)
+        return pulse
+    
+    elif pulse_type == "hermite_2":
+        pulse = sa.hermitian_pulse(pol_num = 2,
+                                    bandwidth = bandwidth,
+                                    centre = centre,
+                                    FWHM = FWHM,
+                                    num = num)
+        pulse.Y = np.abs(pulse.Y)
+        return pulse
+    
+    elif pulse_type == "hermite_3":
+        pulse = sa.hermitian_pulse(pol_num = 3,
                                     bandwidth = bandwidth,
                                     centre = centre,
                                     FWHM = FWHM,

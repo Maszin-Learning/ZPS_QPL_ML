@@ -171,13 +171,10 @@ class Generator():
 
         elif self.target_type == "hermite_1":
 
-            order = np.random.randint(1, 2)
-            correction = 0#np.random.uniform(-0.4, 0.4)
-
             intensity = sa.hermitian_pulse(pol_num = 1,
                                            bandwidth = [190, 196],
                                            centre = 193,
-                                           FWHM = 0.3 + correction,
+                                           FWHM = 0.6,
                                            num = len(intensity)).Y
             
             intensity = intensity / np.sqrt(np.sum(intensity*np.conjugate(intensity)))
@@ -186,13 +183,22 @@ class Generator():
 
         elif self.target_type == "hermite_2":
 
-            order = np.random.randint(1, 2)
-            correction = 0#np.random.uniform(-0.4, 0.4)
-
             intensity = sa.hermitian_pulse(pol_num = 2,
                                            bandwidth = [190, 196],
                                            centre = 193,
-                                           FWHM = 1 + correction,
+                                           FWHM = 1,
+                                           num = len(intensity)).Y
+            
+            intensity = intensity / np.sqrt(np.sum(intensity*np.conjugate(intensity)))
+            intensity = intensity * np.sqrt(np.sum(self.initial_intensity*np.conjugate(self.initial_intensity)))
+            phase_significant = np.ones(self.phase_len)
+
+        elif self.target_type == "hermite_3":
+
+            intensity = sa.hermitian_pulse(pol_num = 3,
+                                           bandwidth = [190, 196],
+                                           centre = 193,
+                                           FWHM = 2,
                                            num = len(intensity)).Y
             
             intensity = intensity / np.sqrt(np.sum(intensity*np.conjugate(intensity)))
@@ -200,13 +206,11 @@ class Generator():
             phase_significant = np.ones(self.phase_len)
 
         elif self.target_type == "gauss":
-            
-            correction = 0#np.random.uniform(-0.3, 0.3)
 
             intensity = sa.hermitian_pulse(pol_num = 0,
                                 bandwidth = [190, 196],
                                 centre = 193,
-                                FWHM = 1 + correction,
+                                FWHM = 0.6,
                                 num = len(intensity)).Y
             
             intensity = intensity / np.sqrt(np.sum(intensity*np.conjugate(intensity)))

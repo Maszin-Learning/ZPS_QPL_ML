@@ -123,31 +123,31 @@ def main(_learning_rate,
     # initial pulse (that is to be transformed by some phase)
 
     input_dim = 5000    # number of points in a single pulse
-    zeroes_num = 7500   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
+    zeroes_num = 12500   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
 
     bandwidth = [190, 196]
     centre = 193
-    width = 0.3
+    width = 0.6
 
     initial_pulse_1 = create_initial_pulse(bandwidth = bandwidth,
                                          centre = centre,
                                          FWHM = width,
                                          num = input_dim,
-                                         pulse_type = "exponential")
+                                         pulse_type = "hermite_1")
     
     initial_pulse_2 = create_initial_pulse(bandwidth = bandwidth,
                                         centre = centre,
                                         FWHM = width,
                                         num = input_dim,
-                                        pulse_type = "hermite_1")
+                                        pulse_type = "hermite_2")
 
     # normalize it in L2
 
     initial_pulse_1.Y / np.sqrt(np.sum(initial_pulse_1.Y*np.conjugate(initial_pulse_1.Y)))
     initial_pulse_2.Y / np.sqrt(np.sum(initial_pulse_2.Y*np.conjugate(initial_pulse_2.Y)))
 
-    initial_pulse_1.Y *= 1.1
-    initial_pulse_2.Y *= 1.1
+    #initial_pulse_1.Y *= 1.1
+    #initial_pulse_2.Y *= 1.1
 
     # this serves only to generate FT pulse
 
@@ -173,8 +173,8 @@ def main(_learning_rate,
         idx_end += 1
     '''
 
-    idx_start = 9600
-    idx_end = 10400
+    idx_start = 14750
+    idx_end = 15250
 
     output_dim = idx_end - idx_start    # number of points of non-zero FT-intensity
 
