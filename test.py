@@ -4,6 +4,7 @@ from math import floor
 import os
 import spectral_analysis as sa
 from utilities import np_to_complex_pt, evolve_np, evolve_pt, shift_to_centre, wl_to_freq, freq_to_wl
+import utilities as u
 from torch.nn import MSELoss
 import torch
 from scipy.interpolate import CubicSpline
@@ -97,13 +98,20 @@ def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = Non
     plt.legend(["Initial intensity", "Target intensity", "Transformed intensity"], bbox_to_anchor = [1, -0.12], ncol = 2)
     plt.grid()
 
-    # temporal phase
+    # temporal phase, firstly we want to find non-zero intensity
+
+    reconstr_spectrum = sa.spectrum(initial_pulse_short.X[plot_from:plot_to], np.abs(np.reshape(reconstructed.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to])/norm_const, "time", "intensity")
+
+    left = reconstr_spectrum.quantile(0.02, norm = "L1") 
+    right = reconstr_spectrum.quantile(0.98, norm = "L1")
+    left_idx = np.searchsorted(initial_pulse_short.X, left)
+    right_idx = np.searchsorted(initial_pulse_short.X, right)
 
     ax = plt.gca()
     ax2 = ax.twinx()
 
-    ax2.scatter(initial_pulse_short.X[plot_from:plot_to], 
-            np.unwrap(np.reshape(temporal_phase.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to]), 
+    ax2.scatter(initial_pulse_short.X[left_idx: right_idx], 
+            np.unwrap(np.reshape(temporal_phase.clone().cpu().detach().numpy(), input_dim)[left_idx:right_idx]), 
             color = "burlywood",
             s = 0.25,
             zorder = 0)
@@ -167,16 +175,16 @@ def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = Non
     ax4 = ax3.twinx()
 
     if x_type == "freq":
-        ax4.scatter(FT_X[idx_start: idx_end] + 375, 
+        ax4.plot(FT_X[idx_start: idx_end] + 375, 
                     reconstructed_phase, 
-                    s = 1, 
+                    lw = 1, 
                     color = "red",
                     zorder = 10)
         
     elif x_type == "wl":
-        ax4.scatter(wl_to_freq(FT_X[idx_start: idx_end] + 375), 
+        ax4.plot(wl_to_freq(FT_X[idx_start: idx_end] + 375), 
                     np.flip(reconstructed_phase), 
-                    s = 1, 
+                    lw = 1, 
                     color = "red",
                     zorder = 10)
         
@@ -305,7 +313,7 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
         test_pulse_ = sa.hermitian_pulse(pol_num = 0,
                                     bandwidth = (initial_pulse.X[0], initial_pulse.X[-1]),
                                     centre = 500,
-                                    FWHM = 100,
+                                    FWHM = 150,
                                     num = len(initial_pulse))
 
         test_pulse_.Y = test_pulse_.Y / np.sqrt(np.sum(test_pulse_.Y*np.conjugate(test_pulse_.Y)))
