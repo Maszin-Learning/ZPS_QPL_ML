@@ -148,7 +148,7 @@ def main(_learning_rate,
     # additional pulse to add to exp (gauss) so it makes it more physical
     signal_correction = create_initial_pulse(bandwidth = bandwidth,
                                          centre = centre,
-                                         FWHM = width/10,
+                                         FWHM = width/100,
                                          num = long_pulse.Y.shape[0],
                                          pulse_type = 'gauss')
     
@@ -247,7 +247,7 @@ def main(_learning_rate,
     if _criterion =='L1':
         criterion = torch.nn.L1Loss()
     if _criterion =='MSEsmooth':
-        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.6)
+        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.8)
     
     # create dataset and dataloader
     
