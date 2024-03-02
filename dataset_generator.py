@@ -10,7 +10,7 @@ from math import floor
 
 class Generator():
 
-    def __init__(self, data_num, initial_intensity, FT_X, phase_len, device, dtype, max_order = 10, max_value = np.pi, target_type = "hermite", flag = ""):
+    def __init__(self, data_num, initial_intensity, FT_X, phase_len, device, dtype, max_order = 10, max_value = np.pi, target_type = "hermite", flag = "", target_metadata = None):
         self.data_num = data_num
         self.initial_intensity = initial_intensity
         self.FT_X = FT_X
@@ -22,7 +22,7 @@ class Generator():
         self.dtype = dtype
         self.target_type = target_type
         self.flag = flag
-
+        self.target_metadata = target_metadata
 
     def generate_and_save(self):
         shutil.rmtree('data' + self.flag)
@@ -172,10 +172,10 @@ class Generator():
         elif self.target_type == "hermite_1":
 
             intensity = sa.hermitian_pulse(pol_num = 1,
-                                           bandwidth = [190, 196],
-                                           centre = 193,
-                                           FWHM = 0.6,
-                                           num = len(intensity)).Y
+                                        bandwidth = [self.target_metadata[2], self.target_metadata[3]],
+                                        centre = self.target_metadata[0],
+                                        FWHM = self.target_metadata[1],
+                                        num = len(intensity)).Y
             
             intensity = intensity / np.sqrt(np.sum(intensity*np.conjugate(intensity)))
             intensity = intensity * np.sqrt(np.sum(self.initial_intensity*np.conjugate(self.initial_intensity)))
@@ -184,10 +184,10 @@ class Generator():
         elif self.target_type == "hermite_2":
 
             intensity = sa.hermitian_pulse(pol_num = 2,
-                                           bandwidth = [190, 196],
-                                           centre = 193,
-                                           FWHM = 1,
-                                           num = len(intensity)).Y
+                                        bandwidth = [self.target_metadata[2], self.target_metadata[3]],
+                                        centre = self.target_metadata[0],
+                                        FWHM = self.target_metadata[1],
+                                        num = len(intensity)).Y
             
             intensity = intensity / np.sqrt(np.sum(intensity*np.conjugate(intensity)))
             intensity = intensity * np.sqrt(np.sum(self.initial_intensity*np.conjugate(self.initial_intensity)))
@@ -196,10 +196,10 @@ class Generator():
         elif self.target_type == "hermite_3":
 
             intensity = sa.hermitian_pulse(pol_num = 3,
-                                           bandwidth = [190, 196],
-                                           centre = 193,
-                                           FWHM = 2,
-                                           num = len(intensity)).Y
+                                        bandwidth = [self.target_metadata[2], self.target_metadata[3]],
+                                        centre = self.target_metadata[0],
+                                        FWHM = self.target_metadata[1],
+                                        num = len(intensity)).Y
             
             intensity = intensity / np.sqrt(np.sum(intensity*np.conjugate(intensity)))
             intensity = intensity * np.sqrt(np.sum(self.initial_intensity*np.conjugate(self.initial_intensity)))
@@ -208,10 +208,10 @@ class Generator():
         elif self.target_type == "gauss":
 
             intensity = sa.hermitian_pulse(pol_num = 0,
-                                bandwidth = [190, 196],
-                                centre = 193,
-                                FWHM = 0.6,
-                                num = len(intensity)).Y
+                                        bandwidth = [self.target_metadata[2], self.target_metadata[3]],
+                                        centre = self.target_metadata[0],
+                                        FWHM = self.target_metadata[1],
+                                        num = len(intensity)).Y
             
             intensity = intensity / np.sqrt(np.sum(intensity*np.conjugate(intensity)))
             intensity = intensity * np.sqrt(np.sum(self.initial_intensity*np.conjugate(self.initial_intensity)))

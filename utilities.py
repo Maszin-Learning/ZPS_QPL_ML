@@ -289,6 +289,42 @@ class MSEsmooth(nn.modules.loss._Loss):
 
         return MSE_sum + cont_penalty
     
+class MSEsmooth2(nn.modules.loss._Loss):
+    '''
+    Classical MSE loss function with continuity and smoothness penalty for rapid changes of the transforming phase.
+    \"c_factor\" denotes ratio of the continuity penalty to the MSE, while \"s_factor"\" denotes the analogous ratio in case
+    of smoothness penalty.
+    '''
+    
+    def __init__(self, device, dtype, c_factor = 0.6, s_factor = 0.2):
+        super(MSEsmooth2, self).__init__()
+        self.c_factor = c_factor
+        self.s_factor = s_factor
+        self.device = device
+        self.dtype = dtype
+
+    def forward(self, results, target):
+
+        pred_phase, pred_intensity = results
+
+        MSE_sum = torch.sum(torch.square(pred_intensity - target))
+
+        zero_shape = np.array(torch.diff(pred_phase).shape)
+        zero_shape[-1] = 1
+        zero_shape = tuple(zero_shape)
+
+        phase_unwraped = unwrap(pred_phase)
+
+        cont_penalty = torch.mean(torch.square(diff_pt(phase_unwraped, device = self.device, dtype = self.dtype)))
+        cont_penalty = cont_penalty/(cont_penalty.clone().detach())
+        cont_penalty = self.c_factor*cont_penalty*(MSE_sum.clone().detach())
+
+        smooth_penalty = torch.mean(torch.square(diff_pt(diff_pt(phase_unwraped, device = self.device, dtype = self.dtype), device = self.device, dtype = self.dtype)))
+        smooth_penalty = smooth_penalty/(smooth_penalty.clone().detach())
+        smooth_penalty = self.s_factor*smooth_penalty*(MSE_sum.clone().detach())
+
+        return MSE_sum + cont_penalty + smooth_penalty
+
 def unwrap(x):  
     x_1=0 
     for batch in range(x.shape[0]):              
@@ -308,3 +344,15 @@ def clear_folder(name:str):
         os.mkdir(name)
     else:
         os.mkdir(name)
+
+def wl_to_freq(wl):
+    if type(wl) == type(np.array([])):
+        return 299792458/np.flip(wl)/1000
+    else:
+        return 299792458/wl/1000
+
+def freq_to_wl(freq):
+    if type(freq) == type(np.array([])):
+        return 299792458/np.flip(freq)/1000
+    else:
+        return 299792458/freq/1000

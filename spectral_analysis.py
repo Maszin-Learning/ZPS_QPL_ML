@@ -420,9 +420,16 @@ class spectrum:
         X2 = self.X.copy()
         Y2 = self.Y.copy()
         spectrum2 = spectrum(X2, Y2, self.x_type, self.y_type)
-        spectrum2.fourier()
-        spectrum2.Y *= np.exp(2j*np.pi*shift*spectrum2.X)
-        spectrum2.inv_fourier()
+        try:
+            spectrum2.fourier()
+            spectrum2.Y *= np.exp(2j*np.pi*shift*spectrum2.X)
+            spectrum2.inv_fourier()
+
+        except:
+            spectrum2.inv_fourier()
+            spectrum2.Y *= np.exp(2j*np.pi*shift*spectrum2.X)
+            spectrum2.fourier()
+
         if inplace == True:
             self.Y = spectrum2.Y
         if inplace == False:
@@ -1079,7 +1086,7 @@ def ratio(vis_value):
 
 
 
-def gaussian_pulse(bandwidth, centre, FWHM, x_type = "freq", num = 1000):
+def gaussian_pulse(bandwidth, centre, FWHM, x_type = "time", num = 1000):
     '''
     Creates spectrum with gaussian intensity. "bandwidth" is a tuple with start and the end of the entire spectrum. 
     "centre" and "FWHM" characterize the pulse itself. The spectrum is composed of \"num\" = 1000 points on default.
@@ -1098,7 +1105,7 @@ def gaussian_pulse(bandwidth, centre, FWHM, x_type = "freq", num = 1000):
 
 
 
-def hermitian_pulse(pol_num, bandwidth, centre, FWHM, num = 1000, x_type = "freq", broad = False):
+def hermitian_pulse(pol_num, bandwidth, centre, FWHM, num = 1000, x_type = "time", broad = False):
     '''
     Creates spectrum with \"pol-num\"-th Hermit-Gauss intensity mode. "bandwidth" is a tuple with start and the end of the entire spectrum. 
     "centre" and "FWHM" characterize the pulse itself. The spectrum is composed of \"num\" = 1000 points on default.
@@ -1124,7 +1131,7 @@ def hermitian_pulse(pol_num, bandwidth, centre, FWHM, num = 1000, x_type = "freq
     Y_hermite = hermite_pol(2*(X-centre)/FWHM)
     Y_out = Y_hermite*Y_gauss
 
-    spectrum_out = spectrum(X, Y_out, "freq", "intensity")
+    spectrum_out = spectrum(X, Y_out, x_type, "intensity")
     spectrum_out.normalize(norm = "L2", shift_to_zero = False)
 
     return spectrum_out

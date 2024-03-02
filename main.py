@@ -23,7 +23,7 @@ import argparse
 import wandb
 import shutil
 import warnings
-from utilities import MSEsmooth
+from utilities import MSEsmooth, MSEsmooth2
 
 def main(_learning_rate,
          _epoch_num,
@@ -38,7 +38,8 @@ def main(_learning_rate,
          _optimalizer,
          _test_signal,
          _initial_signal,
-         _weight_decay):
+         _weight_decay,
+         _axis_type):
     
     # hyperparameters
 
@@ -55,7 +56,8 @@ def main(_learning_rate,
           'optimalizer:', _optimalizer, '\n',
           'test_signal:', _test_signal, '\n',
           'initial_signal:', _initial_signal, '\n',
-          'weight_decay:', _weight_decay, '\n')
+          'weight_decay:', _weight_decay, '\n',
+          'axis_type:', _axis_type, '\n')
     
     # Choose architecture 
 
@@ -110,24 +112,22 @@ def main(_learning_rate,
     # data type
     my_dtype = torch.float32
     
-    #clear data folders
+    # clear data folders
     utilities.clear_folder('saved_models')
     utilities.clear_folder('pics')
     utilities.clear_folder('pics_1')
     utilities.clear_folder('pics_2')
-
-
         
     model_save_PATH_dir='saved_models'
 
     # initial pulse (that is to be transformed by some phase)
 
     input_dim = 5000    # number of points in a single pulse
-    zeroes_num = 12500   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
+    zeroes_num = 2500   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
 
-    bandwidth = [190, 196]
-    centre = 193
-    width = 0.6
+    bandwidth = [0, 1000]
+    centre = 500
+    width = 100
 
     initial_pulse_1 = create_initial_pulse(bandwidth = bandwidth,
                                          centre = centre,
@@ -146,18 +146,29 @@ def main(_learning_rate,
     initial_pulse_1.Y / np.sqrt(np.sum(initial_pulse_1.Y*np.conjugate(initial_pulse_1.Y)))
     initial_pulse_2.Y / np.sqrt(np.sum(initial_pulse_2.Y*np.conjugate(initial_pulse_2.Y)))
 
-    #initial_pulse_1.Y *= 1.1
-    #initial_pulse_2.Y *= 1.1
-
-    # this serves only to generate FT pulse
-
+    # adding zeroes on both sides
     long_pulse_1 = initial_pulse_1.zero_padding(length = zeroes_num, inplace = False)
-    long_pulse_ii_1 = long_pulse_1.copy()    
-    Y_initial_1 = initial_pulse_1.Y.copy()
-
     long_pulse_2 = initial_pulse_2.zero_padding(length = zeroes_num, inplace = False)
-    long_pulse_ii_2 = long_pulse_2.copy()    
+    
+    Y_initial_1 = initial_pulse_1.Y.copy()
     Y_initial_2 = initial_pulse_2.Y.copy()
+
+    # additional pulse to add to make the initial one more it more physical
+    signal_correction = create_initial_pulse(bandwidth = bandwidth,
+                                         centre = centre,
+                                         FWHM = width/10,
+                                         num = long_pulse_1.Y.shape[0],
+                                         pulse_type = 'gauss')
+    
+    long_pulse_ii_1 = long_pulse_1.copy()
+    long_pulse_ii_1.Y = np.convolve(long_pulse_ii_1.Y, signal_correction.Y, mode='same')
+    long_pulse_ii_1.Y = long_pulse_ii_1.Y / np.sqrt(np.sum(long_pulse_ii_1.Y*np.conjugate(long_pulse_ii_1.Y)))    
+
+
+    long_pulse_ii_2 = long_pulse_2.copy()
+    long_pulse_ii_2.Y = np.convolve(long_pulse_ii_2.Y, signal_correction.Y, mode='same')
+    long_pulse_ii_2.Y = long_pulse_ii_2.Y / np.sqrt(np.sum(long_pulse_ii_2.Y*np.conjugate(long_pulse_ii_2.Y)))    
+ 
 
     # we want to find what is the bandwidth of intensity after FT, to estimate output dimension of NN
     '''
@@ -173,8 +184,8 @@ def main(_learning_rate,
         idx_end += 1
     '''
 
-    idx_start = 14750
-    idx_end = 15250
+    idx_start = 4500
+    idx_end = 5500
 
     output_dim = idx_end - idx_start    # number of points of non-zero FT-intensity
 
@@ -184,13 +195,13 @@ def main(_learning_rate,
     # stuff for plots
 
     pulse_ft_1 = long_pulse_ii_1.copy()
-    pulse_ft_1.fourier()
+    pulse_ft_1.inv_fourier()
     pulse_ft_1.X = np.real(pulse_ft_1.X)
     pulse_ft_1.Y = np.abs(pulse_ft_1.Y)
     pulse_ft_1.cut(inplace = True, start = idx_start, end = idx_end, how = "index")    
 
     pulse_ft_2 = long_pulse_ii_2.copy()
-    pulse_ft_2.fourier()
+    pulse_ft_2.inv_fourier()
     pulse_ft_2.X = np.real(pulse_ft_2.X)
     pulse_ft_2.Y = np.abs(pulse_ft_2.Y)
     pulse_ft_2.cut(inplace = True, start = idx_start, end = idx_end, how = "index")    
@@ -220,7 +231,8 @@ def main(_learning_rate,
                                 device = my_device,
                                 dtype = np.float32,
                                 target_type = "gauss",
-                                flag = "_1"
+                                flag = "_1",
+                                target_metadata = [500, 150, bandwidth[0], bandwidth[1]]
                                 )
 
         the_generator.generate_and_save()
@@ -242,7 +254,8 @@ def main(_learning_rate,
                                 device = my_device,
                                 dtype = np.float32,
                                 target_type = "hermite_1",
-                                flag = "_2"
+                                flag = "_2",
+                                target_metadata = [500, 150, bandwidth[0], bandwidth[1]]
                                 )
 
         the_generator.generate_and_save()
@@ -284,7 +297,9 @@ def main(_learning_rate,
         criterion = torch.nn.L1Loss()
     if _criterion =='MSEsmooth':
         criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.1)
-    
+    if _criterion =='MSEsmooth2':
+        criterion = MSEsmooth2(device = my_device, dtype = my_dtype, c_factor = 0.5, s_factor = 0.5)
+        
     # create dataset and dataloader
     
     dataset_train_1 = Dataset_train(root='', transform=True, device = my_device, flag = '_1/')
@@ -304,18 +319,7 @@ def main(_learning_rate,
         for pulse_2, _2 in tqdm(dataloader_train_2):
             pulse_1, _1 = next(dataloader_iter)
 
-            # pulse = pulse.to(my_device) # the pulse is already created on device by dataset, uncomment if not using designated dataset for this problem
-            
-            # predict phase that will transform gauss into this pulse
-            #predicted_phase = utilities.unwrap(model(pulse))
             predicted_phase = model(pulse_1)
-            #print(predicted_phase_t)
-            #print(pulse.shape)
-            #utilities.unwrap(model(pulse))
-            #if epoch > 0.5*_epoch_num:
-            #    print('FILTERING')
-            #    predicted_phase = torchaudio.functional.lowpass_biquad(waveform=predicted_phase, sample_rate=1, cutoff_freq=200)
-            #predicted_phase = predicted_phase  % (2*np.pi)
 
             # transform gauss into something using this phase
             initial_intensity_1 = u.np_to_complex_pt(long_pulse_ii_1.Y.copy(), device = my_device, dtype = my_dtype)
@@ -325,7 +329,7 @@ def main(_learning_rate,
             reconstructed_intensity_2 = u.evolve_pt(initial_intensity_2, predicted_phase, device = my_device, dtype = my_dtype)
 
             # calculating back-propagation
-            if _criterion == "MSEsmooth":
+            if _criterion == "MSEsmooth" or _criterion == "MSEsmooth2":
                 loss_1 = criterion((predicted_phase, reconstructed_intensity_1.abs()[:,zeroes_num: input_dim + zeroes_num]), pulse_1)
                 loss_2 = criterion((predicted_phase, reconstructed_intensity_2.abs()[:,zeroes_num: input_dim + zeroes_num]), pulse_2)
 
@@ -423,6 +427,7 @@ if __name__ == "__main__":
     parser.add_argument('-ts', '--test_signal', default='gauss', type=str,)
     parser.add_argument('-is', '--initial_signal', default='exponential', type=str,)
     parser.add_argument('-wd', '--weight_decay', default=0, type=float)
+    parser.add_argument('-ax', '--axis_type', default="freq", type=str)
     args = parser.parse_args()
     config={}
     
@@ -451,7 +456,8 @@ if __name__ == "__main__":
         "initial_signal": args.initial_signal,
         "criterion": args.criterion,
         "optimizer": args.optimalizer,
-        "weight_decay": args.weight_decay
+        "weight_decay": args.weight_decay,
+        "axis_type": args.axis_type
         }
         )
     
@@ -468,4 +474,5 @@ if __name__ == "__main__":
          args.optimalizer,
          args.test_signal,
          args.initial_signal,
-         args.weight_decay)
+         args.weight_decay,
+         args.axis_type)
