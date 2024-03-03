@@ -3,13 +3,24 @@ import matplotlib.pyplot as plt
 from math import floor
 import os
 import spectral_analysis as sa
-from utilities import np_to_complex_pt, evolve_np, evolve_pt, shift_to_centre, wl_to_freq, freq_to_wl
+from utilities import np_to_complex_pt, evolve_np, evolve_pt, shift_to_centre, wl_to_freq, freq_to_wl, complex_intensity
 from torch.nn import MSELoss
 import torch
 from scipy.interpolate import CubicSpline
 from scipy.interpolate import splrep, BSpline
 
-def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = None, iter_num = 0, x_type = "freq", flag = "", reconst_phase = None):
+def test(model, 
+         test_pulse, 
+         initial_pulse,
+         device, 
+         dtype, 
+         save, 
+         initial_phase = None,          
+         test_phase = None, 
+         iter_num = 0, 
+         x_type = "freq", 
+         flag = "", 
+         reconst_phase = None):
     '''
     ## Test the model with a given test pulse.
 
@@ -56,6 +67,8 @@ def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = Non
 
     # evolve
     initial_intensity = np_to_complex_pt(np.abs(initial_pulse.Y.copy()), device = device, dtype = dtype)
+    if isinstance(initial_phase, torch.Tensor):
+        initial_intensity = complex_intensity(torch.flatten(initial_intensity), initial_phase, device = device, dtype = dtype)
     test_intensity = evolve_pt(initial_intensity, test_phase_pred, device = device, dtype = dtype, abs = False)
     reconstructed = test_intensity.abs()[:, zeros_num: zeros_num+input_dim]
     temporal_phase = torch.angle(test_intensity)[:, zeros_num: zeros_num+input_dim]

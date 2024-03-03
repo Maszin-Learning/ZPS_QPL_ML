@@ -86,6 +86,8 @@ def main(_learning_rate,
         from nets import network_11 as network
     if _net_architecture == 'network_12':
         from nets import network_12 as network
+    if _net_architecture == 'network_13':
+        from nets import network_13 as network
 
     # Choose device, disclaimer! on cpu network will not run due to batch normalization
 
@@ -170,6 +172,15 @@ def main(_learning_rate,
     long_pulse_ii_2 = long_pulse_2.copy()
     long_pulse_ii_2.Y = np.convolve(long_pulse_ii_2.Y, signal_correction.Y, mode='same')
     long_pulse_ii_2.Y = long_pulse_ii_2.Y / np.sqrt(np.sum(long_pulse_ii_2.Y*np.conjugate(long_pulse_ii_2.Y)))
+
+    # find how many points are in non-zero intensity region
+    left_1 = long_pulse_ii_1.quantile(0.001, norm = "L2")
+    right_1 = long_pulse_ii_1.quantile(0.999, norm = "L2")
+    pulse_1_length = np.searchsorted(long_pulse_ii_1.X, right_1) - np.searchsorted(long_pulse_ii_1.X, left_1)
+
+    left_2 = long_pulse_ii_2.quantile(0.001, norm = "L2")
+    right_2 = long_pulse_ii_2.quantile(0.999, norm = "L2")
+    pulse_2_length = np.searchsorted(long_pulse_ii_2.X, right_2) - np.searchsorted(long_pulse_ii_2.X, left_2)
 
     # we want to find what is the bandwidth of intensity after FT, to estimate output dimension of NN
     '''
@@ -275,7 +286,9 @@ def main(_learning_rate,
 
     model = network(input_size = input_dim, 
                 n = _node_number, 
-                output_size = output_dim)
+                output_size = output_dim,
+                pulse_1_size = pulse_1_length,
+                pulse_2_size = pulse_2_length)
     model.to(device = my_device, dtype = my_dtype)
 
     print("Model parameters: {}\n".format(utilities.count_parameters(model)))
@@ -298,7 +311,7 @@ def main(_learning_rate,
     if _criterion =='L1':
         criterion = torch.nn.L1Loss()
     if _criterion =='MSEsmooth':
-        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.3)
+        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.6)
     if _criterion =='MSEsmooth2':
         criterion = MSEsmooth2(device = my_device, dtype = my_dtype, c_factor = 0.5, s_factor = 0.5)
         
@@ -321,13 +334,16 @@ def main(_learning_rate,
         for pulse_2, _2 in tqdm(dataloader_train_2):
             pulse_1, _1 = next(dataloader_iter)
 
-            predicted_phase = model(pulse_1)
+            output = model(pulse_1)
+            predicted_phase = output[0]
 
             # transform gauss into something using this phase
             initial_intensity_1 = u.np_to_complex_pt(long_pulse_ii_1.Y.copy(), device = my_device, dtype = my_dtype)
+            initial_intensity_1 = u.complex_intensity(initial_intensity_1, output[1], device = my_device, dtype = my_dtype)
             reconstructed_intensity_1 = u.evolve_pt(initial_intensity_1, predicted_phase, device = my_device, dtype = my_dtype)
 
             initial_intensity_2 = u.np_to_complex_pt(long_pulse_ii_2.Y.copy(), device = my_device, dtype = my_dtype)
+            initial_intensity_2 = u.complex_intensity(initial_intensity_2, output[2], device = my_device, dtype = my_dtype)
             reconstructed_intensity_2 = u.evolve_pt(initial_intensity_2, predicted_phase, device = my_device, dtype = my_dtype)
 
             # calculating back-propagation
@@ -339,7 +355,7 @@ def main(_learning_rate,
                 loss_1 = criterion(reconstructed_intensity_1.abs()[:,zeroes_num: input_dim + zeroes_num], pulse_1) # pulse intensity
                 loss_2 = criterion(reconstructed_intensity_2.abs()[:,zeroes_num: input_dim + zeroes_num], pulse_2) # pulse intensity
 
-            loss = loss_1 + loss_2
+            loss = 10*loss_1 + loss_2
 
             loss.backward()
             optimizer.step()
@@ -358,6 +374,7 @@ def main(_learning_rate,
                     test_pulse = test_pulse_1,
                     test_phase = test_phase_1,
                     initial_pulse = long_pulse_ii_1.copy(),
+                    initial_phase = torch.unsqueeze(output[1][0, :], dim = 0),
                     device = my_device, 
                     dtype = my_dtype,
                     iter_num = epoch,
@@ -370,6 +387,7 @@ def main(_learning_rate,
                     test_pulse = test_pulse_2,
                     test_phase = test_phase_2,
                     initial_pulse = long_pulse_ii_2.copy(),
+                    initial_phase = torch.unsqueeze(output[2][0, :], dim = 0),
                     device = my_device, 
                     dtype = my_dtype,
                     iter_num = epoch,

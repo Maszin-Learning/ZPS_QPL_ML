@@ -100,6 +100,22 @@ def evolve_pt(intensity, phase, device, dtype, abs = True):
     else:
         return complex_intensity
     
+def complex_intensity(intensity, phase, device, dtype, batch = False):
+    '''
+    Given Pytorch \"intensity\" and \"phase\", we want to multiply them with each other (exp of phase).
+    Only problem is that the \"phase\" is much shorter than \"intensity\".
+    '''
+
+    zeroes_shape = np.array(phase.shape)
+    zeroes_shape[-1] = floor((intensity.shape[-1]-phase.shape[-1])/2)
+    zeroes_shape = tuple(zeroes_shape)
+
+    long_phase = torch.concat([torch.zeros(size = zeroes_shape, requires_grad = True, device = device, dtype = dtype), 
+                          torch.exp(phase),
+                          torch.zeros(size = zeroes_shape, requires_grad = True, device = device, dtype = dtype)], dim=phase.ndim-1)
+    
+    return torch.mul(intensity, torch.exp(1j*long_phase))
+    
     
 def plot_dataset(number, pulse, ft_pulse, flag = ""):
     '''

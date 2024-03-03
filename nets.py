@@ -185,7 +185,7 @@ class network_11(nn.Module):
         #self.linear_2 = nn.Linear(n,n)
         self.linear_3 = nn.Linear(n,output_size)
         self.sigmoid = nn.Sigmoid()
-        self.leakyrelu=nn.LeakyReLU(1, inplace=True)
+        self.leakyrelu=nn.LeakyReLU(1, inplace=False)
         
         self.normal_1 = nn.LayerNorm(input_size)
         self.normal_3 = nn.LayerNorm(output_size)
@@ -392,8 +392,6 @@ class network_8(nn.Module): #do not work on cpu
     ### network_9 with convolutionas, BIG BOY
     
 
-    
-
 class network_9(nn.Module): #do not work on cpu
     def __init__(self, input_size, n, output_size):
         super(network_9, self).__init__()
@@ -480,3 +478,38 @@ class network_9(nn.Module): #do not work on cpu
         
         x = torch.squeeze(x)
         return self.sigmoid(x)* np.pi*2
+
+
+class network_13(nn.Module):
+    def __init__(self, input_size, n, output_size, pulse_1_size, pulse_2_size):
+        # super function. It inherits from nn.Module and we can access everything in nn.Module
+        super(network_13, self).__init__()
+        self.input = input_size
+        self.output = output_size
+        self.linear_1 = nn.Linear(input_size, n)
+        self.linear_2 = nn.Linear(n, output_size)
+        self.linear_3 = nn.Linear(n, pulse_1_size)
+        self.linear_4 = nn.Linear(n, pulse_2_size)
+        self.sigmoid = nn.Sigmoid()
+        self.leakyrelu = nn.LeakyReLU(1, inplace = False)
+        
+        self.normal_1 = nn.LayerNorm(input_size)
+
+    def forward(self, input):
+        x = self.normal_1(input)
+        x = self.leakyrelu(self.linear_1(x))
+        x = self.linear_2(x)
+        x = self.sigmoid(x)*np.pi*2
+
+        y = self.normal_1(input)
+        y = self.leakyrelu(self.linear_1(y))
+        y = self.linear_3(y)
+        y = self.sigmoid(y)*np.pi*2
+
+        z = self.normal_1(input)
+        z = self.leakyrelu(self.linear_1(z))
+        z = self.linear_4(z)
+        z = self.sigmoid(z)*np.pi*2
+
+
+        return (x, y, z)
