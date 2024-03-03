@@ -166,7 +166,6 @@ class Generator():
             for i in range(0, floor(len(intensity)*1/3)):
                 intensity[i] = 0
             intensity = intensity / np.sqrt(np.sum(intensity*np.conjugate(intensity)))
-            intensity = intensity * np.sqrt(np.sum(self.initial_intensity*np.conjugate(self.initial_intensity)))
             phase_significant = np.ones(self.phase_len)
 
         elif self.target_type == "hermite_1":
@@ -178,7 +177,6 @@ class Generator():
                                         num = len(intensity)).Y
             
             intensity = intensity / np.sqrt(np.sum(intensity*np.conjugate(intensity)))
-            intensity = intensity * np.sqrt(np.sum(self.initial_intensity*np.conjugate(self.initial_intensity)))
             phase_significant = np.ones(self.phase_len)
 
         elif self.target_type == "hermite_2":
@@ -190,7 +188,6 @@ class Generator():
                                         num = len(intensity)).Y
             
             intensity = intensity / np.sqrt(np.sum(intensity*np.conjugate(intensity)))
-            intensity = intensity * np.sqrt(np.sum(self.initial_intensity*np.conjugate(self.initial_intensity)))
             phase_significant = np.ones(self.phase_len)
 
         elif self.target_type == "hermite_3":
@@ -202,7 +199,6 @@ class Generator():
                                         num = len(intensity)).Y
             
             intensity = intensity / np.sqrt(np.sum(intensity*np.conjugate(intensity)))
-            intensity = intensity * np.sqrt(np.sum(self.initial_intensity*np.conjugate(self.initial_intensity)))
             phase_significant = np.ones(self.phase_len)
 
         elif self.target_type == "gauss":
@@ -214,10 +210,9 @@ class Generator():
                                         num = len(intensity)).Y
             
             intensity = intensity / np.sqrt(np.sum(intensity*np.conjugate(intensity)))
-            intensity = intensity * np.sqrt(np.sum(self.initial_intensity*np.conjugate(self.initial_intensity)))
             phase_significant = np.ones(self.phase_len)
 
         intensity = shift_to_centre(intensity_to_shift = intensity,
                                     intensity_ref = self.initial_intensity)
-        
+                
         return np.abs(intensity), phase_significant ### phase_significant is now wrong up to the linear phase

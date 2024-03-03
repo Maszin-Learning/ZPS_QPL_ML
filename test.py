@@ -49,13 +49,12 @@ def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = Non
     plot_from = floor(0*input_dim)
     plot_to = floor(1*input_dim)
 
-    # generate test chirp pulse
-
-    test_phase_pred = model(test_pulse.abs())
+    # generate test phase
+    #test_phase_pred = model(test_pulse.abs())
+    test_phase_pred = reconst_phase[0, :]
     test_phase_pred = test_phase_pred.reshape([output_dim])
 
     # evolve
-
     initial_intensity = np_to_complex_pt(np.abs(initial_pulse.Y.copy()), device = device, dtype = dtype)
     test_intensity = evolve_pt(initial_intensity, test_phase_pred, device = device, dtype = dtype, abs = False)
     reconstructed = test_intensity.abs()[:, zeros_num: zeros_num+input_dim]
@@ -343,7 +342,7 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
         test_pulse_ = sa.hermitian_pulse(pol_num = 0,
                                         bandwidth = (initial_pulse.X[0], initial_pulse.X[-1]),
                                         centre = 500,
-                                        FWHM = 100,
+                                        FWHM = 200,
                                         num = len(initial_pulse))
 
         test_pulse_.Y = test_pulse_.Y / np.sqrt(np.sum(test_pulse_.Y*np.conjugate(test_pulse_.Y)))
@@ -399,7 +398,7 @@ def create_initial_pulse(bandwidth, centre, FWHM, num, pulse_type):
     
     elif pulse_type == "exponential":
         Y = np.flip(np.exp(np.linspace(-10, 3, num)) - np.exp(-10))
-        for i in range(0, floor(1/3*num)):
+        for i in range(0, floor(2/5*num)):
             Y[i] = 0
 
         X = np.linspace(bandwidth[0], bandwidth[1], num)

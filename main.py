@@ -123,28 +123,31 @@ def main(_learning_rate,
     # initial pulse (that is to be transformed by some phase)
 
     input_dim = 5000    # number of points in a single pulse
-    zeroes_num = 2500   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
+    zeroes_num = 10000   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
 
     bandwidth = [0, 1000]
     centre = 500
-    width = 100
+    width = 75
 
     initial_pulse_1 = create_initial_pulse(bandwidth = bandwidth,
                                          centre = centre,
-                                         FWHM = width,
+                                         FWHM = 100,
                                          num = input_dim,
-                                         pulse_type = "hermite_1")
+                                         pulse_type = "exponential")
     
     initial_pulse_2 = create_initial_pulse(bandwidth = bandwidth,
                                         centre = centre,
-                                        FWHM = width,
+                                        FWHM = 100,
                                         num = input_dim,
-                                        pulse_type = "hermite_2")
+                                        pulse_type = "hermite_1")
+    
+    initial_pulse_1.very_smart_shift(500-initial_pulse_1.comp_center("L2"))
+    initial_pulse_2.very_smart_shift(500-initial_pulse_2.comp_center("L2"))
 
     # normalize it in L2
 
-    initial_pulse_1.Y / np.sqrt(np.sum(initial_pulse_1.Y*np.conjugate(initial_pulse_1.Y)))
-    initial_pulse_2.Y / np.sqrt(np.sum(initial_pulse_2.Y*np.conjugate(initial_pulse_2.Y)))
+    initial_pulse_1.Y /= np.sqrt(np.sum(initial_pulse_1.Y*np.conjugate(initial_pulse_1.Y)))
+    initial_pulse_2.Y /= np.sqrt(np.sum(initial_pulse_2.Y*np.conjugate(initial_pulse_2.Y)))
 
     # adding zeroes on both sides
     long_pulse_1 = initial_pulse_1.zero_padding(length = zeroes_num, inplace = False)
@@ -156,19 +159,17 @@ def main(_learning_rate,
     # additional pulse to add to make the initial one more it more physical
     signal_correction = create_initial_pulse(bandwidth = bandwidth,
                                          centre = centre,
-                                         FWHM = width/10,
+                                         FWHM = width/100,
                                          num = long_pulse_1.Y.shape[0],
                                          pulse_type = 'gauss')
     
     long_pulse_ii_1 = long_pulse_1.copy()
     long_pulse_ii_1.Y = np.convolve(long_pulse_ii_1.Y, signal_correction.Y, mode='same')
-    long_pulse_ii_1.Y = long_pulse_ii_1.Y / np.sqrt(np.sum(long_pulse_ii_1.Y*np.conjugate(long_pulse_ii_1.Y)))    
-
-
+    long_pulse_ii_1.Y = long_pulse_ii_1.Y / np.sqrt(np.sum(long_pulse_ii_1.Y*np.conjugate(long_pulse_ii_1.Y)))
+                                                           
     long_pulse_ii_2 = long_pulse_2.copy()
     long_pulse_ii_2.Y = np.convolve(long_pulse_ii_2.Y, signal_correction.Y, mode='same')
-    long_pulse_ii_2.Y = long_pulse_ii_2.Y / np.sqrt(np.sum(long_pulse_ii_2.Y*np.conjugate(long_pulse_ii_2.Y)))    
- 
+    long_pulse_ii_2.Y = long_pulse_ii_2.Y / np.sqrt(np.sum(long_pulse_ii_2.Y*np.conjugate(long_pulse_ii_2.Y)))
 
     # we want to find what is the bandwidth of intensity after FT, to estimate output dimension of NN
     '''
@@ -184,8 +185,8 @@ def main(_learning_rate,
         idx_end += 1
     '''
 
-    idx_start = 4500
-    idx_end = 5500
+    idx_start = 12000
+    idx_end = 13000
 
     output_dim = idx_end - idx_start    # number of points of non-zero FT-intensity
 
@@ -198,7 +199,7 @@ def main(_learning_rate,
     pulse_ft_1.inv_fourier()
     pulse_ft_1.X = np.real(pulse_ft_1.X)
     pulse_ft_1.Y = np.abs(pulse_ft_1.Y)
-    pulse_ft_1.cut(inplace = True, start = idx_start, end = idx_end, how = "index")    
+    pulse_ft_1.cut(inplace = True, start = idx_start, end = idx_end, how = "index")
 
     pulse_ft_2 = long_pulse_ii_2.copy()
     pulse_ft_2.inv_fourier()
@@ -210,6 +211,7 @@ def main(_learning_rate,
 
     test_pulse_1, test_phase_1 = create_test_pulse("gauss", initial_pulse_1, output_dim, my_device, my_dtype)
     test_pulse_2, test_phase_2 = create_test_pulse("hermite_1", initial_pulse_2, output_dim, my_device, my_dtype)
+
 
     '''
     #test_pulse = test_pulse * 0.96
@@ -232,7 +234,7 @@ def main(_learning_rate,
                                 dtype = np.float32,
                                 target_type = "gauss",
                                 flag = "_1",
-                                target_metadata = [500, 150, bandwidth[0], bandwidth[1]]
+                                target_metadata = [500, 200, bandwidth[0], bandwidth[1]]
                                 )
 
         the_generator.generate_and_save()
@@ -255,7 +257,7 @@ def main(_learning_rate,
                                 dtype = np.float32,
                                 target_type = "hermite_1",
                                 flag = "_2",
-                                target_metadata = [500, 150, bandwidth[0], bandwidth[1]]
+                                target_metadata = [500, 100, bandwidth[0], bandwidth[1]]
                                 )
 
         the_generator.generate_and_save()
@@ -296,7 +298,7 @@ def main(_learning_rate,
     if _criterion =='L1':
         criterion = torch.nn.L1Loss()
     if _criterion =='MSEsmooth':
-        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.1)
+        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.3)
     if _criterion =='MSEsmooth2':
         criterion = MSEsmooth2(device = my_device, dtype = my_dtype, c_factor = 0.5, s_factor = 0.5)
         
@@ -349,6 +351,7 @@ def main(_learning_rate,
             loss_list.append(_loss)
 
         if epoch%_plot_freq == 0: # plot and test model
+
             model.eval()
             print("Epoch no. {}. Loss {}.".format(epoch, np.mean(np.array(loss_list[epoch*len(dataloader_train_1): (epoch+1)*len(dataloader_train_1)]))))
             fig_1, test_loss_1 = test(model = model,
@@ -360,7 +363,8 @@ def main(_learning_rate,
                     iter_num = epoch,
                     save = True,
                     flag = "_1",
-                    reconst_phase = predicted_phase)
+                    reconst_phase = predicted_phase,
+                    x_type = _axis_type)
             
             fig_2, test_loss_2 = test(model = model,
                     test_pulse = test_pulse_2,
@@ -371,7 +375,8 @@ def main(_learning_rate,
                     iter_num = epoch,
                     save = True,
                     flag = "_2",
-                    reconst_phase = predicted_phase)
+                    reconst_phase = predicted_phase,
+                    x_type = _axis_type)
             
             #cont_penalty = torch.sqrt(torch.sum(torch.square(u.diff_pt(u.unwrap(predicted_phase), device = my_device, dtype = my_dtype))))
             #print("phase's variation MSE: {}.".format(cont_penalty))
@@ -387,25 +392,6 @@ def main(_learning_rate,
             wandb.log({"test_loss": test_loss_1})
             fig_1.close()
 
-            test_set_losses = []
-            '''
-            for test_signal in test_set:
-                fig, test_loss_temp = test(model = model,
-                                test_pulse = test_signal,
-                                test_phase = test_phase_2,
-                                initial_pulse = long_pulse_ii.copy(),
-                                device = my_device, 
-                                dtype = my_dtype,
-                                iter_num = epoch,
-                                save = False)
-                test_set_losses.append(test_loss_temp)
-                fig.close()
-            
-
-
-            wandb.log({"test_set_loss": np.mean(test_set_losses)})
-            print('test_set_loss', np.mean(test_set_losses))
-            '''
             model.train()
 
 

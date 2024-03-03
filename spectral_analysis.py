@@ -201,7 +201,8 @@ class spectrum:
 
         # Fourier Transform
 
-        FT_intens = fft(self.Y, norm = "ortho")
+        FT_intens = fftshift(self.Y)
+        FT_intens = fft(FT_intens, norm = "ortho")
         FT_intens = fftshift(FT_intens)
         time = fftfreq(self.__len__(), self.spacing)
         time = fftshift(time)
@@ -225,18 +226,16 @@ class spectrum:
 
         # prepare input
 
-        time = self.X.copy()
         intens = self.Y.copy()
-
-        time = ifftshift(time)
         intens = ifftshift(intens)
 
         # Fourier Transform
 
         FT_intens = ifft(intens, norm = "ortho")
+        FT_intens = ifftshift(FT_intens)
 
         freq = fftfreq(self.__len__(), self.spacing)
-        freq = fftshift(freq)
+        freq = ifftshift(freq)
 
         if inplace == True:
             self.X = freq
@@ -424,11 +423,12 @@ class spectrum:
             spectrum2.fourier()
             spectrum2.Y *= np.exp(2j*np.pi*shift*spectrum2.X)
             spectrum2.inv_fourier()
-
+            spectrum2.Y = np.abs(spectrum2.Y)
         except:
             spectrum2.inv_fourier()
             spectrum2.Y *= np.exp(2j*np.pi*shift*spectrum2.X)
             spectrum2.fourier()
+            spectrum2.Y = np.abs(spectrum2.Y)
 
         if inplace == True:
             self.Y = spectrum2.Y
