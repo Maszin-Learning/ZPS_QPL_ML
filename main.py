@@ -125,7 +125,7 @@ def main(_learning_rate,
     # initial pulse (that is to be transformed by some phase)
 
     input_dim = 5000    # number of points in a single pulse
-    zeroes_num = 10000   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
+    zeroes_num = 25000   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
 
     bandwidth = [0, 1000]
     centre = 500
@@ -133,15 +133,15 @@ def main(_learning_rate,
 
     initial_pulse_1 = create_initial_pulse(bandwidth = bandwidth,
                                          centre = centre,
-                                         FWHM = 100,
+                                         FWHM = 150,
                                          num = input_dim,
-                                         pulse_type = "exponential")
+                                         pulse_type = "gauss")
     
     initial_pulse_2 = create_initial_pulse(bandwidth = bandwidth,
                                         centre = centre,
-                                        FWHM = 100,
+                                        FWHM = 60,
                                         num = input_dim,
-                                        pulse_type = "hermite_1")
+                                        pulse_type = "gauss")
     
     initial_pulse_1.very_smart_shift(500-initial_pulse_1.comp_center("L2"))
     initial_pulse_2.very_smart_shift(500-initial_pulse_2.comp_center("L2"))
@@ -182,6 +182,10 @@ def main(_learning_rate,
     right_2 = long_pulse_ii_2.quantile(0.999, norm = "L2")
     pulse_2_length = np.searchsorted(long_pulse_ii_2.X, right_2) - np.searchsorted(long_pulse_ii_2.X, left_2)
 
+    # bug fixing - ensure parity
+    pulse_1_length += (input_dim-pulse_1_length)%2
+    pulse_2_length += (input_dim-pulse_2_length)%2
+
     # we want to find what is the bandwidth of intensity after FT, to estimate output dimension of NN
     '''
     trash_fraction = 0.01 # percent of FT transformed to be cut off - it will contribute to the noise
@@ -196,8 +200,8 @@ def main(_learning_rate,
         idx_end += 1
     '''
 
-    idx_start = 12000
-    idx_end = 13000
+    idx_start = 27200
+    idx_end = 27800
 
     output_dim = idx_end - idx_start    # number of points of non-zero FT-intensity
 
@@ -221,7 +225,7 @@ def main(_learning_rate,
     # test pulse
 
     test_pulse_1, test_phase_1 = create_test_pulse("gauss", initial_pulse_1, output_dim, my_device, my_dtype)
-    test_pulse_2, test_phase_2 = create_test_pulse("hermite_1", initial_pulse_2, output_dim, my_device, my_dtype)
+    test_pulse_2, test_phase_2 = create_test_pulse("two_pulses", initial_pulse_2, output_dim, my_device, my_dtype)
 
 
     '''
@@ -245,7 +249,7 @@ def main(_learning_rate,
                                 dtype = np.float32,
                                 target_type = "gauss",
                                 flag = "_1",
-                                target_metadata = [500, 200, bandwidth[0], bandwidth[1]]
+                                target_metadata = [500, 150, bandwidth[0], bandwidth[1]]
                                 )
 
         the_generator.generate_and_save()
@@ -266,7 +270,7 @@ def main(_learning_rate,
                                 phase_len = output_dim,
                                 device = my_device,
                                 dtype = np.float32,
-                                target_type = "hermite_1",
+                                target_type = "two_pulses",
                                 flag = "_2",
                                 target_metadata = [500, 100, bandwidth[0], bandwidth[1]]
                                 )
@@ -311,7 +315,7 @@ def main(_learning_rate,
     if _criterion =='L1':
         criterion = torch.nn.L1Loss()
     if _criterion =='MSEsmooth':
-        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.6)
+        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.2)
     if _criterion =='MSEsmooth2':
         criterion = MSEsmooth2(device = my_device, dtype = my_dtype, c_factor = 0.5, s_factor = 0.5)
         
@@ -348,14 +352,14 @@ def main(_learning_rate,
 
             # calculating back-propagation
             if _criterion == "MSEsmooth" or _criterion == "MSEsmooth2":
-                loss_1 = criterion((predicted_phase, reconstructed_intensity_1.abs()[:,zeroes_num: input_dim + zeroes_num]), pulse_1)
-                loss_2 = criterion((predicted_phase, reconstructed_intensity_2.abs()[:,zeroes_num: input_dim + zeroes_num]), pulse_2)
+                loss_1 = criterion((output[1], reconstructed_intensity_1.abs()[:,zeroes_num: input_dim + zeroes_num]), pulse_1)
+                loss_2 = criterion((output[2], reconstructed_intensity_2.abs()[:,zeroes_num: input_dim + zeroes_num]), pulse_2)
 
             else:
                 loss_1 = criterion(reconstructed_intensity_1.abs()[:,zeroes_num: input_dim + zeroes_num], pulse_1) # pulse intensity
                 loss_2 = criterion(reconstructed_intensity_2.abs()[:,zeroes_num: input_dim + zeroes_num], pulse_2) # pulse intensity
 
-            loss = 10*loss_1 + loss_2
+            loss = loss_1 + loss_2
 
             loss.backward()
             optimizer.step()

@@ -58,7 +58,7 @@ def test(model,
     initial_pulse_short = initial_pulse.cut(start = zeros_num, end = zeros_num+input_dim, inplace = False, how = "index")
 
     plot_from = floor(0*input_dim)
-    plot_to = floor(1*input_dim)
+    plot_to = floor(1*input_dim)-1
 
     # generate test phase
     #test_phase_pred = model(test_pulse.abs())
@@ -80,6 +80,17 @@ def test(model,
     plt.subplot(1, 2, 1)
     plt.title("Time domain")
 
+    # just for the legend
+
+    x_far_away = 2*initial_pulse_short.X[plot_to]
+    plt.plot([x_far_away],[0], color = "blue")
+    plt.plot([x_far_away],[0], color = "firebrick")
+    plt.plot([x_far_away],[0], color = "green")
+    plt.scatter([x_far_away],[0], color = "skyblue")   
+    plt.scatter([x_far_away],[0], color = "lightcoral")
+    plt.legend(["Initial intensity", "Transformed intensity", "Target intensity", "Initial phase", "Phase of transformed spectrum"], 
+               bbox_to_anchor = [1.2, -0.12], ncol = 2)
+
     # constant to normalize the time plot
 
     norm_const = max([np.max(np.abs(initial_pulse_short.Y[plot_from:plot_to])),
@@ -95,22 +106,22 @@ def test(model,
     # target intensity
     plt.plot(initial_pulse_short.X[plot_from:plot_to], 
                     np.abs(np.reshape(test_pulse.clone().cpu().detach().numpy(), input_dim))[plot_from:plot_to]/norm_const, 
-                    color = "red")
+                    color = "green")
     
     # transformed intensity
     plt.scatter(initial_pulse_short.X[plot_from:plot_to], 
             np.abs(np.reshape(reconstructed.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to])/norm_const, 
-            color = "green", 
+            color = "firebrick", 
             s = 0.25,
             zorder = 10)
     
     plt.xlabel("Time (ps)")
     plt.ylabel("Normalized intensity")
-    plt.legend(["Initial intensity", "Target intensity", "Transformed intensity"], bbox_to_anchor = [1, -0.12], ncol = 2)
+    #plt.legend(["Initial intensity", "Target intensity", "Transformed intensity"], bbox_to_anchor = [1, -0.12], ncol = 2)
     plt.grid()
+    plt.xlim([initial_pulse_short.X[plot_from], initial_pulse_short.X[plot_to]])
 
-    # temporal phase, firstly we want to find non-zero intensity
-
+    # initial phase (it is mixed with some code connected with transformed spectrum)
     reconstr_spectrum = sa.spectrum(initial_pulse_short.X[plot_from:plot_to], np.abs(np.reshape(reconstructed.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to])/norm_const, "time", "intensity")
 
     left = reconstr_spectrum.quantile(0.02, norm = "L1") 
@@ -118,16 +129,27 @@ def test(model,
     left_idx = np.searchsorted(initial_pulse_short.X, left)
     right_idx = np.searchsorted(initial_pulse_short.X, right)
 
+    start_idx = floor((len(initial_pulse_short)-initial_phase.shape[1])/2)
+    end_idx = start_idx + initial_phase.shape[1]
+
     ax = plt.gca()
     ax2 = ax.twinx()
 
-    ax2.scatter(initial_pulse_short.X[left_idx: right_idx], 
-            np.unwrap(np.reshape(temporal_phase.clone().cpu().detach().numpy(), input_dim)[left_idx:right_idx]), 
-            color = "burlywood",
+    ax2.scatter(initial_pulse_short.X[start_idx: end_idx], 
+            np.unwrap((torch.flatten(initial_phase).clone().cpu().detach().numpy())), 
+            color = "skyblue",
             s = 0.25,
             zorder = 0)
     
-    ax2.legend(["Phase of transformed spectrum"], bbox_to_anchor = [0.721, -0.25])
+    # temporal phase
+
+    ax2.scatter(initial_pulse_short.X[left_idx: right_idx], 
+            np.unwrap(np.reshape(temporal_phase.clone().cpu().detach().numpy(), input_dim)[left_idx:right_idx]), 
+            color = "lightcoral",
+            s = 0.25,
+            zorder = 0)
+    
+    #ax2.legend(["Phase of transformed spectrum", "Initial phase"], bbox_to_anchor = [1.125, -0.25], ncol = 2)
     ax2.set_ylabel("Temporal phase (rad)")
     
     # second plot in frequency
@@ -258,7 +280,7 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
         test_pulse_ = sa.hermitian_pulse(pol_num = 1,
                                         bandwidth = (initial_pulse.X[0], initial_pulse.X[-1]),
                                         centre = 500,
-                                        FWHM = 100,
+                                        FWHM = 150,
                                         num = len(initial_pulse))
 
         test_pulse_.Y = test_pulse_.Y / np.sqrt(np.sum(test_pulse_.Y*np.conjugate(test_pulse_.Y)))
@@ -286,7 +308,7 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
         test_pulse_ = sa.hermitian_pulse(pol_num = 2,
                                         bandwidth = (initial_pulse.X[0], initial_pulse.X[-1]),
                                         centre = 500,
-                                        FWHM = 100,
+                                        FWHM = 200,
                                         num = len(initial_pulse))
 
         test_pulse_.Y = test_pulse_.Y / np.sqrt(np.sum(test_pulse_.Y*np.conjugate(test_pulse_.Y)))
@@ -312,15 +334,23 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
     elif pulse_type == "two_pulses":
         pulses = sa.hermitian_pulse(pol_num = 0, 
                                     bandwidth = [initial_pulse.X[0], initial_pulse.X[-1]],
-                                    centre = initial_pulse.quantile(0.5),
-                                    FWHM = initial_pulse.FWHM(),
+                                    centre = 500,
+                                    FWHM = 75,
                                     num = len(initial_pulse),
                                     x_type = initial_pulse.x_type)
-        pulses.Y = pulses.Y + pulses.very_smart_shift(-0.5, inplace = False).Y + pulses.very_smart_shift(0.5, inplace = False).Y
+        
+        pulses.Y = pulses.Y + sa.hermitian_pulse(pol_num = 0, 
+                                    bandwidth = [initial_pulse.X[0], initial_pulse.X[-1]],
+                                    centre = 850,
+                                    FWHM = 75,
+                                    num = len(initial_pulse),
+                                    x_type = initial_pulse.x_type).Y
+        
         pulses.Y = pulses.Y / np.sqrt(np.sum(pulses.Y*np.conjugate(pulses.Y)))
         pulses.Y = pulses.Y * np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
 
-        test_pulse_.very_smart_shift(test_pulse_.comp_center()-initial_pulse.comp_center())
+        test_pulse_ = pulses.copy()
+        #test_pulse_.very_smart_shift(test_pulse_.comp_center(norm = "L2")-initial_pulse.comp_center(norm = "L2"))
         test_pulse_ = np_to_complex_pt(pulses.Y, device = device, dtype = dtype)
         test_phase_ = None
 
@@ -355,7 +385,7 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
         test_pulse_ = sa.hermitian_pulse(pol_num = 0,
                                         bandwidth = (initial_pulse.X[0], initial_pulse.X[-1]),
                                         centre = 500,
-                                        FWHM = 200,
+                                        FWHM = 150,
                                         num = len(initial_pulse))
 
         test_pulse_.Y = test_pulse_.Y / np.sqrt(np.sum(test_pulse_.Y*np.conjugate(test_pulse_.Y)))
@@ -431,6 +461,29 @@ def create_initial_pulse(bandwidth, centre, FWHM, num, pulse_type):
         spectrum_out.very_smart_shift(centre-(bandwidth[1]+bandwidth[0])/2, inplace = True)
         spectrum_out.Y = np.abs(spectrum_out.Y)
         return spectrum_out
+    
+    elif pulse_type == "two_pulses":
+        pulses = sa.hermitian_pulse(pol_num = 0, 
+                                    bandwidth = [bandwidth[0], bandwidth[1]],
+                                    centre = centre*3/5,
+                                    FWHM = FWHM,
+                                    num = num,
+                                    x_type = "time")
+        
+        pulses.Y = pulses.Y + sa.hermitian_pulse(pol_num = 0, 
+                                    bandwidth = [bandwidth[0], bandwidth[1]],
+                                    centre = centre*7/5,
+                                    FWHM = FWHM,
+                                    num = num,
+                                    x_type = "time").Y
+        
+        pulses.Y = pulses.Y / np.sqrt(np.sum(pulses.Y*np.conjugate(pulses.Y)))
+
+        spectrum_out = pulses
+        spectrum_out.very_smart_shift(centre-(bandwidth[1]+bandwidth[0])/2, inplace = True)
+        spectrum_out.Y = np.abs(spectrum_out.Y)
+        return spectrum_out
+    
     
     else:
         raise Exception("Pulse_type must be either \"gauss\", \"hermite\" or \"exponential\".")

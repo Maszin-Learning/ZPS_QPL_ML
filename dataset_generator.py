@@ -212,7 +212,23 @@ class Generator():
             intensity = intensity / np.sqrt(np.sum(intensity*np.conjugate(intensity)))
             phase_significant = np.ones(self.phase_len)
 
-        intensity = shift_to_centre(intensity_to_shift = intensity,
-                                    intensity_ref = self.initial_intensity)
+        elif self.target_type == "two_pulses":
+            pulses = sa.hermitian_pulse(pol_num = 0,
+                                        bandwidth = [self.target_metadata[2], self.target_metadata[3]],
+                                        centre = self.target_metadata[0],
+                                        FWHM = self.target_metadata[1],
+                                        num = len(intensity)).Y
+            
+            pulses = pulses + sa.hermitian_pulse(pol_num = 0,
+                                        bandwidth = [self.target_metadata[2], self.target_metadata[3]],
+                                        centre = self.target_metadata[0]*2*0.85,
+                                        FWHM = self.target_metadata[1],
+                                        num = len(intensity)).Y
+            
+            intensity = pulses / np.sqrt(np.sum(pulses*np.conjugate(pulses)))
+            phase_significant = np.ones(self.phase_len)
+
+        #intensity = shift_to_centre(intensity_to_shift = intensity,
+        #                            intensity_ref = self.initial_intensity)
                 
         return np.abs(intensity), phase_significant ### phase_significant is now wrong up to the linear phase
