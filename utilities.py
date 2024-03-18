@@ -111,7 +111,7 @@ def complex_intensity(intensity, phase, device, dtype, batch = False):
     zeroes_shape = tuple(zeroes_shape)
 
     long_phase = torch.concat([torch.zeros(size = zeroes_shape, requires_grad = True, device = device, dtype = dtype), 
-                          torch.exp(phase),
+                          phase,
                           torch.zeros(size = zeroes_shape, requires_grad = True, device = device, dtype = dtype)], dim=phase.ndim-1)
     
     return torch.mul(intensity, torch.exp(1j*long_phase))
@@ -190,7 +190,7 @@ def np_to_complex_pt(array, device, dtype):
     '''
     Transform one-dimensional real-valued NumPy array into complex-valued PyTorch Tensor with shape [1, len(array)].
     '''
-    array = torch.tensor([[np.real(array[i]), 0] for i in range(len(array))], requires_grad = True, device = device, dtype = dtype)
+    array = torch.tensor([[np.real(array[i]), np.imag(array[i])] for i in range(len(array))], requires_grad = True, device = device, dtype = dtype)
     array = torch.view_as_complex(array)
     array = array.reshape(1, array.numel())
 

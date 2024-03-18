@@ -8,6 +8,7 @@ from torch.nn import MSELoss
 import torch
 from scipy.interpolate import CubicSpline
 from scipy.interpolate import splrep, BSpline
+from torch.fft import fft, fftshift
 
 def test(model, 
          test_pulse, 
@@ -179,9 +180,9 @@ def test(model,
     idx_start = floor(zeros_num + input_dim/2 - output_dim/2)
     idx_end = floor(zeros_num + input_dim/2 + output_dim/2)
 
-    FT_pulse = initial_pulse.inv_fourier(inplace = False)
-    FT_Y = FT_pulse.Y.copy()
-    FT_X = FT_pulse.X.copy()
+    FT_X = initial_pulse.inv_fourier(inplace = False).X
+    FT_Y = fftshift(fft(fftshift(torch.flatten(initial_intensity))))
+    FT_Y = FT_Y.clone().detach().cpu().numpy()
 
     FT_Y /= np.max(FT_Y[idx_start: idx_end])
 
@@ -211,16 +212,16 @@ def test(model,
     ax4 = ax3.twinx()
 
     if x_type == "freq":
-        ax4.plot(FT_X[idx_start: idx_end] + 375, 
+        ax4.scatter(FT_X[idx_start: idx_end] + 375, 
                     reconstructed_phase, 
-                    lw = 1, 
+                    s = 1, 
                     color = "red",
                     zorder = 10)
         
     elif x_type == "wl":
-        ax4.plot(wl_to_freq(FT_X[idx_start: idx_end] + 375), 
+        ax4.scatter(wl_to_freq(FT_X[idx_start: idx_end] + 375), 
                     np.flip(reconstructed_phase), 
-                    lw = 1, 
+                    s = 1, 
                     color = "red",
                     zorder = 10)
         
@@ -279,14 +280,14 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
     if pulse_type == "hermite_1":
         test_pulse_ = sa.hermitian_pulse(pol_num = 1,
                                         bandwidth = (initial_pulse.X[0], initial_pulse.X[-1]),
-                                        centre = 500,
+                                        centre = 500+70,
                                         FWHM = 150,
                                         num = len(initial_pulse))
 
         test_pulse_.Y = test_pulse_.Y / np.sqrt(np.sum(test_pulse_.Y*np.conjugate(test_pulse_.Y)))
         test_pulse_.Y = test_pulse_.Y * np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
         
-        test_pulse_.very_smart_shift(test_pulse_.comp_center(norm = "L2")-initial_pulse.comp_center(norm = "L2"))
+        #test_pulse_.very_smart_shift(test_pulse_.comp_center(norm = "L2")-initial_pulse.comp_center(norm = "L2"))
         test_pulse_ = np_to_complex_pt(test_pulse_.Y, device = device, dtype = dtype)
         test_phase_ = None
 
@@ -385,7 +386,7 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
         test_pulse_ = sa.hermitian_pulse(pol_num = 0,
                                         bandwidth = (initial_pulse.X[0], initial_pulse.X[-1]),
                                         centre = 500,
-                                        FWHM = 150,
+                                        FWHM = 50,
                                         num = len(initial_pulse))
 
         test_pulse_.Y = test_pulse_.Y / np.sqrt(np.sum(test_pulse_.Y*np.conjugate(test_pulse_.Y)))

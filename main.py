@@ -125,7 +125,7 @@ def main(_learning_rate,
     # initial pulse (that is to be transformed by some phase)
 
     input_dim = 5000    # number of points in a single pulse
-    zeroes_num = 25000   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
+    zeroes_num = 27500   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
 
     bandwidth = [0, 1000]
     centre = 500
@@ -133,13 +133,13 @@ def main(_learning_rate,
 
     initial_pulse_1 = create_initial_pulse(bandwidth = bandwidth,
                                          centre = centre,
-                                         FWHM = 150,
+                                         FWHM = 50,
                                          num = input_dim,
                                          pulse_type = "gauss")
     
     initial_pulse_2 = create_initial_pulse(bandwidth = bandwidth,
                                         centre = centre,
-                                        FWHM = 60,
+                                        FWHM = 50,
                                         num = input_dim,
                                         pulse_type = "gauss")
     
@@ -200,8 +200,8 @@ def main(_learning_rate,
         idx_end += 1
     '''
 
-    idx_start = 27200
-    idx_end = 27800
+    idx_start = 28750
+    idx_end = 31250
 
     output_dim = idx_end - idx_start    # number of points of non-zero FT-intensity
 
@@ -224,8 +224,8 @@ def main(_learning_rate,
 
     # test pulse
 
-    test_pulse_1, test_phase_1 = create_test_pulse("gauss", initial_pulse_1, output_dim, my_device, my_dtype)
-    test_pulse_2, test_phase_2 = create_test_pulse("two_pulses", initial_pulse_2, output_dim, my_device, my_dtype)
+    test_pulse_1, test_phase_1 = create_test_pulse("hermite_2", initial_pulse_1, output_dim, my_device, my_dtype)
+    test_pulse_2, test_phase_2 = create_test_pulse("hermite_1", initial_pulse_2, output_dim, my_device, my_dtype)
 
 
     '''
@@ -247,9 +247,9 @@ def main(_learning_rate,
                                 phase_len = output_dim,
                                 device = my_device,
                                 dtype = np.float32,
-                                target_type = "gauss",
+                                target_type = "hermite_2",
                                 flag = "_1",
-                                target_metadata = [500, 150, bandwidth[0], bandwidth[1]]
+                                target_metadata = [500, 200, bandwidth[0], bandwidth[1]]
                                 )
 
         the_generator.generate_and_save()
@@ -270,9 +270,9 @@ def main(_learning_rate,
                                 phase_len = output_dim,
                                 device = my_device,
                                 dtype = np.float32,
-                                target_type = "two_pulses",
+                                target_type = "hermite_1",
                                 flag = "_2",
-                                target_metadata = [500, 100, bandwidth[0], bandwidth[1]]
+                                target_metadata = [500+70, 150, bandwidth[0], bandwidth[1]]
                                 )
 
         the_generator.generate_and_save()
@@ -315,20 +315,31 @@ def main(_learning_rate,
     if _criterion =='L1':
         criterion = torch.nn.L1Loss()
     if _criterion =='MSEsmooth':
-        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.2)
+        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.6)
     if _criterion =='MSEsmooth2':
         criterion = MSEsmooth2(device = my_device, dtype = my_dtype, c_factor = 0.5, s_factor = 0.5)
         
     # create dataset and dataloader
-    
     dataset_train_1 = Dataset_train(root='', transform=True, device = my_device, flag = '_1/')
     dataloader_train_1 = torch.utils.data.DataLoader(dataset=dataset_train_1, batch_size=_batch_size, num_workers=0, shuffle=True)
     
     dataset_train_2 = Dataset_train(root='', transform=True, device = my_device, flag = '_2/')
     dataloader_train_2 = torch.utils.data.DataLoader(dataset=dataset_train_2, batch_size=_batch_size, num_workers=0, shuffle=True)
     
-    # learning loop
+    # prepare initial pulses
+    initial_phase_1 = np.ones(len(long_pulse_ii_1))
+    initial_phase_2 = np.ones(len(long_pulse_ii_2))
 
+    initial_intensity_1 = long_pulse_ii_1.copy()
+    initial_intensity_2 = long_pulse_ii_2.copy()
+
+    initial_intensity_1.Y = initial_intensity_1.Y*np.exp(1j*initial_phase_1)
+    initial_intensity_2.Y = initial_intensity_2.Y*np.exp(1j*initial_phase_2)
+
+    initial_intensity_pt_1 = u.np_to_complex_pt(initial_intensity_1.Y, device = my_device, dtype = my_dtype)
+    initial_intensity_pt_2 = u.np_to_complex_pt(initial_intensity_2.Y, device = my_device, dtype = my_dtype)
+
+    # learning loop
     loss_list = []
     test_loss_global = 10000
     wandb.watch(model, criterion, log="all", log_freq=400)
@@ -342,24 +353,23 @@ def main(_learning_rate,
             predicted_phase = output[0]
 
             # transform gauss into something using this phase
-            initial_intensity_1 = u.np_to_complex_pt(long_pulse_ii_1.Y.copy(), device = my_device, dtype = my_dtype)
-            initial_intensity_1 = u.complex_intensity(initial_intensity_1, output[1], device = my_device, dtype = my_dtype)
-            reconstructed_intensity_1 = u.evolve_pt(initial_intensity_1, predicted_phase, device = my_device, dtype = my_dtype)
+            initial_intensity_c_1 = u.complex_intensity(initial_intensity_pt_1, output[1], device = my_device, dtype = my_dtype)
+            reconstructed_intensity_1 = u.evolve_pt(initial_intensity_c_1, predicted_phase, device = my_device, dtype = my_dtype, abs = True)
 
-            initial_intensity_2 = u.np_to_complex_pt(long_pulse_ii_2.Y.copy(), device = my_device, dtype = my_dtype)
-            initial_intensity_2 = u.complex_intensity(initial_intensity_2, output[2], device = my_device, dtype = my_dtype)
-            reconstructed_intensity_2 = u.evolve_pt(initial_intensity_2, predicted_phase, device = my_device, dtype = my_dtype)
+            initial_intensity_c_2 = u.complex_intensity(initial_intensity_pt_2, output[2], device = my_device, dtype = my_dtype)
+            reconstructed_intensity_2 = u.evolve_pt(initial_intensity_c_2, predicted_phase, device = my_device, dtype = my_dtype, abs = True)
 
             # calculating back-propagation
             if _criterion == "MSEsmooth" or _criterion == "MSEsmooth2":
                 loss_1 = criterion((output[1], reconstructed_intensity_1.abs()[:,zeroes_num: input_dim + zeroes_num]), pulse_1)
                 loss_2 = criterion((output[2], reconstructed_intensity_2.abs()[:,zeroes_num: input_dim + zeroes_num]), pulse_2)
+                loss_3 = criterion((output[0], reconstructed_intensity_2.abs()[:,zeroes_num: input_dim + zeroes_num]), pulse_2)
 
             else:
                 loss_1 = criterion(reconstructed_intensity_1.abs()[:,zeroes_num: input_dim + zeroes_num], pulse_1) # pulse intensity
                 loss_2 = criterion(reconstructed_intensity_2.abs()[:,zeroes_num: input_dim + zeroes_num], pulse_2) # pulse intensity
 
-            loss = loss_1 + loss_2
+            loss = loss_1 + 0.5*loss_2 + 0.5*loss_3
 
             loss.backward()
             optimizer.step()
@@ -377,7 +387,7 @@ def main(_learning_rate,
             fig_1, test_loss_1 = test(model = model,
                     test_pulse = test_pulse_1,
                     test_phase = test_phase_1,
-                    initial_pulse = long_pulse_ii_1.copy(),
+                    initial_pulse = initial_intensity_1,
                     initial_phase = torch.unsqueeze(output[1][0, :], dim = 0),
                     device = my_device, 
                     dtype = my_dtype,
@@ -390,7 +400,7 @@ def main(_learning_rate,
             fig_2, test_loss_2 = test(model = model,
                     test_pulse = test_pulse_2,
                     test_phase = test_phase_2,
-                    initial_pulse = long_pulse_ii_2.copy(),
+                    initial_pulse = initial_intensity_2,
                     initial_phase = torch.unsqueeze(output[2][0, :], dim = 0),
                     device = my_device, 
                     dtype = my_dtype,
