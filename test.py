@@ -3,14 +3,24 @@ import matplotlib.pyplot as plt
 from math import floor
 import os
 import spectral_analysis as sa
-from utilities import np_to_complex_pt, evolve_np, evolve_pt, shift_to_centre, wl_to_freq, freq_to_wl
+from utilities import np_to_complex_pt, evolve_np, evolve_pt, shift_to_centre, wl_to_freq, freq_to_wl, complex_intensity
 import utilities as u
 from torch.nn import MSELoss
 import torch
 from scipy.interpolate import CubicSpline
 from scipy.interpolate import splrep, BSpline
+from torch.fft import ifft, ifftshift
 
-def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = None, iter_num = 0, x_type = "freq"):
+
+def test(model, 
+         test_pulse, 
+         initial_pulse, 
+         device, 
+         dtype, 
+         save, 
+         test_phase = None, 
+         iter_num = 0, 
+         x_type = "freq"):
     '''
     ## Test the model with a given test pulse.
 
@@ -48,7 +58,7 @@ def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = Non
     initial_pulse_short = initial_pulse.cut(start = zeros_num, end = zeros_num+input_dim, inplace = False, how = "index")
 
     plot_from = floor(0*input_dim)
-    plot_to = floor(1*input_dim)
+    plot_to = floor(1*input_dim)-1
 
     # generate test chirp pulse
 
@@ -58,16 +68,28 @@ def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = Non
     # evolve
 
     initial_intensity = np_to_complex_pt(np.abs(initial_pulse.Y.copy()), device = device, dtype = dtype)
+
     test_intensity = evolve_pt(initial_intensity, test_phase_pred, device = device, dtype = dtype, abs = False)
     reconstructed = test_intensity.abs()[:, zeros_num: zeros_num+input_dim]
     temporal_phase = torch.angle(test_intensity)[:, zeros_num: zeros_num+input_dim]
     
     # create plots
 
-    plt.figure(figsize = (10, 5), constrained_layout=True )
+    plt.figure(figsize = (10, 5), constrained_layout = True)
 
     plt.subplot(1, 2, 1)
     plt.title("Time domain")
+
+    # just for the legend
+
+    x_far_away = 2*initial_pulse_short.X[plot_to]
+    plt.plot([x_far_away],[0], color = "blue")
+    plt.plot([x_far_away],[0], color = "firebrick")
+    plt.plot([x_far_away],[0], color = "green")
+    plt.plot([x_far_away],[0], color = "skyblue")   
+    plt.plot([x_far_away],[0], color = "lightcoral")
+    plt.legend(["Initial intensity", "Transformed intensity", "Target intensity", "Initial phase", "Phase of transformed spectrum"], 
+               bbox_to_anchor = [1.2, -0.12], ncol = 2)
 
     # constant to normalize the time plot
 
@@ -84,39 +106,55 @@ def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = Non
     # target intensity
     plt.plot(initial_pulse_short.X[plot_from:plot_to], 
                     np.abs(np.reshape(test_pulse.clone().cpu().detach().numpy(), input_dim))[plot_from:plot_to]/norm_const, 
-                    color = "red")
+                    color = "green")
     
     # transformed intensity
     plt.scatter(initial_pulse_short.X[plot_from:plot_to], 
             np.abs(np.reshape(reconstructed.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to])/norm_const, 
-            color = "green", 
+            color = "firebrick", 
             s = 0.25,
             zorder = 10)
     
     plt.xlabel("Time (ps)")
     plt.ylabel("Normalized intensity")
-    plt.legend(["Initial intensity", "Target intensity", "Transformed intensity"], bbox_to_anchor = [1, -0.12], ncol = 2)
+    #plt.legend(["Initial intensity", "Target intensity", "Transformed intensity"], bbox_to_anchor = [1, -0.12], ncol = 2)
     plt.grid()
+    plt.xlim([initial_pulse_short.X[plot_from], initial_pulse_short.X[plot_to]])
 
     # temporal phase, firstly we want to find non-zero intensity
 
-    reconstr_spectrum = sa.spectrum(initial_pulse_short.X[plot_from:plot_to], np.abs(np.reshape(reconstructed.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to])/norm_const, "time", "intensity")
-
-    left = reconstr_spectrum.quantile(0.02, norm = "L1") 
-    right = reconstr_spectrum.quantile(0.98, norm = "L1")
+    left = initial_pulse_short.quantile(0.02, norm = "L1") 
+    right = initial_pulse_short.quantile(0.98, norm = "L1")
     left_idx = np.searchsorted(initial_pulse_short.X, left)
     right_idx = np.searchsorted(initial_pulse_short.X, right)
 
     ax = plt.gca()
     ax2 = ax.twinx()
 
-    ax2.scatter(initial_pulse_short.X[left_idx: right_idx], 
-            np.unwrap(np.reshape(temporal_phase.clone().cpu().detach().numpy(), input_dim)[left_idx:right_idx]), 
-            color = "burlywood",
-            s = 0.25,
+    # initial temporal phase
+
+    ax2.plot(initial_pulse_short.X[left_idx: right_idx], 
+            np.unwrap((np.angle(initial_pulse_short.Y[left_idx: right_idx]))), 
+            color = "skyblue",
+            lw = 1,
             zorder = 0)
     
-    ax2.legend(["Phase of transformed spectrum"], bbox_to_anchor = [0.721, -0.25])
+    # temporal phase
+
+    reconstr_spectrum = sa.spectrum(initial_pulse_short.X[plot_from:plot_to], np.abs(np.reshape(reconstructed.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to])/norm_const, "time", "intensity")
+    
+    left_2 = reconstr_spectrum.quantile(0.02, norm = "L1") 
+    right_2 = reconstr_spectrum.quantile(0.98, norm = "L1")
+    left_idx_2 = np.searchsorted(reconstr_spectrum.X, left_2)
+    right_idx_2 = np.searchsorted(reconstr_spectrum.X, right_2)
+
+    ax2.plot(initial_pulse_short.X[left_idx_2: right_idx_2], 
+            np.unwrap(np.reshape(temporal_phase.clone().cpu().detach().numpy(), input_dim)[left_idx_2:right_idx_2]), 
+            color = "lightcoral",
+            lw = 1,
+            zorder = 0)
+    
+    #ax2.legend(["Phase of transformed spectrum"], bbox_to_anchor = [0.721, -0.25])
     ax2.set_ylabel("Temporal phase (rad)")
     
     # second plot in frequency
@@ -135,6 +173,19 @@ def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = Non
     plt.ylabel("Normalized intensity")
     plt.grid()
 
+    # just for the legend
+
+    plt.fill_between([500], 
+                     [0],
+                     color = 'orange',
+                     alpha = 0.5)
+    plt.plot([500], 
+             [0],
+             lw = 1, 
+             color = "red",
+             zorder = 10)
+    plt.legend(["FT initial intensity", "Transforming phase (rad)"], bbox_to_anchor = [0.665, -0.12])
+
     # preprocessing
 
     reconstructed_phase = np.unwrap(test_phase_pred.clone().cpu().detach().numpy().reshape(output_dim))
@@ -143,11 +194,16 @@ def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = Non
     idx_start = floor(zeros_num + input_dim/2 - output_dim/2)
     idx_end = floor(zeros_num + input_dim/2 + output_dim/2)
 
-    FT_pulse = initial_pulse.fourier(inplace = False)
-    FT_Y = FT_pulse.Y.copy()
-    FT_X = FT_pulse.X.copy()
+    FT_X = initial_pulse.inv_fourier(inplace = False).X
+    FT_Y = ifftshift(ifft(ifftshift(torch.flatten(initial_intensity))))
+    FT_Y = FT_Y.clone().detach().cpu().numpy()
 
     FT_Y /= np.max(FT_Y[idx_start: idx_end])
+
+    if x_type == "freq":
+        plt.xlim([FT_X[idx_start] + 375, FT_X[idx_end] + 375])
+    if x_type == "wl":
+        plt.xlim([freq_to_wl(FT_X[idx_end] + 375), freq_to_wl(FT_X[idx_start] + 375)])
 
     # FT intensity
 
@@ -165,9 +221,6 @@ def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = Non
         
     else:
         raise Exception("x_type must be either \"wl\" or \"freq\"")
-
-
-    plt.legend(["FT initial intensity"], bbox_to_anchor = [0.665, -0.12])
 
     # transforming phase
 
@@ -192,26 +245,8 @@ def test(model, test_pulse, initial_pulse, device, dtype, save, test_phase = Non
         raise Exception("x_type must be either \"wl\" or \"freq\"")
 
     ax4.set_ylabel("Spectral phase (rad)")
-    ax4.legend(["Transforming phase (rad)"], bbox_to_anchor = [0.8, -0.19])
 
     # the below part of the code isn't always executed and when is, won't probably work correctly
-
-    if type(test_phase) == type(np.array([])):
-        test_phase_np = test_phase.copy()
-        #test_phase_np -= test_phase_np[floor(output_dim/2)]
-        plt.plot(FT_X[idx_start: idx_end] + 375,
-                    np.real(test_phase_np),
-                    color = "black",
-                    lw = 1,
-                    linestyle = "dashed",
-                    zorder = 5)
-        
-    '''
-    if type(test_phase) == type(np.array([])):
-        plt.legend(["Reconstructed phase", "Initial phase", "FT intensity"], bbox_to_anchor = [0.95, -0.15])
-    else:
-        plt.legend(["Reconstructed phase", "FT intensity"], bbox_to_anchor = [0.95, -0.15])
-    '''
     
     if save:
         if not os.path.isdir("pics"):
@@ -245,7 +280,8 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
                                         bandwidth = (initial_pulse.X[0], initial_pulse.X[-1]),
                                         centre = 500,
                                         FWHM = 100,
-                                        num = len(initial_pulse))
+                                        num = len(initial_pulse),
+                                    x_type = "time")
 
         test_pulse_.Y = test_pulse_.Y / np.sqrt(np.sum(test_pulse_.Y*np.conjugate(test_pulse_.Y)))
         test_pulse_.Y = test_pulse_.Y * np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
@@ -314,7 +350,8 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
                                     bandwidth = (initial_pulse.X[0], initial_pulse.X[-1]),
                                     centre = 500,
                                     FWHM = 150,
-                                    num = len(initial_pulse))
+                                    num = len(initial_pulse),
+                                    x_type = "time")
 
         test_pulse_.Y = test_pulse_.Y / np.sqrt(np.sum(test_pulse_.Y*np.conjugate(test_pulse_.Y)))
         test_pulse_.Y = test_pulse_.Y * np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
@@ -336,7 +373,8 @@ def create_initial_pulse(bandwidth, centre, FWHM, num, pulse_type):
                                     bandwidth = bandwidth,
                                     centre = centre,
                                     FWHM = FWHM,
-                                    num = num)
+                                    num = num,
+                                    x_type = "time")
         pulse.Y = np.abs(pulse.Y)
         return pulse
     
@@ -345,7 +383,8 @@ def create_initial_pulse(bandwidth, centre, FWHM, num, pulse_type):
                                     bandwidth = bandwidth,
                                     centre = centre,
                                     FWHM = FWHM,
-                                    num = num)
+                                    num = num,
+                                    x_type = "time")
         pulse.Y = np.abs(pulse.Y)
         return pulse
     
@@ -355,7 +394,7 @@ def create_initial_pulse(bandwidth, centre, FWHM, num, pulse_type):
             Y[i] = 0
 
         X = np.linspace(bandwidth[0], bandwidth[1], num)
-        spectrum_out = sa.spectrum(X = X, Y = Y, x_type ="freq", y_type ="intensity")
+        spectrum_out = sa.spectrum(X = X, Y = Y, x_type ="time", y_type ="intensity")
         spectrum_out.very_smart_shift(centre-(bandwidth[1]+bandwidth[0])/2, inplace = True)
         spectrum_out.Y = np.abs(spectrum_out.Y)
         return spectrum_out

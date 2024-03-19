@@ -122,7 +122,7 @@ def main(_learning_rate,
     # initial pulse (that is to be transformed by some phase)
 
     input_dim = 5000    # number of points in a single pulse
-    zeroes_num = 2500   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
+    zeroes_num = 5000   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
 
     bandwidth = [0, 1000]
     centre = 500
@@ -146,7 +146,7 @@ def main(_learning_rate,
     # additional pulse to add to exp (gauss) so it makes it more physical
     signal_correction = create_initial_pulse(bandwidth = bandwidth,
                                          centre = centre,
-                                         FWHM = width/10,
+                                         FWHM = width/50,
                                          num = long_pulse.Y.shape[0],
                                          pulse_type = 'gauss')
     
@@ -161,8 +161,8 @@ def main(_learning_rate,
 
     trash_fraction = 0.005 # percent of FT transformed to be cut off - it will contribute to the noise
 
-    long_pulse.fourier()
-    fwhm_init_F = u.comp_FWHM(u.comp_std(initial_pulse.fourier(inplace = False).X, initial_pulse.fourier(inplace = False).Y))
+    long_pulse.inv_fourier()
+    fwhm_init_F = u.comp_FWHM(u.comp_std(initial_pulse.inv_fourier(inplace = False).X, initial_pulse.inv_fourier(inplace = False).Y))
     x_start = long_pulse.quantile(trash_fraction/2, norm = "L2")
     x_end = long_pulse.quantile(1-trash_fraction/2, norm = "L2")
     idx_start = np.searchsorted(long_pulse.X, x_start)
@@ -177,7 +177,7 @@ def main(_learning_rate,
     # stuff for plots
 
     pulse_ft = long_pulse_2.copy()
-    pulse_ft.fourier()
+    pulse_ft.inv_fourier()
     pulse_ft.X = np.real(pulse_ft.X)
     pulse_ft.Y = np.abs(pulse_ft.Y)
     pulse_ft.cut(inplace = True, start = idx_start, end = idx_end, how = "index")    
@@ -247,7 +247,7 @@ def main(_learning_rate,
     if _criterion =='L1':
         criterion = torch.nn.L1Loss()
     if _criterion =='MSEsmooth':
-        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.65)
+        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.8)
     if _criterion =='MSEsmooth2':
         criterion = MSEsmooth2(device = my_device, dtype = my_dtype, c_factor = 0.5, s_factor = 0.5)
     
@@ -256,6 +256,14 @@ def main(_learning_rate,
     dataset_train = Dataset_train(root='', transform=True, device = my_device)
     dataloader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size=_batch_size, num_workers=0, shuffle=True)
     
+    # prepare initial pulses
+    
+
+    initial_intensity = long_pulse_2.copy()
+    initial_phase = np.zeros(len(long_pulse_2))      # HERE YOU CAN ADD WHATEVER YOU WANT
+    initial_intensity.Y = initial_intensity.Y*np.exp(1j*initial_phase)
+    initial_intensity_pt = u.np_to_complex_pt(initial_intensity.Y, device = my_device, dtype = my_dtype)
+
     # learning loop
 
     loss_list = []
@@ -270,8 +278,7 @@ def main(_learning_rate,
             predicted_phase = model(pulse)
 
             # transform gauss into something using this phase
-            initial_intensity = u.np_to_complex_pt(long_pulse_2.Y.copy(), device = my_device, dtype = my_dtype)
-            reconstructed_intensity = u.evolve_pt(initial_intensity, predicted_phase, device = my_device, dtype = my_dtype)
+            reconstructed_intensity = u.evolve_pt(initial_intensity_pt, predicted_phase, device = my_device, dtype = my_dtype)
 
             # calculating back-propagation
             if _criterion == "MSEsmooth" or _criterion == "MSEsmooth2":
@@ -295,7 +302,7 @@ def main(_learning_rate,
             fig, test_loss = test(model = model,
                     test_pulse = test_pulse,
                     test_phase = test_phase,
-                    initial_pulse = long_pulse_2.copy(),
+                    initial_pulse = initial_intensity,
                     device = my_device, 
                     dtype = my_dtype,
                     iter_num = epoch,
@@ -320,7 +327,7 @@ def main(_learning_rate,
                 fig, test_loss_temp = test(model = model,
                                 test_pulse = test_signal,
                                 test_phase = test_phase,
-                                initial_pulse = long_pulse_2.copy(),
+                                initial_pulse = initial_intensity,
                                 device = my_device, 
                                 dtype = my_dtype,
                                 iter_num = epoch,
