@@ -14,7 +14,7 @@ import utilities as u
 from dataset import Dataset
 from torch.utils.data import DataLoader #Dataloader module
 import torchaudio
-from test import create_test_pulse, test, create_test_set, create_initial_pulse
+from test import create_test_pulse, test, reverse_transformation, create_test_set, create_initial_pulse
 import torchvision.transforms as transforms  # Transformations and augmentations
 from dataset import Dataset_train
 from dataset_generator import Generator
@@ -206,7 +206,7 @@ def main(_learning_rate,
                                 device = my_device,
                                 dtype = np.float32,
                                 target_type = _test_signal,
-                                target_metadata = [500, 100, bandwidth[0], bandwidth[1]]
+                                target_metadata = [500, 180, bandwidth[0], bandwidth[1]]
                                 )
 
         the_generator.generate_and_save()
@@ -298,7 +298,17 @@ def main(_learning_rate,
             model.eval()
 
             print("Epoch no. {}. Loss {}.".format(epoch, np.mean(np.array(loss_list[epoch*len(dataloader_train): (epoch+1)*len(dataloader_train)]))))
-            fig, test_loss = test(model = model,
+            # fig, test_loss = test(model = model,
+            #         test_pulse = test_pulse,
+            #         test_phase = test_phase,
+            #         initial_pulse = long_pulse_2.copy(),
+            #         device = my_device, 
+            #         dtype = my_dtype,
+            #         iter_num = epoch,
+            #         save = True,
+            #         x_type = _axis_type)
+        
+            fig_2, test_loss = reverse_transformation(model = model,
                     test_pulse = test_pulse,
                     test_phase = test_phase,
                     initial_pulse = long_pulse_2.copy(),
@@ -306,7 +316,7 @@ def main(_learning_rate,
                     dtype = my_dtype,
                     iter_num = epoch,
                     save = True,
-                    x_type = _axis_type)
+                    x_type = _axis_type)            
             
             cont_penalty = torch.sqrt(torch.sum(torch.square(u.diff_pt(u.unwrap(predicted_phase), device = my_device, dtype = my_dtype))))
             print("phase's variation MSE: {}.".format(cont_penalty))
@@ -316,14 +326,16 @@ def main(_learning_rate,
                 utilities.clear_folder('saved_models')
                 torch.save(model.state_dict(), os.path.join(model_save_PATH_dir, f'{_net_architecture}_ep{epoch}.pt'))
             test_loss_global = test_loss
-            wandb.log({"chart": fig})
+            #wandb.log({"chart": fig})
+            wandb.log({"chart": fig_2})
             print('test_loss',test_loss)
             wandb.log({"test_loss": test_loss})
-            fig.close()
+            #fig.close()
+            fig_2.close()
 
             test_set_losses = []
             for test_signal in test_set:
-                fig, test_loss_temp = test_reverse(model = model,
+                fig, test_loss_temp = test(model = model,
                                 test_pulse = test_signal,
                                 test_phase = test_phase,
                                 initial_pulse = long_pulse_2.copy(),
