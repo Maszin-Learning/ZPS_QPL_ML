@@ -16,7 +16,7 @@ class network_0(nn.Module):
         self.output = output_size
         self.linear_1 = nn.Linear(input_size,n)
         #self.linear_2 = nn.Linear(n,n)
-        self.linear_3 = nn.Linear(240,output_size)
+        self.linear_3 = nn.Linear(480,output_size)
         self.sigmoid = nn.Sigmoid()
         self.leakyrelu=nn.LeakyReLU(1, inplace=True)
         
@@ -48,7 +48,7 @@ class network_0(nn.Module):
         x = torch.flatten(x, start_dim=1, end_dim=-1)
         x = self.linear_3(x)
         #x = self.normal_3(x)
-        x = torch.squeeze(x+ torch.squeeze(x_0))
+        x = torch.squeeze(x+ torch.squeeze(self.sigmoid(x_0))*1)
         return self.sigmoid(x)* np.pi*2
     
     
@@ -112,7 +112,7 @@ class network_3(nn.Module): #very good very promising at -nn 300 -lr 1e-4 -bs 2 
         self.output = output_size
         self.linear_1 = nn.Linear(input_size,n)
         #self.linear_2 = nn.Linear(n,n)
-        self.linear_3 = nn.Linear(1776,output_size)
+        self.linear_3 = nn.Linear(2701,output_size)
         self.sigmoid = nn.Sigmoid()
         self.leakyrelu=nn.LeakyReLU(1, inplace=True)
         

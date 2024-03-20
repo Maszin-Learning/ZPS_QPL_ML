@@ -122,7 +122,7 @@ def main(_learning_rate,
     # initial pulse (that is to be transformed by some phase)
 
     input_dim = 5000    # number of points in a single pulse
-    zeroes_num = 2500   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
+    zeroes_num = 3000   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
 
     bandwidth = [0, 1000]
     centre = 500
@@ -277,7 +277,7 @@ def main(_learning_rate,
 
             # transform gauss into something using this phase
             initial_intensity = u.np_to_complex_pt(long_pulse_2.Y.copy(), device = my_device, dtype = my_dtype)
-            reconstructed_intensity = u.evolve_pt(initial_intensity, predicted_phase, device = my_device, dtype = my_dtype)
+            reconstructed_intensity = u.evolve_pt(initial_intensity, -1*predicted_phase, device = my_device, dtype = my_dtype)
 
             # calculating back-propagation
             if _criterion == "MSEsmooth":
@@ -323,7 +323,7 @@ def main(_learning_rate,
 
             test_set_losses = []
             for test_signal in test_set:
-                fig, test_loss_temp = test(model = model,
+                fig, test_loss_temp = test_reverse(model = model,
                                 test_pulse = test_signal,
                                 test_phase = test_phase,
                                 initial_pulse = long_pulse_2.copy(),
@@ -349,7 +349,7 @@ if __name__ == "__main__":
     parser.add_argument('-pf', '--plot_freq', default=3, type=int)
     parser.add_argument('-ds', '--dataset_size', default=5000, type=int)
     parser.add_argument('-g', '--generate', action='store_true') # only generate, training will not run, wandb will be offline
-    parser.add_argument('-fc', '--force_cpu', action='store_true')
+    parser.add_argument('-fc', '--force_cpu', action='store_true', default=True)
     parser.add_argument('-tr', '--test_run', action='store_true')
     parser.add_argument('-nn', '--node_number', default=100, type=int)
     parser.add_argument('-ar', '--architecture', default='network_1', type=str)

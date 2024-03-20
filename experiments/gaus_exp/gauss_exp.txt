@@ -1,0 +1,4 @@
+python main.py -tr -pf 5 -nn 50 -is gauss -ts exponential -cr MSE -lr 1e-3 -en 100 -bs 2 -ar network_0 -fc -ax wl
+width 50
+input_dim = 5000  
+zeroes_num = 50000

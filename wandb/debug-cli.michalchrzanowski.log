@@ -415,3 +415,687 @@ wandb.errors.UsageError: Invalid sweep config: invalid hyperparameter configurat
 	epoch_num: 1
 	learning_rate: 0.0005605894120180301
 2023-11-06 20:09:21 INFO About to run command: /usr/bin/env python main.py --epoch_num=1 --learning_rate=0.0005605894120180301
+2024-03-19 21:49:46 INFO Running runs: []
+2024-03-19 21:49:46 INFO Agent received command: run
+2024-03-19 21:49:46 INFO Agent starting run with config:
+	architecture: network_0
+	criterion: MSEsmooth
+	epoch_num: 50
+	initial_signal: exponential
+	learning_rate: 0.0035280750121973264
+	node_number: 190
+	optimalizer: NAdam
+	plot_freq: 5
+	test_signal: gauss
+	weight_decay: 0.0832278035195298
+2024-03-19 21:49:46 INFO About to run command: /usr/bin/env python main.py --architecture=network_0 --criterion=MSEsmooth --epoch_num=50 --initial_signal=exponential --learning_rate=0.0035280750121973264 --node_number=190 --optimalizer=NAdam --plot_freq=5 --test_signal=gauss --weight_decay=0.0832278035195298
+2024-03-19 21:49:51 INFO Running runs: ['nlw6kyhx']
+2024-03-19 21:50:02 INFO Cleaning up finished run: nlw6kyhx
+2024-03-19 21:50:08 INFO Agent received command: run
+2024-03-19 21:50:08 INFO Agent starting run with config:
+	architecture: network_11
+	criterion: MSEsmooth
+	epoch_num: 50
+	initial_signal: exponential
+	learning_rate: 0.001570119519570355
+	node_number: 80
+	optimalizer: NAdam
+	plot_freq: 5
+	test_signal: gauss
+	weight_decay: 0.05878346168922079
+2024-03-19 21:50:08 INFO About to run command: /usr/bin/env python main.py --architecture=network_11 --criterion=MSEsmooth --epoch_num=50 --initial_signal=exponential --learning_rate=0.001570119519570355 --node_number=80 --optimalizer=NAdam --plot_freq=5 --test_signal=gauss --weight_decay=0.05878346168922079
+2024-03-19 21:50:56 INFO Running runs: []
+2024-03-19 21:51:05 INFO Agent received command: run
+2024-03-19 21:51:05 INFO Agent starting run with config:
+	architecture: network_0
+	criterion: MSEsmooth
+	epoch_num: 50
+	initial_signal: exponential
+	learning_rate: 0.003598954011019122
+	node_number: 102
+	optimalizer: NAdam
+	plot_freq: 5
+	test_signal: gauss
+	weight_decay: 0.023144129541288777
+2024-03-19 21:51:05 INFO About to run command: /usr/bin/env python main.py --architecture=network_0 --criterion=MSEsmooth --epoch_num=50 --initial_signal=exponential --learning_rate=0.003598954011019122 --node_number=102 --optimalizer=NAdam --plot_freq=5 --test_signal=gauss --weight_decay=0.023144129541288777
+2024-03-19 21:51:10 INFO Running runs: ['isf8dtnx']
+2024-03-19 21:51:48 INFO Running runs: []
+2024-03-19 21:51:49 INFO Agent received command: run
+2024-03-19 21:51:49 INFO Agent starting run with config:
+	architecture: network_0
+	criterion: MSEsmooth
+	epoch_num: 50
+	initial_signal: exponential
+	learning_rate: 0.0004623709569721119
+	node_number: 84
+	optimalizer: NAdam
+	plot_freq: 5
+	test_signal: gauss
+	weight_decay: 0.06606697632518722
+2024-03-19 21:51:49 INFO About to run command: /usr/bin/env python main.py --architecture=network_0 --criterion=MSEsmooth --epoch_num=50 --initial_signal=exponential --learning_rate=0.0004623709569721119 --node_number=84 --optimalizer=NAdam --plot_freq=5 --test_signal=gauss --weight_decay=0.06606697632518722
+2024-03-19 21:51:54 INFO Running runs: ['necvj2sb']
+2024-03-19 21:51:59 INFO Cleaning up finished run: necvj2sb
+2024-03-19 21:52:07 INFO Agent received command: run
+2024-03-19 21:52:07 INFO Agent starting run with config:
+	architecture: network_11
+	criterion: MSEsmooth
+	epoch_num: 50
+	initial_signal: exponential
+	learning_rate: 0.0016618688608022038
+	node_number: 152
+	optimalizer: NAdam
+	plot_freq: 5
+	test_signal: gauss
+	weight_decay: 0.039238737243377446
+2024-03-19 21:52:07 INFO About to run command: /usr/bin/env python main.py --architecture=network_11 --criterion=MSEsmooth --epoch_num=50 --initial_signal=exponential --learning_rate=0.0016618688608022038 --node_number=152 --optimalizer=NAdam --plot_freq=5 --test_signal=gauss --weight_decay=0.039238737243377446
+2024-03-19 21:52:12 INFO Running runs: ['yfsud2sk']
+2024-03-19 21:52:38 INFO Running runs: []
+2024-03-19 21:52:38 INFO Agent received command: run
+2024-03-19 21:52:38 INFO Agent starting run with config:
+	architecture: network_11
+	criterion: MSEsmooth
+	epoch_num: 50
+	initial_signal: exponential
+	learning_rate: 0.0015564872472603704
+	node_number: 111
+	optimalizer: NAdam
+	plot_freq: 5
+	test_signal: gauss
+	weight_decay: 0.06626685293850451
+2024-03-19 21:52:38 INFO About to run command: /usr/bin/env python main.py --architecture=network_11 --criterion=MSEsmooth --epoch_num=50 --initial_signal=exponential --learning_rate=0.0015564872472603704 --node_number=111 --optimalizer=NAdam --plot_freq=5 --test_signal=gauss --weight_decay=0.06626685293850451
+2024-03-19 21:52:43 INFO Running runs: ['l39zxlo2']
+2024-03-19 21:54:40 INFO Running runs: []
+2024-03-19 21:54:40 INFO Agent received command: run
+2024-03-19 21:54:40 INFO Agent starting run with config:
+	architecture: network_11
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.001389497109334172
+	node_number: 164
+	optimalizer: Adam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.0938895722949071
+2024-03-19 21:54:40 INFO About to run command: /usr/bin/env python main.py --architecture=network_11 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.001389497109334172 --node_number=164 --optimalizer=Adam --plot_freq=4 --test_signal=gauss --weight_decay=0.0938895722949071
+2024-03-19 21:54:45 INFO Running runs: ['kh9xssmp']
+2024-03-19 21:57:10 INFO Cleaning up finished run: kh9xssmp
+2024-03-19 21:57:16 INFO Agent received command: run
+2024-03-19 21:57:16 INFO Agent starting run with config:
+	architecture: network_0
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.003230541081643438
+	node_number: 199
+	optimalizer: Adam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.08828752100339617
+2024-03-19 21:57:16 INFO About to run command: /usr/bin/env python main.py --architecture=network_0 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.003230541081643438 --node_number=199 --optimalizer=Adam --plot_freq=4 --test_signal=gauss --weight_decay=0.08828752100339617
+2024-03-19 21:57:21 INFO Running runs: ['tb2de6va']
+2024-03-19 21:57:37 INFO Cleaning up finished run: tb2de6va
+2024-03-19 21:57:37 INFO Agent received command: run
+2024-03-19 21:57:37 INFO Agent starting run with config:
+	architecture: network_11
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.004750766071677476
+	node_number: 100
+	optimalizer: Adam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.05538650171642445
+2024-03-19 21:57:37 INFO About to run command: /usr/bin/env python main.py --architecture=network_11 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.004750766071677476 --node_number=100 --optimalizer=Adam --plot_freq=4 --test_signal=gauss --weight_decay=0.05538650171642445
+2024-03-19 21:59:04 ERROR 400 response executing GraphQL.
+2024-03-19 21:59:04 ERROR {"errors":[{"message":"Invalid sweep config: node_number: min 150 is not less than max 150","path":["upsertSweep"]}],"data":{"upsertSweep":null}}
+2024-03-19 21:59:04 ERROR Traceback (most recent call last):
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/lib/retry.py", line 131, in __call__
+    result = self._call_fn(*args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/internal/internal_api.py", line 369, in execute
+    return self.client.execute(*args, **kwargs)  # type: ignore
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/vendor/gql-0.2.0/wandb_gql/client.py", line 52, in execute
+    result = self._get_result(document, *args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/vendor/gql-0.2.0/wandb_gql/client.py", line 60, in _get_result
+    return self.transport.execute(document, *args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/lib/gql_request.py", line 59, in execute
+    request.raise_for_status()
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/requests/models.py", line 1021, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 400 Client Error: Bad Request for url: https://api.wandb.ai/graphql
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/cli/cli.py", line 105, in wrapper
+    return func(*args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/cli/cli.py", line 1032, in sweep
+    sweep_id, warnings = api.upsert_sweep(
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/apis/internal.py", line 129, in upsert_sweep
+    return self.api.upsert_sweep(*args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/apis/normalize.py", line 73, in wrapper
+    raise err
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/apis/normalize.py", line 41, in wrapper
+    return func(*args, **kwargs)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/internal/internal_api.py", line 3169, in upsert_sweep
+    raise e
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/internal/internal_api.py", line 3163, in upsert_sweep
+    response = self.gql(
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/internal/internal_api.py", line 341, in gql
+    ret = self._retry_gql(
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/sdk/lib/retry.py", line 147, in __call__
+    retry_timedelta_triggered = check_retry_fn(e)
+  File "/Users/michalchrzanowski/anaconda3/envs/ML_M1/lib/python3.9/site-packages/wandb/util.py", line 881, in no_retry_4xx
+    raise UsageError(body["errors"][0]["message"])
+wandb.errors.UsageError: Invalid sweep config: node_number: min 150 is not less than max 150
+
+2024-03-19 21:59:58 INFO Running runs: []
+2024-03-19 21:59:58 INFO Agent received command: run
+2024-03-19 21:59:58 INFO Agent starting run with config:
+	architecture: network_11
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.0032016190062322774
+	node_number: 150
+	optimalizer: NAdam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.07439924750005696
+2024-03-19 21:59:58 INFO About to run command: /usr/bin/env python main.py --architecture=network_11 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.0032016190062322774 --node_number=150 --optimalizer=NAdam --plot_freq=4 --test_signal=gauss --weight_decay=0.07439924750005696
+2024-03-19 22:00:03 INFO Running runs: ['vtato5go']
+2024-03-19 22:00:44 INFO Running runs: []
+2024-03-19 22:00:44 INFO Agent received command: run
+2024-03-19 22:00:44 INFO Agent starting run with config:
+	architecture: network_11
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.00010674936244285564
+	node_number: 150
+	optimalizer: NAdam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.08238973328530823
+2024-03-19 22:00:44 INFO About to run command: /usr/bin/env python main.py --architecture=network_11 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.00010674936244285564 --node_number=150 --optimalizer=NAdam --plot_freq=4 --test_signal=gauss --weight_decay=0.08238973328530823
+2024-03-19 22:00:49 INFO Running runs: ['bm57ncbp']
+2024-03-19 22:03:15 INFO Cleaning up finished run: bm57ncbp
+2024-03-19 22:03:24 INFO Agent received command: run
+2024-03-19 22:03:24 INFO Agent starting run with config:
+	architecture: network_11
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.0007736167454638661
+	node_number: 150
+	optimalizer: Adam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.07923917216968053
+2024-03-19 22:03:24 INFO About to run command: /usr/bin/env python main.py --architecture=network_11 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.0007736167454638661 --node_number=150 --optimalizer=Adam --plot_freq=4 --test_signal=gauss --weight_decay=0.07923917216968053
+2024-03-19 22:03:29 INFO Running runs: ['zrfh1r3y']
+2024-03-19 22:05:28 INFO Cleaning up finished run: zrfh1r3y
+2024-03-19 22:05:28 INFO Agent received command: run
+2024-03-19 22:05:28 INFO Agent starting run with config:
+	architecture: network_11
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.00272233127810903
+	node_number: 150
+	optimalizer: Adam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.08268701177662924
+2024-03-19 22:05:28 INFO About to run command: /usr/bin/env python main.py --architecture=network_11 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.00272233127810903 --node_number=150 --optimalizer=Adam --plot_freq=4 --test_signal=gauss --weight_decay=0.08268701177662924
+2024-03-19 22:05:33 INFO Running runs: ['1x8r9mh3']
+2024-03-19 22:06:54 INFO Cleaning up finished run: 1x8r9mh3
+2024-03-19 22:06:58 INFO Agent received command: run
+2024-03-19 22:06:58 INFO Agent starting run with config:
+	architecture: network_11
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.0006636703086015922
+	node_number: 150
+	optimalizer: Adam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.02564977107663472
+2024-03-19 22:06:58 INFO About to run command: /usr/bin/env python main.py --architecture=network_11 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.0006636703086015922 --node_number=150 --optimalizer=Adam --plot_freq=4 --test_signal=gauss --weight_decay=0.02564977107663472
+2024-03-19 22:07:03 INFO Running runs: ['dqlo12ge']
+2024-03-19 22:10:21 INFO Running runs: []
+2024-03-19 22:10:21 INFO Agent received command: run
+2024-03-19 22:10:21 INFO Agent starting run with config:
+	architecture: network_0
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.00012453203754776753
+	node_number: 150
+	optimalizer: Adam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.01133853867197272
+2024-03-19 22:10:21 INFO About to run command: /usr/bin/env python main.py --architecture=network_0 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.00012453203754776753 --node_number=150 --optimalizer=Adam --plot_freq=4 --test_signal=gauss --weight_decay=0.01133853867197272
+2024-03-19 22:10:26 INFO Running runs: ['yskzvxed']
+2024-03-19 22:13:33 INFO Cleaning up finished run: yskzvxed
+2024-03-19 22:13:39 INFO Agent received command: run
+2024-03-19 22:13:39 INFO Agent starting run with config:
+	architecture: network_0
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.002407882159929419
+	node_number: 150
+	optimalizer: Adam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.05203920293884201
+2024-03-19 22:13:39 INFO About to run command: /usr/bin/env python main.py --architecture=network_0 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.002407882159929419 --node_number=150 --optimalizer=Adam --plot_freq=4 --test_signal=gauss --weight_decay=0.05203920293884201
+2024-03-19 22:13:44 INFO Running runs: ['apjdya7c']
+2024-03-19 22:15:18 INFO Cleaning up finished run: apjdya7c
+2024-03-19 22:15:18 INFO Agent received command: run
+2024-03-19 22:15:18 INFO Agent starting run with config:
+	architecture: network_0
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.004252884084644335
+	node_number: 150
+	optimalizer: Adam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.025035335131376235
+2024-03-19 22:15:18 INFO About to run command: /usr/bin/env python main.py --architecture=network_0 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.004252884084644335 --node_number=150 --optimalizer=Adam --plot_freq=4 --test_signal=gauss --weight_decay=0.025035335131376235
+2024-03-19 22:15:23 INFO Running runs: ['ama8yrl2']
+2024-03-19 22:17:04 INFO Cleaning up finished run: ama8yrl2
+2024-03-19 22:17:04 INFO Agent received command: run
+2024-03-19 22:17:04 INFO Agent starting run with config:
+	architecture: network_0
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.0023064361809122342
+	node_number: 150
+	optimalizer: NAdam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.08012890932795329
+2024-03-19 22:17:04 INFO About to run command: /usr/bin/env python main.py --architecture=network_0 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.0023064361809122342 --node_number=150 --optimalizer=NAdam --plot_freq=4 --test_signal=gauss --weight_decay=0.08012890932795329
+2024-03-19 22:17:10 INFO Running runs: ['10mgm8x7']
+2024-03-19 22:18:39 INFO Cleaning up finished run: 10mgm8x7
+2024-03-19 22:18:40 INFO Agent received command: run
+2024-03-19 22:18:40 INFO Agent starting run with config:
+	architecture: network_0
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.000903171698136252
+	node_number: 150
+	optimalizer: Adam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.006773964031655023
+2024-03-19 22:18:40 INFO About to run command: /usr/bin/env python main.py --architecture=network_0 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.000903171698136252 --node_number=150 --optimalizer=Adam --plot_freq=4 --test_signal=gauss --weight_decay=0.006773964031655023
+2024-03-19 22:18:45 INFO Running runs: ['wwhhaqh9']
+2024-03-19 22:20:58 INFO Cleaning up finished run: wwhhaqh9
+2024-03-19 22:20:59 INFO Agent received command: run
+2024-03-19 22:20:59 INFO Agent starting run with config:
+	architecture: network_11
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.0001488787586328244
+	node_number: 150
+	optimalizer: NAdam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.005610542936437657
+2024-03-19 22:20:59 INFO About to run command: /usr/bin/env python main.py --architecture=network_11 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.0001488787586328244 --node_number=150 --optimalizer=NAdam --plot_freq=4 --test_signal=gauss --weight_decay=0.005610542936437657
+2024-03-19 22:21:54 INFO Running runs: ['5rdtc88p']
+2024-03-19 22:23:18 INFO Cleaning up finished run: 5rdtc88p
+2024-03-19 22:23:19 INFO Agent received command: run
+2024-03-19 22:23:19 INFO Agent starting run with config:
+	architecture: network_11
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.001039544854734873
+	node_number: 150
+	optimalizer: Adam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.08486969046225842
+2024-03-19 22:23:19 INFO About to run command: /usr/bin/env python main.py --architecture=network_11 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.001039544854734873 --node_number=150 --optimalizer=Adam --plot_freq=4 --test_signal=gauss --weight_decay=0.08486969046225842
+2024-03-19 22:23:24 INFO Running runs: ['kpy7m2iv']
+2024-03-19 22:25:44 INFO Cleaning up finished run: kpy7m2iv
+2024-03-19 22:26:00 INFO Agent received command: run
+2024-03-19 22:26:00 INFO Agent starting run with config:
+	architecture: network_11
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.001488031542892072
+	node_number: 150
+	optimalizer: Adam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.0867726121119142
+2024-03-19 22:26:00 INFO About to run command: /usr/bin/env python main.py --architecture=network_11 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.001488031542892072 --node_number=150 --optimalizer=Adam --plot_freq=4 --test_signal=gauss --weight_decay=0.0867726121119142
+2024-03-19 22:26:05 INFO Running runs: ['2zyimvn4']
+2024-03-19 22:28:04 INFO Cleaning up finished run: 2zyimvn4
+2024-03-19 22:28:05 INFO Agent received command: run
+2024-03-19 22:28:05 INFO Agent starting run with config:
+	architecture: network_0
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.004056320837951055
+	node_number: 150
+	optimalizer: NAdam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.004957092329251733
+2024-03-19 22:28:05 INFO About to run command: /usr/bin/env python main.py --architecture=network_0 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.004056320837951055 --node_number=150 --optimalizer=NAdam --plot_freq=4 --test_signal=gauss --weight_decay=0.004957092329251733
+2024-03-19 22:28:10 INFO Running runs: ['mle951b0']
+2024-03-19 22:29:33 INFO Cleaning up finished run: mle951b0
+2024-03-19 22:29:34 INFO Agent received command: run
+2024-03-19 22:29:34 INFO Agent starting run with config:
+	architecture: network_11
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.0029075298437583248
+	node_number: 150
+	optimalizer: NAdam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.07370541236173665
+2024-03-19 22:29:34 INFO About to run command: /usr/bin/env python main.py --architecture=network_11 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.0029075298437583248 --node_number=150 --optimalizer=NAdam --plot_freq=4 --test_signal=gauss --weight_decay=0.07370541236173665
+2024-03-19 22:29:39 INFO Running runs: ['xmh7yjar']
+2024-03-19 22:31:03 INFO Cleaning up finished run: xmh7yjar
+2024-03-19 22:31:04 INFO Agent received command: run
+2024-03-19 22:31:04 INFO Agent starting run with config:
+	architecture: network_11
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.0011708363455509609
+	node_number: 150
+	optimalizer: Adam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.019828174991014448
+2024-03-19 22:31:04 INFO About to run command: /usr/bin/env python main.py --architecture=network_11 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.0011708363455509609 --node_number=150 --optimalizer=Adam --plot_freq=4 --test_signal=gauss --weight_decay=0.019828174991014448
+2024-03-19 22:31:09 INFO Running runs: ['8w9jctkg']
+2024-03-19 22:36:28 INFO Cleaning up finished run: 8w9jctkg
+2024-03-19 22:36:29 INFO Agent received command: run
+2024-03-19 22:36:29 INFO Agent starting run with config:
+	architecture: network_11
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.0006585936061262724
+	node_number: 150
+	optimalizer: Adam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.09192885489719924
+2024-03-19 22:36:29 INFO About to run command: /usr/bin/env python main.py --architecture=network_11 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.0006585936061262724 --node_number=150 --optimalizer=Adam --plot_freq=4 --test_signal=gauss --weight_decay=0.09192885489719924
+2024-03-19 22:36:34 INFO Running runs: ['4cpodsic']
+2024-03-19 22:38:44 INFO Cleaning up finished run: 4cpodsic
+2024-03-19 22:38:44 INFO Agent received command: run
+2024-03-19 22:38:44 INFO Agent starting run with config:
+	architecture: network_11
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.00028367428390087756
+	node_number: 150
+	optimalizer: Adam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.07890754879075591
+2024-03-19 22:38:44 INFO About to run command: /usr/bin/env python main.py --architecture=network_11 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.00028367428390087756 --node_number=150 --optimalizer=Adam --plot_freq=4 --test_signal=gauss --weight_decay=0.07890754879075591
+2024-03-19 22:38:49 INFO Running runs: ['ph9hyy08']
+2024-03-19 22:41:16 INFO Cleaning up finished run: ph9hyy08
+2024-03-19 22:41:16 INFO Agent received command: run
+2024-03-19 22:41:16 INFO Agent starting run with config:
+	architecture: network_11
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.00021621286559574745
+	node_number: 150
+	optimalizer: NAdam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.027978274281687723
+2024-03-19 22:41:16 INFO About to run command: /usr/bin/env python main.py --architecture=network_11 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.00021621286559574745 --node_number=150 --optimalizer=NAdam --plot_freq=4 --test_signal=gauss --weight_decay=0.027978274281687723
+2024-03-19 22:41:21 INFO Running runs: ['pr63l0pd']
+2024-03-19 22:43:41 INFO Cleaning up finished run: pr63l0pd
+2024-03-19 22:43:41 INFO Agent received command: run
+2024-03-19 22:43:41 INFO Agent starting run with config:
+	architecture: network_11
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.000983368222617093
+	node_number: 150
+	optimalizer: NAdam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.011680164123093185
+2024-03-19 22:43:41 INFO About to run command: /usr/bin/env python main.py --architecture=network_11 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.000983368222617093 --node_number=150 --optimalizer=NAdam --plot_freq=4 --test_signal=gauss --weight_decay=0.011680164123093185
+2024-03-19 22:43:46 INFO Running runs: ['lfaa00iy']
+2024-03-19 22:45:09 INFO Cleaning up finished run: lfaa00iy
+2024-03-19 22:45:10 INFO Agent received command: run
+2024-03-19 22:45:10 INFO Agent starting run with config:
+	architecture: network_11
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.001364408832585345
+	node_number: 150
+	optimalizer: Adam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.09663732305993544
+2024-03-19 22:45:10 INFO About to run command: /usr/bin/env python main.py --architecture=network_11 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.001364408832585345 --node_number=150 --optimalizer=Adam --plot_freq=4 --test_signal=gauss --weight_decay=0.09663732305993544
+2024-03-19 22:45:15 INFO Running runs: ['yze36czj']
+2024-03-19 22:47:14 INFO Cleaning up finished run: yze36czj
+2024-03-19 22:47:14 INFO Agent received command: run
+2024-03-19 22:47:14 INFO Agent starting run with config:
+	architecture: network_11
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.0007700115759682731
+	node_number: 150
+	optimalizer: Adam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.09506578201358055
+2024-03-19 22:47:14 INFO About to run command: /usr/bin/env python main.py --architecture=network_11 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.0007700115759682731 --node_number=150 --optimalizer=Adam --plot_freq=4 --test_signal=gauss --weight_decay=0.09506578201358055
+2024-03-19 22:47:20 INFO Running runs: ['otaauuh4']
+2024-03-19 23:18:26 INFO Cleaning up finished run: otaauuh4
+2024-03-19 23:18:28 INFO Agent received command: run
+2024-03-19 23:18:28 INFO Agent starting run with config:
+	architecture: network_11
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.0018086141767884724
+	node_number: 150
+	optimalizer: Adam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.084382462100739
+2024-03-19 23:18:28 INFO About to run command: /usr/bin/env python main.py --architecture=network_11 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.0018086141767884724 --node_number=150 --optimalizer=Adam --plot_freq=4 --test_signal=gauss --weight_decay=0.084382462100739
+2024-03-19 23:18:33 INFO Running runs: ['xqhrmpp6']
+2024-03-19 23:20:03 INFO Cleaning up finished run: xqhrmpp6
+2024-03-19 23:20:04 INFO Agent received command: run
+2024-03-19 23:20:04 INFO Agent starting run with config:
+	architecture: network_0
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.0006999174700140034
+	node_number: 150
+	optimalizer: Adam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.07729712075102918
+2024-03-19 23:20:04 INFO About to run command: /usr/bin/env python main.py --architecture=network_0 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.0006999174700140034 --node_number=150 --optimalizer=Adam --plot_freq=4 --test_signal=gauss --weight_decay=0.07729712075102918
+2024-03-19 23:20:09 INFO Running runs: ['bctr44wp']
+2024-03-19 23:22:23 INFO Cleaning up finished run: bctr44wp
+2024-03-19 23:22:24 INFO Agent received command: run
+2024-03-19 23:22:24 INFO Agent starting run with config:
+	architecture: network_11
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.004287787557338716
+	node_number: 150
+	optimalizer: Adam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.03662584180977384
+2024-03-19 23:22:24 INFO About to run command: /usr/bin/env python main.py --architecture=network_11 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.004287787557338716 --node_number=150 --optimalizer=Adam --plot_freq=4 --test_signal=gauss --weight_decay=0.03662584180977384
+2024-03-19 23:22:29 INFO Running runs: ['rn73lpz3']
+2024-03-19 23:24:03 INFO Cleaning up finished run: rn73lpz3
+2024-03-19 23:24:04 INFO Agent received command: run
+2024-03-19 23:24:04 INFO Agent starting run with config:
+	architecture: network_0
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.002661166644573325
+	node_number: 150
+	optimalizer: NAdam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.07050670238663935
+2024-03-19 23:24:04 INFO About to run command: /usr/bin/env python main.py --architecture=network_0 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.002661166644573325 --node_number=150 --optimalizer=NAdam --plot_freq=4 --test_signal=gauss --weight_decay=0.07050670238663935
+2024-03-19 23:24:09 INFO Running runs: ['lya1a8gh']
+2024-03-19 23:25:28 INFO Cleaning up finished run: lya1a8gh
+2024-03-19 23:25:29 INFO Agent received command: run
+2024-03-19 23:25:29 INFO Agent starting run with config:
+	architecture: network_11
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.0001463657920352801
+	node_number: 150
+	optimalizer: Adam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.08997626477159432
+2024-03-19 23:25:29 INFO About to run command: /usr/bin/env python main.py --architecture=network_11 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.0001463657920352801 --node_number=150 --optimalizer=Adam --plot_freq=4 --test_signal=gauss --weight_decay=0.08997626477159432
+2024-03-19 23:25:34 INFO Running runs: ['hxryx7fi']
+2024-03-19 23:27:59 INFO Cleaning up finished run: hxryx7fi
+2024-03-19 23:27:59 INFO Agent received command: run
+2024-03-19 23:27:59 INFO Agent starting run with config:
+	architecture: network_11
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.0030023081411214105
+	node_number: 150
+	optimalizer: Adam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.021058475336960515
+2024-03-19 23:27:59 INFO About to run command: /usr/bin/env python main.py --architecture=network_11 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.0030023081411214105 --node_number=150 --optimalizer=Adam --plot_freq=4 --test_signal=gauss --weight_decay=0.021058475336960515
+2024-03-19 23:28:04 INFO Running runs: ['ss2w5d5q']
+2024-03-19 23:45:58 INFO Cleaning up finished run: ss2w5d5q
+2024-03-19 23:45:59 INFO Agent received command: run
+2024-03-19 23:45:59 INFO Agent starting run with config:
+	architecture: network_11
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.004221101438381065
+	node_number: 150
+	optimalizer: NAdam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.002373752294906695
+2024-03-19 23:45:59 INFO About to run command: /usr/bin/env python main.py --architecture=network_11 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.004221101438381065 --node_number=150 --optimalizer=NAdam --plot_freq=4 --test_signal=gauss --weight_decay=0.002373752294906695
+2024-03-19 23:46:04 INFO Running runs: ['1pav1g6e']
+2024-03-19 23:47:17 INFO Cleaning up finished run: 1pav1g6e
+2024-03-19 23:47:17 INFO Agent received command: run
+2024-03-19 23:47:17 INFO Agent starting run with config:
+	architecture: network_0
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.0019914260331161527
+	node_number: 150
+	optimalizer: NAdam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.006243548215205175
+2024-03-19 23:47:17 INFO About to run command: /usr/bin/env python main.py --architecture=network_0 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.0019914260331161527 --node_number=150 --optimalizer=NAdam --plot_freq=4 --test_signal=gauss --weight_decay=0.006243548215205175
+2024-03-19 23:47:22 INFO Running runs: ['gyv8275c']
+2024-03-20 00:03:48 INFO Cleaning up finished run: gyv8275c
+2024-03-20 00:03:48 INFO Agent received command: run
+2024-03-20 00:03:48 INFO Agent starting run with config:
+	architecture: network_0
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.00494762535349838
+	node_number: 150
+	optimalizer: NAdam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.00016788422084924594
+2024-03-20 00:03:48 INFO About to run command: /usr/bin/env python main.py --architecture=network_0 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.00494762535349838 --node_number=150 --optimalizer=NAdam --plot_freq=4 --test_signal=gauss --weight_decay=0.00016788422084924594
+2024-03-20 00:03:53 INFO Running runs: ['afaux0y1']
+2024-03-20 00:12:02 INFO Cleaning up finished run: afaux0y1
+2024-03-20 00:12:03 INFO Agent received command: run
+2024-03-20 00:12:03 INFO Agent starting run with config:
+	architecture: network_0
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.0026941310519462604
+	node_number: 150
+	optimalizer: Adam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.013968868604018535
+2024-03-20 00:12:03 INFO About to run command: /usr/bin/env python main.py --architecture=network_0 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.0026941310519462604 --node_number=150 --optimalizer=Adam --plot_freq=4 --test_signal=gauss --weight_decay=0.013968868604018535
+2024-03-20 00:12:08 INFO Running runs: ['25vcdg2d']
+2024-03-20 00:13:32 INFO Cleaning up finished run: 25vcdg2d
+2024-03-20 00:13:33 INFO Agent received command: run
+2024-03-20 00:13:33 INFO Agent starting run with config:
+	architecture: network_0
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.0006724892228303686
+	node_number: 150
+	optimalizer: Adam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.07874371229576223
+2024-03-20 00:13:33 INFO About to run command: /usr/bin/env python main.py --architecture=network_0 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.0006724892228303686 --node_number=150 --optimalizer=Adam --plot_freq=4 --test_signal=gauss --weight_decay=0.07874371229576223
+2024-03-20 00:13:38 INFO Running runs: ['5fwwq8g8']
+2024-03-20 00:15:58 INFO Cleaning up finished run: 5fwwq8g8
+2024-03-20 00:15:58 INFO Agent received command: run
+2024-03-20 00:15:58 INFO Agent starting run with config:
+	architecture: network_0
+	criterion: MSEsmooth
+	epoch_num: 20
+	initial_signal: exponential
+	learning_rate: 0.00097898661549959
+	node_number: 150
+	optimalizer: Adam
+	plot_freq: 4
+	test_signal: gauss
+	weight_decay: 0.050583607823849186
+2024-03-20 00:15:58 INFO About to run command: /usr/bin/env python main.py --architecture=network_0 --criterion=MSEsmooth --epoch_num=20 --initial_signal=exponential --learning_rate=0.00097898661549959 --node_number=150 --optimalizer=Adam --plot_freq=4 --test_signal=gauss --weight_decay=0.050583607823849186

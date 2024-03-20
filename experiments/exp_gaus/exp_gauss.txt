@@ -1,0 +1,7 @@
+dataset  na splecionym exp z gausem width/50 a trenning na normalnym
+    input_dim = 5000    # number of points in a single pulse
+    zeroes_num = 2500   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
+
+    bandwidth = [0, 1000]
+    centre = 500
+    width = 100
