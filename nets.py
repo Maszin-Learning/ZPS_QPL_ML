@@ -16,7 +16,7 @@ class network_0(nn.Module):
         self.output = output_size
         self.linear_1 = nn.Linear(input_size,n)
         #self.linear_2 = nn.Linear(n,n)
-        self.linear_3 = nn.Linear(480,output_size)
+        self.linear_3 = nn.Linear(360,output_size)
         self.sigmoid = nn.Sigmoid()
         self.softmax = nn.Softmax()
         self.leakyrelu=nn.LeakyReLU(1, inplace=True)
@@ -49,7 +49,7 @@ class network_0(nn.Module):
         x = torch.flatten(x, start_dim=1, end_dim=-1)
         x = self.linear_3(x)
         #x = self.normal_3(x)
-        x = torch.squeeze(x+ torch.squeeze(x_0)*0.5)
+        x = torch.squeeze(x+ torch.squeeze(x_0)*0.2)
         return self.sigmoid(x)* np.pi*2
     
     
