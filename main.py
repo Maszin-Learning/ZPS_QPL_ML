@@ -14,7 +14,7 @@ import utilities
 from dataset import Dataset
 from torch.utils.data import DataLoader #Dataloader module
 import torchaudio
-from test import create_test_pulse, test, create_test_set, create_initial_pulse
+from test import create_test_pulse, reverse_transformation, test, create_test_set, create_initial_pulse
 import torchvision.transforms as transforms  # Transformations and augmentations
 from dataset import Dataset_train
 from dataset_generator import Generator
@@ -299,15 +299,25 @@ def main(_learning_rate,
             model.eval()
 
             print("Epoch no. {}. Loss {}.".format(epoch, np.mean(np.array(loss_list[epoch*len(dataloader_train): (epoch+1)*len(dataloader_train)]))))
-            fig, test_loss = test(model = model,
+            # fig, test_loss = test(model = model,
+            #         test_pulse = test_pulse,
+            #         test_phase = test_phase,
+            #         initial_pulse = initial_intensity,
+            #         device = my_device, 
+            #         dtype = my_dtype,
+            #         iter_num = epoch,
+            #         save = True,
+            #         x_type = _axis_type)
+            
+            fig, test_loss = reverse_transformation(model = model,
                     test_pulse = test_pulse,
                     test_phase = test_phase,
-                    initial_pulse = initial_intensity,
+                    initial_pulse = long_pulse_2.copy(),
                     device = my_device, 
                     dtype = my_dtype,
                     iter_num = epoch,
                     save = True,
-                    x_type = _axis_type)
+                    x_type = _axis_type)   
             
             cont_penalty = torch.sqrt(torch.sum(torch.square(u.diff_pt(u.unwrap(predicted_phase), device = my_device, dtype = my_dtype))))
             print("phase's variation MSE: {}.".format(cont_penalty))
