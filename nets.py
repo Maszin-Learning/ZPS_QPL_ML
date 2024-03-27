@@ -16,7 +16,7 @@ class network_0(nn.Module):
         self.output = output_size
         self.linear_1 = nn.Linear(input_size,n)
         #self.linear_2 = nn.Linear(n,n)
-        self.linear_3 = nn.Linear(740,output_size)
+        self.linear_3 = nn.Linear(360,output_size)
         self.sigmoid = nn.Sigmoid()
         self.leakyrelu=nn.LeakyReLU(1, inplace=True)
         
@@ -35,7 +35,7 @@ class network_0(nn.Module):
                     stride=2,
                     padding=2)
         
-        self.linear_01 = nn.Linear(n,788)
+        self.linear_01 = nn.Linear(n,output_size)
 
     def forward(self,x):
         x = torch.unsqueeze(x, 1)

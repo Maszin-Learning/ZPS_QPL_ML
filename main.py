@@ -206,7 +206,7 @@ def main(_learning_rate,
                                 device = my_device,
                                 dtype = np.float32,
                                 target_type = _test_signal,
-                                target_metadata = [500, 150, bandwidth[0], bandwidth[1]]
+                                target_metadata = [500, 150, bandwidth[0], bandwidth[1]] #czemu do cholery jak zmienie na center i width to przestaje się uczyć XDDD
                                 )
 
         the_generator.generate_and_save()
