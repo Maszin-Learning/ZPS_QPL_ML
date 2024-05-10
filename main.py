@@ -86,6 +86,10 @@ def main(_learning_rate,
         from nets import network_11 as network
     if _net_architecture == 'network_12':
         from nets import network_12 as network
+    if _net_architecture == 'network_13':
+        from nets import network_13 as network
+    if _net_architecture == 'network_14':
+        from nets import network_14 as network
 
     # Choose device, disclaimer! on cpu network will not run due to batch normalization
 
@@ -159,7 +163,7 @@ def main(_learning_rate,
 
     # we want to find what is the bandwidth of intensity after FT, to estimate output dimension of NN
 
-    trash_fraction = 0.005 # percent of FT transformed to be cut off - it will contribute to the noise
+    trash_fraction = 0.01 # percent of FT transformed to be cut off - it will contribute to the noise
 
     long_pulse.inv_fourier()
     fwhm_init_F = u.comp_FWHM(u.comp_std(initial_pulse.inv_fourier(inplace = False).X, initial_pulse.inv_fourier(inplace = False).Y))
@@ -247,7 +251,7 @@ def main(_learning_rate,
     if _criterion =='L1':
         criterion = torch.nn.L1Loss()
     if _criterion =='MSEsmooth':
-        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.8)
+        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.7)
     if _criterion =='MSEsmooth2':
         criterion = MSEsmooth2(device = my_device, dtype = my_dtype, c_factor = 0.5, s_factor = 0.5)
     
@@ -299,25 +303,15 @@ def main(_learning_rate,
             model.eval()
 
             print("Epoch no. {}. Loss {}.".format(epoch, np.mean(np.array(loss_list[epoch*len(dataloader_train): (epoch+1)*len(dataloader_train)]))))
-            # fig, test_loss = test(model = model,
-            #         test_pulse = test_pulse,
-            #         test_phase = test_phase,
-            #         initial_pulse = initial_intensity,
-            #         device = my_device, 
-            #         dtype = my_dtype,
-            #         iter_num = epoch,
-            #         save = True,
-            #         x_type = _axis_type)
-            
-            fig, test_loss = reverse_transformation(model = model,
+            fig, test_loss = test(model = model,
                     test_pulse = test_pulse,
                     test_phase = test_phase,
-                    initial_pulse = long_pulse_2.copy(),
+                    initial_pulse = initial_intensity,
                     device = my_device, 
                     dtype = my_dtype,
                     iter_num = epoch,
                     save = True,
-                    x_type = _axis_type)   
+                    x_type = _axis_type) 
             
             cont_penalty = torch.sqrt(torch.sum(torch.square(u.diff_pt(u.unwrap(predicted_phase), device = my_device, dtype = my_dtype))))
             print("phase's variation MSE: {}.".format(cont_penalty))
