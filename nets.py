@@ -48,7 +48,7 @@ class network_0(nn.Module):
         x = torch.flatten(x, start_dim=1, end_dim=-1)
         x = self.linear_3(x)
         #x = self.normal_3(x)
-        x = torch.squeeze(x+ torch.squeeze(x_0))
+        x = torch.squeeze(x+ 1*torch.squeeze(x_0))
         return self.sigmoid(x)* np.pi*2
     
     

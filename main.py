@@ -122,7 +122,7 @@ def main(_learning_rate,
     # initial pulse (that is to be transformed by some phase)
 
     input_dim = 5000    # number of points in a single pulse
-    zeroes_num = 2500   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
+    zeroes_num = 7500   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
 
     bandwidth = [0, 1000]
     centre = 500
@@ -159,7 +159,7 @@ def main(_learning_rate,
 
     # we want to find what is the bandwidth of intensity after FT, to estimate output dimension of NN
 
-    trash_fraction = 0.005 # percent of FT transformed to be cut off - it will contribute to the noise
+    trash_fraction = 0.0075 # percent of FT transformed to be cut off - it will contribute to the noise
 
     long_pulse.inv_fourier()
     fwhm_init_F = u.comp_FWHM(u.comp_std(initial_pulse.inv_fourier(inplace = False).X, initial_pulse.inv_fourier(inplace = False).Y))
@@ -247,7 +247,7 @@ def main(_learning_rate,
     if _criterion =='L1':
         criterion = torch.nn.L1Loss()
     if _criterion =='MSEsmooth':
-        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.7)
+        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 2)
     if _criterion =='MSEsmooth2':
         criterion = MSEsmooth2(device = my_device, dtype = my_dtype, c_factor = 0.5, s_factor = 0.5)
     
