@@ -160,8 +160,7 @@ class Generator():
             intensity = evolve_np(intensity, phase_significant, dtype = self.dtype)
 
         elif self.target_type == "exponential":
-            parameter = np.random.uniform(1, 20)
-            intensity = np.flip(np.exp(np.linspace(-10, parameter, self.intensity_len)) - np.exp(-10))
+            intensity = np.flip(np.exp(np.linspace(-3, 3, self.intensity_len)) - np.exp(-3))
 
             for i in range(0, floor(len(intensity)*1/3)):
                 intensity[i] = 0

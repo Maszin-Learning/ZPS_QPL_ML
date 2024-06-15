@@ -158,14 +158,14 @@ def reverse_transformation(model, test_pulse, initial_pulse, device, dtype, save
         ax4.scatter(FT_X[idx_start: idx_end] + 375, 
                     reconstructed_phase, 
                     s = 1, 
-                    color = "red",
+                    color = "firebrick",
                     zorder = 10)
         
     elif x_type == "wl":
         ax4.scatter(wl_to_freq(FT_X[idx_start: idx_end] + 375), 
                     np.flip(reconstructed_phase), 
                     s = 1, 
-                    color = "red",
+                    color = "firebrick",
                     zorder = 10)
         
     else:
@@ -272,12 +272,12 @@ def test(model,
     # just for the legend
 
     x_far_away = 2*initial_pulse_short.X[plot_to]
-    plt.plot([x_far_away],[0], color = "blue")
-    plt.plot([x_far_away],[0], color = "firebrick")
-    plt.plot([x_far_away],[0], color = "green")
-    plt.plot([x_far_away],[0], color = "skyblue")   
-    plt.plot([x_far_away],[0], color = "lightcoral")
-    plt.legend(["Initial intensity", "Transformed intensity", "Target intensity", "Initial phase", "Phase of transformed spectrum"], 
+    plt.plot([x_far_away],[0], color = "blue", lw = 2)
+    plt.plot([x_far_away],[0], color = "red", lw = 2)
+    plt.plot([x_far_away],[0], color = "green", lw = 6, alpha = 0.5)
+    #plt.plot([x_far_away],[0], color = "skyblue")   
+    plt.plot([x_far_away],[0], color = "lightcoral", lw = 2, linestyle = "dashed")
+    plt.legend(["Initial intensity", "Transformed intensity", "Target intensity", "Phase of transformed spectrum"], 
                bbox_to_anchor = [1.2, -0.12], ncol = 2)
 
     # constant to normalize the time plot
@@ -290,17 +290,20 @@ def test(model,
     plt.plot(initial_pulse_short.X[plot_from:plot_to], 
                 np.abs(initial_pulse_short.Y[plot_from:plot_to])/norm_const, 
                 color = "blue", 
-                zorder = 5)
+                zorder = 5,
+                lw = 2)
     
     # target intensity
     plt.plot(initial_pulse_short.X[plot_from:plot_to], 
                     np.abs(np.reshape(test_pulse.clone().cpu().detach().numpy(), input_dim))[plot_from:plot_to]/norm_const, 
-                    color = "green")
+                    color = "green",
+                    lw = 6,
+                    alpha = 0.5)
     
     # transformed intensity
     plt.scatter(initial_pulse_short.X[plot_from:plot_to], 
             np.abs(np.reshape(reconstructed.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to])/norm_const, 
-            color = "firebrick", 
+            color = "red", 
             s = 0.25,
             zorder = 10)
     
@@ -321,13 +324,13 @@ def test(model,
     ax2 = ax.twinx()
 
     # initial temporal phase
-
+    '''
     ax2.plot(initial_pulse_short.X[left_idx: right_idx], 
             np.unwrap((np.angle(initial_pulse_short.Y[left_idx: right_idx]))), 
             color = "skyblue",
             lw = 1,
             zorder = 0)
-    
+    '''
     # temporal phase
 
     reconstr_spectrum = sa.spectrum(initial_pulse_short.X[plot_from:plot_to], np.abs(np.reshape(reconstructed.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to])/norm_const, "time", "intensity")
@@ -340,11 +343,12 @@ def test(model,
     ax2.plot(initial_pulse_short.X[left_idx_2: right_idx_2], 
             np.unwrap(np.reshape(temporal_phase.clone().cpu().detach().numpy(), input_dim)[left_idx_2:right_idx_2]), 
             color = "lightcoral",
-            lw = 1,
-            zorder = 0)
+            lw = 2,
+            zorder = 0,
+            linestyle = "dashed")
     
     #ax2.legend(["Phase of transformed spectrum"], bbox_to_anchor = [0.721, -0.25])
-    ax2.set_ylabel("Temporal phase (rad)")
+    ax2.set_ylabel("Temporal phase")
     
     # second plot in frequency
 
@@ -366,12 +370,11 @@ def test(model,
 
     plt.fill_between([500], 
                      [0],
-                     color = 'orange',
-                     alpha = 0.5)
+                     color = 'orange')
     plt.plot([500], 
              [0],
-             lw = 1, 
-             color = "red",
+             lw = 2, 
+             color = "firebrick",
              zorder = 10)
     plt.legend(["FT initial intensity", "Transforming phase (rad)"], bbox_to_anchor = [0.665, -0.12])
 
@@ -399,14 +402,12 @@ def test(model,
     if x_type == "freq":
         plt.fill_between(FT_X[idx_start: idx_end] + 375, 
                             np.abs(FT_Y[idx_start: idx_end]),
-                            color='orange',
-                            alpha = 0.5)
+                            color='orange')
         
     elif x_type == "wl":
         plt.fill_between(freq_to_wl(FT_X[idx_start: idx_end] + 375), 
                     np.flip(np.abs(FT_Y[idx_start: idx_end])),
-                    color='orange',
-                    alpha = 0.5)
+                    color='orange')
         
     else:
         raise Exception("x_type must be either \"wl\" or \"freq\"")
@@ -419,15 +420,15 @@ def test(model,
     if x_type == "freq":
         ax4.plot(FT_X[idx_start: idx_end] + 375, 
                     reconstructed_phase, 
-                    lw = 1, 
-                    color = "red",
+                    lw = 2, 
+                    color = "firebrick",
                     zorder = 10)
         
     elif x_type == "wl":
         ax4.plot(wl_to_freq(FT_X[idx_start: idx_end] + 375), 
                     np.flip(reconstructed_phase), 
-                    lw = 1, 
-                    color = "red",
+                    lw = 2, 
+                    color = "firebrick",
                     zorder = 10)
         
     else:
@@ -440,7 +441,7 @@ def test(model,
     if save:
         if not os.path.isdir("pics"):
             os.mkdir("pics")
-        plt.savefig("pics/reconstructed_{}.jpg".format(iter_num), bbox_inches = "tight", dpi = 200)
+        plt.savefig("pics/reconstructed_{}.svg".format(iter_num), bbox_inches = "tight", dpi = 200)
 
     return plt, mse(test_pulse.abs(), reconstructed.abs()).clone().cpu().detach().numpy()
     
@@ -530,7 +531,7 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
         exp_intensity = exp_intensity / np.sqrt(np.sum(exp_intensity*np.conjugate(exp_intensity)))
         exp_intensity = exp_intensity * np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
 
-        exp_intensity = shift_to_centre(exp_intensity, initial_pulse.Y)
+        #exp_intensity = shift_to_centre(exp_intensity, initial_pulse.Y)
         test_pulse_ = np_to_complex_pt(exp_intensity, device = device, dtype = dtype)
         test_phase_ = None
 
@@ -538,14 +539,14 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
         test_pulse_ = sa.hermitian_pulse(pol_num = 0,
                                     bandwidth = (initial_pulse.X[0], initial_pulse.X[-1]),
                                     centre = 500,
-                                    FWHM = 150,
+                                    FWHM = 200,
                                     num = len(initial_pulse),
                                     x_type = "time")
 
         test_pulse_.Y = test_pulse_.Y / np.sqrt(np.sum(test_pulse_.Y*np.conjugate(test_pulse_.Y)))
         test_pulse_.Y = test_pulse_.Y * np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
 
-        test_pulse_.very_smart_shift(test_pulse_.comp_center(norm = "L2")-initial_pulse.comp_center(norm = "L2"))
+        test_pulse_.smart_shift(-test_pulse_.comp_center(norm = "L2")+initial_pulse.comp_center(norm = "L2"))
         test_pulse_ = np_to_complex_pt(test_pulse_.Y, device = device, dtype = dtype)
         test_phase_ = None
 
@@ -584,7 +585,7 @@ def create_initial_pulse(bandwidth, centre, FWHM, num, pulse_type):
 
         X = np.linspace(bandwidth[0], bandwidth[1], num)
         spectrum_out = sa.spectrum(X = X, Y = Y, x_type ="time", y_type ="intensity")
-        spectrum_out.very_smart_shift(centre-(bandwidth[1]+bandwidth[0])/2, inplace = True)
+        spectrum_out.smart_shift(100, inplace = True)
         spectrum_out.Y = np.abs(spectrum_out.Y)
         return spectrum_out
     

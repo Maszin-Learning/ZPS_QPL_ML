@@ -122,7 +122,7 @@ def main(_learning_rate,
     # initial pulse (that is to be transformed by some phase)
 
     input_dim = 5000    # number of points in a single pulse
-    zeroes_num = 5000   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
+    zeroes_num = 2500   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
 
     bandwidth = [0, 1000]
     centre = 500
@@ -145,14 +145,14 @@ def main(_learning_rate,
     
     # additional pulse to add to exp (gauss) so it makes it more physical
     signal_correction = create_initial_pulse(bandwidth = bandwidth,
-                                         centre = centre,
-                                         FWHM = width/50,
+                                         centre = 500,
+                                         FWHM = 2,
                                          num = long_pulse.Y.shape[0],
                                          pulse_type = 'gauss')
     
     
     
-    long_pulse_2 = long_pulse.copy()    
+    long_pulse_2 = long_pulse.copy()
     long_pulse_2.Y = np.convolve(long_pulse_2.Y, signal_correction.Y, mode='same')
     long_pulse_2.Y = long_pulse_2.Y / np.sqrt(np.sum(long_pulse_2.Y*np.conjugate(long_pulse_2.Y)))
     Y_initial = initial_pulse.Y.copy()
@@ -206,7 +206,7 @@ def main(_learning_rate,
                                 device = my_device,
                                 dtype = np.float32,
                                 target_type = _test_signal,
-                                target_metadata = [500, 150, bandwidth[0], bandwidth[1]] #czemu do cholery jak zmienie na center i width to przestaje się uczyć XDDD
+                                target_metadata = [500, 200, bandwidth[0], bandwidth[1]] #czemu do cholery jak zmienie na center i width to przestaje się uczyć XDDD
                                 )
 
         the_generator.generate_and_save()
@@ -247,7 +247,7 @@ def main(_learning_rate,
     if _criterion =='L1':
         criterion = torch.nn.L1Loss()
     if _criterion =='MSEsmooth':
-        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.8)
+        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.7)
     if _criterion =='MSEsmooth2':
         criterion = MSEsmooth2(device = my_device, dtype = my_dtype, c_factor = 0.5, s_factor = 0.5)
     
@@ -299,25 +299,25 @@ def main(_learning_rate,
             model.eval()
 
             print("Epoch no. {}. Loss {}.".format(epoch, np.mean(np.array(loss_list[epoch*len(dataloader_train): (epoch+1)*len(dataloader_train)]))))
-            # fig, test_loss = test(model = model,
-            #         test_pulse = test_pulse,
-            #         test_phase = test_phase,
-            #         initial_pulse = initial_intensity,
-            #         device = my_device, 
-            #         dtype = my_dtype,
-            #         iter_num = epoch,
-            #         save = True,
-            #         x_type = _axis_type)
-            
-            fig, test_loss = reverse_transformation(model = model,
+            fig, test_loss = test(model = model,
                     test_pulse = test_pulse,
                     test_phase = test_phase,
-                    initial_pulse = long_pulse_2.copy(),
+                    initial_pulse = initial_intensity,
                     device = my_device, 
                     dtype = my_dtype,
                     iter_num = epoch,
                     save = True,
-                    x_type = _axis_type)   
+                    x_type = _axis_type)
+            
+            # fig, test_loss = reverse_transformation(model = model,
+            #        test_pulse = test_pulse,
+            #        test_phase = test_phase,
+            #        initial_pulse = long_pulse_2.copy(),
+            #        device = my_device, 
+            #        dtype = my_dtype,
+            #        iter_num = epoch,
+            #        save = True,
+            #        x_type = _axis_type)   
             
             cont_penalty = torch.sqrt(torch.sum(torch.square(u.diff_pt(u.unwrap(predicted_phase), device = my_device, dtype = my_dtype))))
             print("phase's variation MSE: {}.".format(cont_penalty))

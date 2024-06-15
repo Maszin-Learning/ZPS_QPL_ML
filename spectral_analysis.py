@@ -1131,7 +1131,7 @@ def hermitian_pulse(pol_num, bandwidth, centre, FWHM, num = 1000, x_type = "freq
     Y_hermite = hermite_pol(2*(X-centre)/FWHM)
     Y_out = Y_hermite*Y_gauss
 
-    spectrum_out = spectrum(X, Y_out, "freq", "intensity")
+    spectrum_out = spectrum(X, Y_out, x_type, "intensity")
     spectrum_out.normalize(norm = "L2", shift_to_zero = False)
 
     return spectrum_out
