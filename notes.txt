@@ -1,0 +1,5 @@
+for a nice transformation exp -> gauss with network_0
+
+python main.py -is exponential -ts gauss -ar network_0 -nn 150 -cr MSEsmooth -pf 1 -tr -lr 5e-5 -ax wl -en 50
+zeroes_num 7500
+trash_fraction 0.0075
