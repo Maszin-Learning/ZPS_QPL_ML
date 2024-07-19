@@ -197,6 +197,27 @@ class network_11(nn.Module):
 
         return self.sigmoid(x)* np.pi*2
     
+class network_14(nn.Module):
+    def __init__(self, input_size, n, output_size):
+        # super function. It inherits from nn.Module and we can access everything in nn.Module
+        super(network_14, self).__init__()
+        self.input = input_size
+        self.output = output_size
+        self.linear_1 = nn.Linear(input_size,n)
+        #self.linear_2 = nn.Linear(n,n)
+        self.linear_3 = nn.Linear(input_size,output_size)
+        self.sigmoid = nn.Sigmoid()
+        self.leakyrelu=nn.LeakyReLU(1, inplace=True)
+        
+        self.normal_1 = nn.LayerNorm(input_size)
+        self.normal_3 = nn.LayerNorm(output_size)
+
+    def forward(self,x):
+        x = self.normal_1(x)
+        x = self.linear_3(x)
+
+        return self.sigmoid(x)* np.pi*2
+    
 class network_12(nn.Module):
     def __init__(self, input_size, n, output_size):
         # super function. It inherits from nn.Module and we can access everything in nn.Module

@@ -469,14 +469,16 @@ def create_test_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
         test_pulse_ = sa.hermitian_pulse(pol_num = 1,
                                         bandwidth = (initial_pulse.X[0], initial_pulse.X[-1]),
                                         centre = 500,
-                                        FWHM = 100,
+                                        FWHM = 250,
                                         num = len(initial_pulse),
                                     x_type = "time")
 
         test_pulse_.Y = test_pulse_.Y / np.sqrt(np.sum(test_pulse_.Y*np.conjugate(test_pulse_.Y)))
         test_pulse_.Y = test_pulse_.Y * np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
         
-        test_pulse_.very_smart_shift(test_pulse_.comp_center(norm = "L2")-initial_pulse.comp_center(norm = "L2"))
+        #test_pulse_.very_smart_shift(test_pulse_.comp_center(norm = "L2")-initial_pulse.comp_center(norm = "L2"))
+        test_pulse_.Y = shift_to_centre(intensity_to_shift = test_pulse_.Y,
+                            intensity_ref = initial_pulse.Y)
         test_pulse_ = np_to_complex_pt(test_pulse_.Y, device = device, dtype = dtype)
         test_phase_ = None
 

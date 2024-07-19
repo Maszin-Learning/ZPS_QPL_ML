@@ -174,10 +174,10 @@ class Generator():
             correction = 0#np.random.uniform(-0.4, 0.4)
 
             intensity = sa.hermitian_pulse(pol_num = 1,
-                                           bandwidth = [190, 196],
-                                           centre = 193,
-                                           FWHM = 1 + correction,
-                                           num = len(intensity)).Y
+                                bandwidth = [self.target_metadata[2], self.target_metadata[3]],
+                                centre = self.target_metadata[0],
+                                FWHM = self.target_metadata[1] + correction,
+                                num = len(intensity)).Y
             
             intensity = intensity / np.sqrt(np.sum(intensity*np.conjugate(intensity)))
             intensity = intensity * np.sqrt(np.sum(self.initial_intensity*np.conjugate(self.initial_intensity)))

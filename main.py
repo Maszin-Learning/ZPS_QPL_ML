@@ -86,6 +86,8 @@ def main(_learning_rate,
         from nets import network_11 as network
     if _net_architecture == 'network_12':
         from nets import network_12 as network
+    if _net_architecture == 'network_14':
+        from nets import network_14 as network
 
     # Choose device, disclaimer! on cpu network will not run due to batch normalization
 
@@ -122,7 +124,7 @@ def main(_learning_rate,
     # initial pulse (that is to be transformed by some phase)
 
     input_dim = 5000    # number of points in a single pulse
-    zeroes_num = 7500   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
+    zeroes_num = 5000   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
 
     bandwidth = [0, 1000]
     centre = 500
@@ -146,7 +148,7 @@ def main(_learning_rate,
     # additional pulse to add to exp (gauss) so it makes it more physical
     signal_correction = create_initial_pulse(bandwidth = bandwidth,
                                          centre = 500,
-                                         FWHM = 2,
+                                         FWHM = 3,
                                          num = long_pulse.Y.shape[0],
                                          pulse_type = 'gauss')
     
@@ -159,7 +161,7 @@ def main(_learning_rate,
 
     # we want to find what is the bandwidth of intensity after FT, to estimate output dimension of NN
 
-    trash_fraction = 0.0075 # percent of FT transformed to be cut off - it will contribute to the noise
+    trash_fraction = 0.02 # percent of FT transformed to be cut off - it will contribute to the noise
 
     long_pulse.inv_fourier()
     fwhm_init_F = u.comp_FWHM(u.comp_std(initial_pulse.inv_fourier(inplace = False).X, initial_pulse.inv_fourier(inplace = False).Y))
@@ -185,7 +187,7 @@ def main(_learning_rate,
     # test pulse
 
     test_pulse, test_phase = create_test_pulse(_test_signal, initial_pulse, output_dim, my_device, my_dtype)
-    #test_pulse = test_pulse * 1.10
+    test_pulse = test_pulse * 0.94
     fwhm_test = u.comp_FWHM(u.comp_std(initial_pulse.X.copy(), test_pulse.clone().detach().cpu().numpy().ravel()))
     print("\nTime-bandwidth product of the transformation from the initial pulse to the test pulse is equal to {}.\n".format(round(fwhm_test*fwhm_init_F/2, 5)))   # WARNING: This "/2" is just empirical correction
     if fwhm_test*fwhm_init_F/2 < 0.44:
@@ -247,7 +249,8 @@ def main(_learning_rate,
     if _criterion =='L1':
         criterion = torch.nn.L1Loss()
     if _criterion =='MSEsmooth':
-        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 2)
+        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.9
+                              )
     if _criterion =='MSEsmooth2':
         criterion = MSEsmooth2(device = my_device, dtype = my_dtype, c_factor = 0.5, s_factor = 0.5)
     
