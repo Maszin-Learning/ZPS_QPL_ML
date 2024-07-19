@@ -501,3 +501,62 @@ class network_9(nn.Module): #do not work on cpu
         
         x = torch.squeeze(x)
         return self.sigmoid(x)* np.pi*2
+
+class network_double(nn.Module):
+    def __init__(self, input_size, n, output_size_spectr, output_size_temp):
+        # super function. It inherits from nn.Module and we can access everything in nn.Module
+        super(network_double, self).__init__()
+        self.input = input_size
+        self.output_s = output_size_spectr
+        self.output_t = output_size_temp
+
+        self.linear_1 = nn.Linear(input_size, n)
+        #self.linear_2 = nn.Linear(n,n)
+        self.linear_3_s = nn.Linear(360, self.output_s)
+        self.linear_3_t = nn.Linear(360, self.output_t)
+
+        self.sigmoid = nn.Sigmoid()
+        self.leakyrelu=nn.LeakyReLU(1, inplace=True)
+        
+        self.normal_1 = nn.LayerNorm(input_size)
+        self.normal_3_s = nn.LayerNorm(self.output_s)
+        self.normal_3_t = nn.LayerNorm(self.output_t)
+        
+        self.conv1d_1 = nn.Conv1d(in_channels=1,
+                            out_channels=20,
+                            kernel_size=20,
+                            stride=4,
+                            padding=5)
+        
+        self.conv1d_2 = nn.Conv1d(in_channels=20,
+                    out_channels=20,
+                    kernel_size=5,
+                    stride=2,
+                    padding=2)
+        
+        self.linear_01_s = nn.Linear(n, self.output_s)
+        self.linear_01_t = nn.Linear(n, self.output_t)
+
+
+    def forward(self, input):
+        s = torch.unsqueeze(input, 1)
+        s = self.normal_1(s)
+        s = self.leakyrelu(self.linear_1(s))
+        s_0 = self.leakyrelu(self.linear_01_s(s))
+        s = self.sigmoid(self.conv1d_1(s))
+        s = self.sigmoid(self.conv1d_2(s))
+        s = torch.flatten(s, start_dim=1, end_dim=-1)
+        s = self.linear_3_s(s)
+        s = torch.squeeze(s + 1*torch.squeeze(s_0))
+
+        t = torch.unsqueeze(input, 1)
+        t = self.normal_1(t)
+        t = self.leakyrelu(self.linear_1(t))
+        t_0 = self.leakyrelu(self.linear_01_t(t))
+        t = self.sigmoid(self.conv1d_1(t))
+        t = self.sigmoid(self.conv1d_2(t))
+        t = torch.flatten(t, start_dim=1, end_dim=-1)
+        t = self.linear_3_t(t)
+        t = torch.squeeze(t + 1*torch.squeeze(t_0))
+
+        return (self.sigmoid(s)*2*np.pi, self.sigmoid(t)*2*np.pi)

@@ -88,6 +88,8 @@ def main(_learning_rate,
         from nets import network_12 as network
     if _net_architecture == 'network_14':
         from nets import network_14 as network
+    if _net_architecture == 'network_double':
+        from nets import network_double as network
 
     # Choose device, disclaimer! on cpu network will not run due to batch normalization
 
@@ -124,7 +126,7 @@ def main(_learning_rate,
     # initial pulse (that is to be transformed by some phase)
 
     input_dim = 5000    # number of points in a single pulse
-    zeroes_num = 5000   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
+    zeroes_num = 10000   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
 
     bandwidth = [0, 1000]
     centre = 500
@@ -187,7 +189,7 @@ def main(_learning_rate,
     # test pulse
 
     test_pulse, test_phase = create_test_pulse(_test_signal, initial_pulse, output_dim, my_device, my_dtype)
-    test_pulse = test_pulse * 0.94
+    test_pulse = test_pulse * 0.97
     fwhm_test = u.comp_FWHM(u.comp_std(initial_pulse.X.copy(), test_pulse.clone().detach().cpu().numpy().ravel()))
     print("\nTime-bandwidth product of the transformation from the initial pulse to the test pulse is equal to {}.\n".format(round(fwhm_test*fwhm_init_F/2, 5)))   # WARNING: This "/2" is just empirical correction
     if fwhm_test*fwhm_init_F/2 < 0.44:
@@ -226,7 +228,9 @@ def main(_learning_rate,
 
     model = network(input_size = input_dim, 
                 n = _node_number, 
-                output_size = output_dim)
+                output_size_spectr = output_dim, 
+                output_size_temp = output_dim)
+    
     model.to(device = my_device, dtype = my_dtype)
 
     print("Model parameters: {}\n".format(utilities.count_parameters(model)))
@@ -278,14 +282,17 @@ def main(_learning_rate,
 
             # pulse = pulse.to(my_device) # the pulse is already created on device by dataset, uncomment if not using designated dataset for this problem
             
-            predicted_phase = model(pulse)
+            output = model(pulse)
+            reconstructed_intensity = u.complex_intensity(initial_intensity_pt, output[1], device = my_device, dtype = my_dtype)
 
             # transform gauss into something using this phase
-            reconstructed_intensity = u.evolve_pt(initial_intensity_pt, predicted_phase, device = my_device, dtype = my_dtype)
+            #reconstructed_intensity = u.evolve_pt(initial_intensity_pt, output[0], device = my_device, dtype = my_dtype)
 
             # calculating back-propagation
             if _criterion == "MSEsmooth" or _criterion == "MSEsmooth2":
-                loss = criterion((predicted_phase, reconstructed_intensity.abs()[:,zeroes_num: input_dim + zeroes_num]), pulse)
+                loss_1 = criterion((output[0], reconstructed_intensity.abs()[:,zeroes_num: input_dim + zeroes_num]), pulse)
+                loss_2 = criterion((output[1], reconstructed_intensity.abs()[:,zeroes_num: input_dim + zeroes_num]), pulse)
+                loss = loss_1 + loss_2
             else:
                 loss = criterion(reconstructed_intensity.abs()[:,zeroes_num: input_dim + zeroes_num], pulse) # pulse intensity
             
@@ -312,15 +319,6 @@ def main(_learning_rate,
                     save = True,
                     x_type = _axis_type)
             
-            # fig, test_loss = reverse_transformation(model = model,
-            #        test_pulse = test_pulse,
-            #        test_phase = test_phase,
-            #        initial_pulse = long_pulse_2.copy(),
-            #        device = my_device, 
-            #        dtype = my_dtype,
-            #        iter_num = epoch,
-            #        save = True,
-            #        x_type = _axis_type)   
             
             cont_penalty = torch.sqrt(torch.sum(torch.square(u.diff_pt(u.unwrap(predicted_phase), device = my_device, dtype = my_dtype))))
             print("phase's variation MSE: {}.".format(cont_penalty))
