@@ -23,7 +23,7 @@ import argparse
 import wandb
 import shutil
 import warnings
-from utilities import MSEsmooth, MSEsmooth2
+from utilities import MSEsmooth, MSEsmooth2, TwoSmooth
 
 def main(_learning_rate,
          _epoch_num,
@@ -253,10 +253,11 @@ def main(_learning_rate,
     if _criterion =='L1':
         criterion = torch.nn.L1Loss()
     if _criterion =='MSEsmooth':
-        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.9
-                              )
+        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.9)
     if _criterion =='MSEsmooth2':
         criterion = MSEsmooth2(device = my_device, dtype = my_dtype, c_factor = 0.5, s_factor = 0.5)
+    if _criterion =='TwoSmooth':
+        criterion = TwoSmooth(device = my_device, dtype = my_dtype, c_factor = 0.1)
     
     # create dataset and dataloader
     
@@ -293,6 +294,10 @@ def main(_learning_rate,
                 loss_1 = criterion((output[0], reconstructed_intensity.abs()[:,zeroes_num: input_dim + zeroes_num]), pulse)
                 loss_2 = criterion((output[1], reconstructed_intensity.abs()[:,zeroes_num: input_dim + zeroes_num]), pulse)
                 loss = loss_1 + loss_2
+
+            if _criterion == "TwoSmooth":
+                loss = criterion((output[0], output[1], reconstructed_intensity.abs()[:,zeroes_num: input_dim + zeroes_num]), pulse)
+            
             else:
                 loss = criterion(reconstructed_intensity.abs()[:,zeroes_num: input_dim + zeroes_num], pulse) # pulse intensity
             
@@ -308,7 +313,7 @@ def main(_learning_rate,
         if epoch%_plot_freq == 0: # plot and test model
             model.eval()
 
-            print("Epoch no. {}. Loss {}.".format(epoch, np.mean(np.array(loss_list[epoch*len(dataloader_train): (epoch+1)*len(dataloader_train)]))))
+            print("Epoch no. {}. MSE {}.".format(epoch, np.mean(np.array(loss_list[epoch*len(dataloader_train): (epoch+1)*len(dataloader_train)]))))
             fig, test_loss = test(model = model,
                     test_pulse = test_pulse,
                     test_phase = test_phase,
@@ -320,8 +325,10 @@ def main(_learning_rate,
                     x_type = _axis_type)
             
             
-            cont_penalty = torch.sqrt(torch.sum(torch.square(u.diff_pt(u.unwrap(predicted_phase), device = my_device, dtype = my_dtype))))
-            print("phase's variation MSE: {}.".format(cont_penalty))
+            sp_cont_penalty = torch.sqrt(torch.sum(torch.square(u.diff_pt(u.unwrap(output[0]), device = my_device, dtype = my_dtype))))
+            print("Spectral phase's variation MSE: {}.".format(sp_cont_penalty))
+            tp_cont_penalty = torch.sqrt(torch.sum(torch.square(u.diff_pt(u.unwrap(output[1]), device = my_device, dtype = my_dtype))))
+            print("Temporal phase's variation MSE: {}.".format(tp_cont_penalty))
 
             if test_loss < test_loss_global:
                 # shutil.rmtree(model_save_PATH_dir)
@@ -329,7 +336,7 @@ def main(_learning_rate,
                 torch.save(model.state_dict(), os.path.join(model_save_PATH_dir, f'{_net_architecture}_ep{epoch}.pt'))
             test_loss_global = test_loss
             wandb.log({"chart": fig})
-            print('test_loss',test_loss)
+            #print('test_loss',test_loss)
             wandb.log({"test_loss": test_loss})
             fig.close()
 
@@ -347,7 +354,7 @@ def main(_learning_rate,
                 fig.close()
 
             wandb.log({"test_set_loss": np.mean(test_set_losses)})
-            print('test_set_loss', np.mean(test_set_losses))
+            #print('test_set_loss', np.mean(test_set_losses))
 
             model.train()
 

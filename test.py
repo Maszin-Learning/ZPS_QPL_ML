@@ -240,7 +240,7 @@ def test(model,
     mse = MSELoss()
 
     input_dim = model.input
-    output_dim = model.output
+    output_dim = model.output_s
     spectrum_len = len(initial_pulse)
     zeros_num = floor((spectrum_len - input_dim)/2)
 
@@ -251,16 +251,16 @@ def test(model,
 
     # generate test chirp pulse
 
-    test_phase_pred = model(test_pulse.abs())
-    test_phase_pred = test_phase_pred.reshape([output_dim])
+    spectral_phase, temporal_phase = model(test_pulse.abs())
+    spectral_phase = spectral_phase.reshape([output_dim])
 
     # evolve
 
     initial_intensity = np_to_complex_pt(np.abs(initial_pulse.Y.copy()), device = device, dtype = dtype)
-
-    test_intensity = evolve_pt(initial_intensity, test_phase_pred, device = device, dtype = dtype, abs = False)
+    test_intensity = complex_intensity(initial_intensity, temporal_phase, device = device, dtype = dtype)
+    test_intensity = evolve_pt(initial_intensity, spectral_phase, device = device, dtype = dtype, abs = False)
     reconstructed = test_intensity.abs()[:, zeros_num: zeros_num+input_dim]
-    temporal_phase = torch.angle(test_intensity)[:, zeros_num: zeros_num+input_dim]
+    end_phase = torch.angle(test_intensity)[:, zeros_num: zeros_num+input_dim]
     
     # create plots
 
@@ -275,9 +275,9 @@ def test(model,
     plt.plot([x_far_away],[0], color = "blue", lw = 2)
     plt.plot([x_far_away],[0], color = "red", lw = 2)
     plt.plot([x_far_away],[0], color = "green", lw = 6, alpha = 0.5)
-    #plt.plot([x_far_away],[0], color = "skyblue")   
+    plt.plot([x_far_away],[0], color = "skyblue")   
     plt.plot([x_far_away],[0], color = "lightcoral", lw = 2, linestyle = "dashed")
-    plt.legend(["Initial intensity", "Transformed intensity", "Target intensity", "Phase of transformed spectrum"], 
+    plt.legend(["Initial intensity", "Transformed intensity", "Target intensity", "Found temporal phase", "Resulting temporal phase"], 
                bbox_to_anchor = [1.2, -0.12], ncol = 2)
 
     # constant to normalize the time plot
@@ -324,13 +324,14 @@ def test(model,
     ax2 = ax.twinx()
 
     # initial temporal phase
-    '''
-    ax2.plot(initial_pulse_short.X[left_idx: right_idx], 
-            np.unwrap((np.angle(initial_pulse_short.Y[left_idx: right_idx]))), 
+    
+    ax2.plot(initial_pulse.X[floor(len(initial_pulse)-len(temporal_phase)):floor(len(initial_pulse)+len(temporal_phase))], 
+            np.unwrap(temporal_phase.clone().cpu().detach().numpy()), 
             color = "skyblue",
             lw = 1,
-            zorder = 0)
-    '''
+            zorder = 0,
+            linestyle = "dashed")
+    
     # temporal phase
 
     reconstr_spectrum = sa.spectrum(initial_pulse_short.X[plot_from:plot_to], np.abs(np.reshape(reconstructed.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to])/norm_const, "time", "intensity")
@@ -341,7 +342,7 @@ def test(model,
     right_idx_2 = np.searchsorted(reconstr_spectrum.X, right_2)
 
     ax2.plot(initial_pulse_short.X[left_idx_2: right_idx_2], 
-            np.unwrap(np.reshape(temporal_phase.clone().cpu().detach().numpy(), input_dim)[left_idx_2:right_idx_2]), 
+            np.unwrap(np.reshape(end_phase.clone().cpu().detach().numpy(), input_dim)[left_idx_2:right_idx_2]), 
             color = "lightcoral",
             lw = 2,
             zorder = 0,
@@ -380,7 +381,7 @@ def test(model,
 
     # preprocessing
 
-    reconstructed_phase = np.unwrap(test_phase_pred.clone().cpu().detach().numpy().reshape(output_dim))
+    reconstructed_phase = np.unwrap(spectral_phase.clone().cpu().detach().numpy().reshape(output_dim))
     reconstructed_phase -= reconstructed_phase[floor(output_dim/2)]
 
     idx_start = floor(zeros_num + input_dim/2 - output_dim/2)

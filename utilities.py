@@ -100,6 +100,47 @@ def evolve_pt(intensity, phase, device, dtype, abs = True):
     else:
         return compl_intensity
     
+
+def multiply_np(intensity, phase, dtype, abs = True):
+
+    input_dim = intensity.shape[-1]
+    output_dim = phase.shape[-1]
+    
+    zeroes_shape = np.array(phase.shape)
+    zeroes_shape[-1] = floor((input_dim-output_dim)/2)
+    zeroes_shape = tuple(zeroes_shape)
+    long_phase = np.concatenate([np.zeros(shape = zeroes_shape, dtype = dtype), 
+                          phase,
+                          np.zeros(shape = zeroes_shape, dtype = dtype)], axis=phase.ndim-1)
+    
+    complex_intensity = intensity*np.exp(1j*long_phase)
+
+    if abs:
+        return np.abs(complex_intensity)
+    else:
+        return complex_intensity
+    
+
+def multiply_pt(intensity, phase, device, dtype, abs = True):
+
+    input_dim = intensity.shape[-1]
+    output_dim = phase.shape[-1]
+    
+    zeroes_shape = np.array(phase.shape)
+    zeroes_shape[-1] = floor((input_dim-output_dim)/2)
+    zeroes_shape = tuple(zeroes_shape)
+    long_phase = torch.concat([torch.zeros(size = zeroes_shape, requires_grad = True, device = device, dtype = dtype), 
+                          phase,
+                          torch.zeros(size = zeroes_shape, requires_grad = True, device = device, dtype = dtype)], dim=phase.ndim-1)
+    
+    compl_intensity = torch.mul(intensity, torch.exp(1j*long_phase))
+
+    if abs:
+        return compl_intensity.abs()
+    else:
+        return compl_intensity
+    
+    
 def complex_intensity(intensity, phase, device, dtype):
     '''
     Given Pytorch \"intensity\" and \"phase\", we want to multiply them with each other (exp of phase).
@@ -341,6 +382,36 @@ class MSEsmooth2(nn.modules.loss._Loss):
 
         return MSE_sum + cont_penalty + smooth_penalty
     
+
+class TwoSmooth(nn.modules.loss._Loss):
+    '''
+    Classical MSE loss function with penalty for rapid changes of the temporal and spectral phase.
+    \"c_factor\" denotes ratio of the penalty to the MSE.
+    '''
+    
+    def __init__(self, device, dtype, c_factor = 0.6):
+        super(TwoSmooth, self).__init__()
+        self.c_factor = c_factor
+        self.device = device
+        self.dtype = dtype
+
+    def forward(self, results, target):
+
+        temporal_phase, spectr_phase_loss, pred_intensity = results
+
+        MSE_sum = torch.sum(torch.square(pred_intensity - target))
+
+        temp_phase_loss = torch.mean(torch.square(diff_pt(unwrap(temporal_phase), device = self.device, dtype = self.dtype)))
+        temp_phase_loss = temp_phase_loss/(temp_phase_loss.clone().detach())
+        temp_phase_loss = self.c_factor*temp_phase_loss*(MSE_sum.clone().detach())
+
+        spectr_phase_loss = torch.mean(torch.square(diff_pt(unwrap(spectr_phase_loss), device = self.device, dtype = self.dtype)))
+        spectr_phase_loss = spectr_phase_loss/(spectr_phase_loss.clone().detach())
+        spectr_phase_loss = self.c_factor*spectr_phase_loss*(MSE_sum.clone().detach())
+
+        return MSE_sum + temp_phase_loss + spectr_phase_loss
+    
+
 def unwrap(x):  
     x_1=0 
     for batch in range(x.shape[0]):              
