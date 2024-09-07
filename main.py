@@ -122,7 +122,7 @@ def main(_learning_rate,
     # initial pulse (that is to be transformed by some phase)
 
     input_dim = 5000    # number of points in a single pulse
-    zeroes_num = 7500   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
+    zeroes_num = 5000   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
 
     bandwidth = [0, 1000]
     centre = 500
@@ -247,7 +247,7 @@ def main(_learning_rate,
     if _criterion =='L1':
         criterion = torch.nn.L1Loss()
     if _criterion =='MSEsmooth':
-        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 2)
+        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.2)
     if _criterion =='MSEsmooth2':
         criterion = MSEsmooth2(device = my_device, dtype = my_dtype, c_factor = 0.5, s_factor = 0.5)
     
