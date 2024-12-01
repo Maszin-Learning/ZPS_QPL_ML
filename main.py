@@ -124,22 +124,25 @@ def main(_learning_rate,
     zeroes_num = 5000   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
 
     bandwidth = [0, 1000]
-    centre = 500
-    width = 100
+    centre_init = 500       # not used if initial signal is exponential
+    width_init = 100        # not used if initial signal is exponential
+
+    centre_target = 500     # centre of the target pulse defined in dataset_generator -> pulse_gen
+    width_target = 200      # centre of the target pulse defined in dataset_generator -> pulse_gen
+
+    convolution_width = 2   # width of the gaussian convolved with the main signal
 
     initial_pulse = create_initial_pulse(bandwidth = bandwidth,
-                                         centre = centre,
-                                         FWHM = width,
+                                         centre = centre_init,
+                                         FWHM = width_init,
                                          num = input_dim,
                                          pulse_type = _initial_signal)
     
-    # IMPORTANT: in order to change properties of the target pulse dive into
-
     # additional pulse to add to exp (gauss) so it makes it more physical
 
     signal_correction = create_initial_pulse(bandwidth = bandwidth,
-                                         centre = 500,
-                                         FWHM = 2,
+                                         centre = bandwidth[0]/2 + bandwidth[1]/2,
+                                         FWHM = convolution_width,
                                          num = input_dim,
                                          pulse_type = 'gauss')
     
@@ -191,7 +194,7 @@ def main(_learning_rate,
                                 device = my_device,
                                 dtype = np.float32,
                                 target_type = _target_signal,
-                                target_metadata = [500, 200, bandwidth[0], bandwidth[1]] #czemu do cholery jak zmienie na center i width to przestaje się uczyć XDDD
+                                target_metadata = [centre_target, width_target, bandwidth[0], bandwidth[1]] #czemu do cholery jak zmienie na center i width to przestaje się uczyć XDDD
                                 )
 
         the_generator.generate_and_save()
@@ -213,7 +216,7 @@ def main(_learning_rate,
     # target pulse
 
     target_pulse = dataset_train[0]
-    # target_pulse = target_pulse * 1.10
+    target_pulse = target_pulse*(1 + trash_fraction)
     fwhm_target = u.comp_FWHM(u.comp_std(initial_pulse.X.copy(), target_pulse.clone().detach().cpu().numpy().ravel()))
     print("\nTime-bandwidth product of the transformation from the initial pulse to the target pulse is equal to {}.\n".format(round(fwhm_target*fwhm_init_F/2, 5)))   # WARNING: This "/2" is just empirical correction
     if fwhm_target*fwhm_init_F/2 < 0.44:
