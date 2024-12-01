@@ -155,17 +155,12 @@ def plot_dataset(number, pulse, ft_pulse):
     for n in tqdm(range(len(plot_indices))):
         i = plot_indices[n]
 
-        phase = np.loadtxt("data/train_phase/" + phase_labels[i])
         intensity = np.loadtxt("data/train_intensity/" + intensity_labels[i])
-
-        pulse_safe.Y /= np.max(np.abs(pulse_safe.Y))
-        pulse_safe.Y *= np.max(np.abs(phase))
 
         plt.subplot(2, 1, 2)
         plt.fill_between(pulse_safe.X + 375, np.real(pulse_safe.Y), color = "orange", alpha = 0.4)
-        plt.scatter(pulse_safe.X + 375, np.real(phase), color = "red", s = 9)
         plt.grid()
-        plt.legend(["Spectral intensity", "Spectral phase"])
+        plt.legend(["Spectral intensity"])
         plt.title("Train phase")
         plt.xlabel("Frequency (THz)")
         plt.ylabel("Spectral phase (rad)")
@@ -341,16 +336,31 @@ class MSEsmooth2(nn.modules.loss._Loss):
 
         return MSE_sum + cont_penalty + smooth_penalty
     
-def unwrap(x):  
-    x_1=0 
-    for batch in range(x.shape[0]):              
+def unwrap(x):
+    ''''''
+    x_1 = 0
+    
+    if len(x.shape) == 1:
         for i in range(x.shape[-1]):
-            _x_1 = x[batch,i]
+            _x_1 = x[i]
             if _x_1 - x_1> np.pi:
-                x[batch,i] -=2*np.pi 
+                x[i] -=2*np.pi 
             if _x_1 - x_1< -np.pi:
-                x[batch,i] +=2*np.pi
+                x[i] +=2*np.pi
             x_1 = _x_1
+
+    elif len(x.shape) == 2:
+        for batch in range(x.shape[0]):              
+            for i in range(x.shape[-1]):
+                _x_1 = x[batch,i]
+                if _x_1 - x_1> np.pi:
+                    x[batch,i] -=2*np.pi 
+                if _x_1 - x_1< -np.pi:
+                    x[batch,i] +=2*np.pi
+                x_1 = _x_1
+
+    else:
+        raise Exception("The \"x\" has surprisingly many dimensions...")
     return x
 
 def clear_folder(name:str):
