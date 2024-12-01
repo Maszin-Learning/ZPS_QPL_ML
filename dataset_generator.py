@@ -35,10 +35,8 @@ class Generator():
             os.mkdir("data/train_phase")
 
         for example_num in tqdm(range(1, self.data_num + 1)):
-            intensity, phase = self.pulse_gen()
+            intensity = self.pulse_gen()
             np.savetxt("data/train_intensity/" + str(example_num) + ".csv", intensity)
-            np.savetxt("data/train_phase/" + str(example_num) + ".csv", phase)
-
 
     def phase_gen(self):
 
@@ -164,9 +162,6 @@ class Generator():
 
             for i in range(0, floor(len(intensity)*1/3)):
                 intensity[i] = 0
-            intensity = intensity / np.sqrt(np.sum(intensity*np.conjugate(intensity)))
-            intensity = intensity * np.sqrt(np.sum(self.initial_intensity*np.conjugate(self.initial_intensity)))
-            phase_significant = np.ones(self.phase_len)
 
         elif self.target_type == "hermite":
 
@@ -178,26 +173,17 @@ class Generator():
                                            centre = 193,
                                            FWHM = 1 + correction,
                                            num = len(intensity)).Y
-            
-            intensity = intensity / np.sqrt(np.sum(intensity*np.conjugate(intensity)))
-            intensity = intensity * np.sqrt(np.sum(self.initial_intensity*np.conjugate(self.initial_intensity)))
-            phase_significant = np.ones(self.phase_len)
 
         elif self.target_type == "gauss":
-            
-            correction = 0#np.random.uniform(-0.3, 0.3)
 
             intensity = sa.hermitian_pulse(pol_num = 0,
                                 bandwidth = [self.target_metadata[2], self.target_metadata[3]],
                                 centre = self.target_metadata[0],
-                                FWHM = self.target_metadata[1] + correction,
+                                FWHM = self.target_metadata[1],
                                 num = len(intensity)).Y
             
-            intensity = intensity / np.sqrt(np.sum(intensity*np.conjugate(intensity)))
-            intensity = intensity * np.sqrt(np.sum(self.initial_intensity*np.conjugate(self.initial_intensity)))
-            phase_significant = np.ones(self.phase_len)
-
+        intensity = intensity/np.sqrt(np.sum(intensity*np.conjugate(intensity)))
         intensity = shift_to_centre(intensity_to_shift = intensity,
                                     intensity_ref = self.initial_intensity)
-        
-        return np.abs(intensity), phase_significant ### phase_significant is now wrong up to the linear phase
+
+        return np.abs(intensity)

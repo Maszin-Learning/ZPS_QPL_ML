@@ -14,7 +14,7 @@ import utilities
 from dataset import Dataset
 from torch.utils.data import DataLoader #Dataloader module
 import torchaudio
-from test import create_test_pulse, reverse_transformation, test, create_test_set, create_initial_pulse
+from test import create_target_pulse, test, create_initial_pulse
 import torchvision.transforms as transforms  # Transformations and augmentations
 from dataset import Dataset_train
 from dataset_generator import Generator
@@ -36,7 +36,7 @@ def main(_learning_rate,
          _net_architecture,
          _criterion,
          _optimalizer,
-         _test_signal,
+         _target_signal,
          _initial_signal,
          _weight_decay,
          _axis_type):
@@ -54,7 +54,7 @@ def main(_learning_rate,
           'architecture:', _net_architecture, '\n',
           'criterion:', _criterion, '\n',
           'optimalizer:', _optimalizer, '\n',
-          'test_signal:', _test_signal, '\n',
+          'target_signal:', _target_signal, '\n',
           'initial_signal:', _initial_signal, '\n',
           'weight_decay:', _weight_decay, '\n',
           'axis_type:', _axis_type, '\n')
@@ -124,20 +124,25 @@ def main(_learning_rate,
     zeroes_num = 5000   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
 
     bandwidth = [0, 1000]
-    centre = 500
-    width = 100
+    centre_init = 500       # not used if initial signal is exponential
+    width_init = 100        # not used if initial signal is exponential
+
+    centre_target = 500     # centre of the target pulse defined in dataset_generator -> pulse_gen
+    width_target = 200      # centre of the target pulse defined in dataset_generator -> pulse_gen
+
+    convolution_width = 2   # width of the gaussian convolved with the main signal
 
     initial_pulse = create_initial_pulse(bandwidth = bandwidth,
-                                         centre = centre,
-                                         FWHM = width,
+                                         centre = centre_init,
+                                         FWHM = width_init,
                                          num = input_dim,
                                          pulse_type = _initial_signal)
-
+    
     # additional pulse to add to exp (gauss) so it makes it more physical
 
     signal_correction = create_initial_pulse(bandwidth = bandwidth,
-                                         centre = 500,
-                                         FWHM = 2,
+                                         centre = bandwidth[0]/2 + bandwidth[1]/2,
+                                         FWHM = convolution_width,
                                          num = input_dim,
                                          pulse_type = 'gauss')
     
@@ -188,14 +193,14 @@ def main(_learning_rate,
                                 phase_len = output_dim,
                                 device = my_device,
                                 dtype = np.float32,
-                                target_type = _test_signal,
-                                target_metadata = [500, 200, bandwidth[0], bandwidth[1]] #czemu do cholery jak zmienie na center i width to przestaje się uczyć XDDD
+                                target_type = _target_signal,
+                                target_metadata = [centre_target, width_target, bandwidth[0], bandwidth[1]] #czemu do cholery jak zmienie na center i width to przestaje się uczyć XDDD
                                 )
 
         the_generator.generate_and_save()
         print("Successfully created training set containing {} spectra.\n".format(len(os.listdir('data/train_intensity'))))
 
-        u.plot_dataset(_batch_size, pulse = initial_pulse, ft_pulse = pulse_ft)
+        #u.plot_dataset(_batch_size, pulse = initial_pulse, ft_pulse = pulse_ft)
 
         print("Calculating mean Time-Bandwidth Product of the training set...")
         TBP_mean, TBP_std = u.comp_mean_TBP(initial_pulse.X, fwhm_init_F)
@@ -208,13 +213,13 @@ def main(_learning_rate,
     dataset_train = Dataset_train(root='', transform=True, device = my_device)
     dataloader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size=_batch_size, num_workers=0, shuffle=True)
 
-    # test pulse
+    # target pulse
 
-    (test_pulse, test_phase) = (dataset_train[0][0], None)
-    #test_pulse = test_pulse * 1.10
-    fwhm_test = u.comp_FWHM(u.comp_std(initial_pulse.X.copy(), test_pulse.clone().detach().cpu().numpy().ravel()))
-    print("\nTime-bandwidth product of the transformation from the initial pulse to the test pulse is equal to {}.\n".format(round(fwhm_test*fwhm_init_F/2, 5)))   # WARNING: This "/2" is just empirical correction
-    if fwhm_test*fwhm_init_F/2 < 0.44:
+    target_pulse = dataset_train[0]
+    target_pulse = target_pulse*(1 + trash_fraction)
+    fwhm_target = u.comp_FWHM(u.comp_std(initial_pulse.X.copy(), target_pulse.clone().detach().cpu().numpy().ravel()))
+    print("\nTime-bandwidth product of the transformation from the initial pulse to the target pulse is equal to {}.\n".format(round(fwhm_target*fwhm_init_F/2, 5)))   # WARNING: This "/2" is just empirical correction
+    if fwhm_target*fwhm_init_F/2 < 0.44:
         print("TRANSFORMATION IMPOSSIBLE\n")
 
     # create NN
@@ -290,9 +295,9 @@ def main(_learning_rate,
             model.eval()
 
             print("Epoch no. {}. Loss {}.".format(epoch, np.mean(np.array(loss_list[epoch*len(dataloader_train): (epoch+1)*len(dataloader_train)]))))
+
             fig, test_loss = test(model = model,
-                    test_pulse = test_pulse,
-                    test_phase = test_phase,
+                    target_pulse = target_pulse,
                     initial_pulse = initial_intensity,
                     device = my_device, 
                     dtype = my_dtype,
@@ -315,7 +320,6 @@ def main(_learning_rate,
 
             model.train()
 
-
 if __name__ == "__main__":
     warnings.simplefilter("ignore", UserWarning) # ignore warnings from plotly
     parser = argparse.ArgumentParser()
@@ -323,7 +327,7 @@ if __name__ == "__main__":
     parser.add_argument('-en', '--epoch_num', default=10, type=int)
     parser.add_argument('-bs', '--batch_size', default=2, type=int)
     parser.add_argument('-pf', '--plot_freq', default=3, type=int)
-    parser.add_argument('-ds', '--dataset_size', default=5000, type=int)
+    parser.add_argument('-ds', '--dataset_size', default=100, type=int)
     parser.add_argument('-g', '--generate', action='store_true') # only generate, training will not run, wandb will be offline
     parser.add_argument('-fc', '--force_cpu', action='store_true')
     parser.add_argument('-tr', '--test_run', action='store_true')
@@ -331,7 +335,7 @@ if __name__ == "__main__":
     parser.add_argument('-ar', '--architecture', default='network_1', type=str)
     parser.add_argument('-cr', '--criterion', default='MSEsmooth', type=str)
     parser.add_argument('-op', '--optimalizer', default='Adam', type=str,)
-    parser.add_argument('-ts', '--test_signal', default='gauss', type=str,)
+    parser.add_argument('-ts', '--target_signal', default='gauss', type=str,)
     parser.add_argument('-is', '--initial_signal', default='exponential', type=str,)
     parser.add_argument('-wd', '--weight_decay', default=0, type=float)
     parser.add_argument('-ax', '--axis_type', default="freq", type=str)
@@ -359,7 +363,7 @@ if __name__ == "__main__":
         "architecture": args.architecture,
         "dataset": "defalut",
         "node_number": args.node_number,
-        "test_signal": args.test_signal,
+        "target_signal": args.target_signal,
         "initial_signal": args.initial_signal,
         "criterion": args.criterion,
         "optimizer": args.optimalizer,
@@ -379,7 +383,7 @@ if __name__ == "__main__":
          args.architecture,
          args.criterion,
          args.optimalizer,
-         args.test_signal,
+         args.target_signal,
          args.initial_signal,
          args.weight_decay,
          args.axis_type)
