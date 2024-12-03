@@ -86,6 +86,8 @@ def main(_learning_rate,
         from nets import network_11 as network
     if _net_architecture == 'network_12':
         from nets import network_12 as network
+    if _net_architecture == 'network_UNET_1D':
+        from nets import UNET_1D as network  
 
     # Choose device, disclaimer! on cpu network will not run due to batch normalization
 
@@ -228,6 +230,7 @@ def main(_learning_rate,
                 n = _node_number, 
                 output_size = output_dim)
     model.to(device = my_device, dtype = my_dtype)
+    
 
     print("Model parameters: {}\n".format(utilities.count_parameters(model)))
 
@@ -265,12 +268,14 @@ def main(_learning_rate,
     loss_list = []
     test_loss_global = 10000
     wandb.watch(model, criterion, log="all", log_freq=400)
+    noise = torch.ones((1, input_dim), requires_grad=True, dtype=my_dtype)
+    noise_=noise.clone().uniform_(1, 2)
+    print(noise_, input_dim)
 
     for epoch in range(_epoch_num):
         for pulse, _ in tqdm(dataloader_train):
 
             # pulse = pulse.to(my_device) # the pulse is already created on device by dataset, uncomment if not using designated dataset for this problem
-            
             predicted_phase = model(pulse)
 
             # transform gauss into something using this phase
@@ -332,7 +337,7 @@ if __name__ == "__main__":
     parser.add_argument('-fc', '--force_cpu', action='store_true')
     parser.add_argument('-tr', '--test_run', action='store_true')
     parser.add_argument('-nn', '--node_number', default=100, type=int)
-    parser.add_argument('-ar', '--architecture', default='network_1', type=str)
+    parser.add_argument('-ar', '--architecture', default='network_0', type=str)
     parser.add_argument('-cr', '--criterion', default='MSEsmooth', type=str)
     parser.add_argument('-op', '--optimalizer', default='Adam', type=str,)
     parser.add_argument('-ts', '--target_signal', default='gauss', type=str,)
