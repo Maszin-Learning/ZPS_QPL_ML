@@ -430,10 +430,35 @@ def test(model,
 
     # the below part of the code isn't always executed and when is, won't probably work correctly
     
+    
     if save:
         if not os.path.isdir("pics"):
             os.mkdir("pics")
         plt.savefig("pics/reconstructed_{}.svg".format(iter_num), bbox_inches = "tight", dpi = 200)
+        
+    if save:
+        plt.figure(figsize = (10, 5), constrained_layout = True)
+
+        plt.subplot(1, 2, 1)
+        plt.plot(FT_X[idx_start: idx_end] + 375, 
+                    reconstructed_phase, 
+                    lw = 2, 
+                    color = "firebrick",
+                    zorder = 10)
+        plt.title("Time domain")
+        plt.subplot(1, 2, 2)
+        fft_phase = np.fft.fftshift(reconstructed_phase)
+        fft_phase = np.fft.fft(fft_phase)
+        fft_phase = np.fft.fftshift(fft_phase)
+        fft_phase = np.abs(fft_phase)
+        X = np.linspace(0,fft_phase.shape[-1], fft_phase.shape[-1])
+        plt.plot(X,fft_phase, 
+                    lw = 2, 
+                    color = "firebrick",
+                    zorder = 10)
+        plt.xlim(400,600)
+        plt.savefig("pics/reconstructed_{}_phase.svg".format(iter_num), bbox_inches = "tight", dpi = 200)
+        
 
     return plt, mse(target_pulse.abs(), reconstructed.abs()).clone().cpu().detach().numpy()
     

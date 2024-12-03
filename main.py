@@ -270,7 +270,7 @@ def main(_learning_rate,
     wandb.watch(model, criterion, log="all", log_freq=400)
     noise = torch.ones((1, input_dim), requires_grad=True, dtype=my_dtype)
     noise_=noise.clone().uniform_(1, 2)
-    print(noise_, input_dim)
+    #print(noise_, input_dim)
 
     for epoch in range(_epoch_num):
         for pulse, _ in tqdm(dataloader_train):
