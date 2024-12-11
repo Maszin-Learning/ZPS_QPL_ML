@@ -208,7 +208,8 @@ def test(model,
          dtype, 
          save, 
          iter_num = 0, 
-         x_type = "freq"):
+         x_type = "freq",
+         filter_threshold = 1):
     '''
     ## Test how the model transforms initial pulse to the target pulse.
 
@@ -246,6 +247,9 @@ def test(model,
 
     target_phase_pred = model(target_pulse.abs())
     target_phase_pred = target_phase_pred.reshape([output_dim])
+
+    filter_mask = u.gen_filter_mask(threshold = filter_threshold, num = len(target_phase_pred), device = device)
+    target_phase_pred = u.low_pass_pt(target_phase_pred, filter_mask)
 
     # evolve
 
@@ -374,6 +378,8 @@ def test(model,
 
     reconstructed_phase = np.unwrap(target_phase_pred.clone().cpu().detach().numpy().reshape(output_dim))
     reconstructed_phase -= reconstructed_phase[floor(output_dim/2)]
+    
+    reconstructed_phase = u.low_pass_np(reconstructed_phase, filter_mask)
 
     idx_start = floor(zeros_num + input_dim/2 - output_dim/2)
     idx_end = floor(zeros_num + input_dim/2 + output_dim/2)

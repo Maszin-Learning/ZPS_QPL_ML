@@ -23,7 +23,7 @@ import argparse
 import wandb
 import shutil
 import warnings
-from utilities import MSEsmooth, MSEsmooth2
+from utilities import MSEsmooth, MSEsmooth2, MSElowpass
 
 def main(_learning_rate,
          _epoch_num,
@@ -246,15 +246,21 @@ def main(_learning_rate,
         optimizer = torch.optim.RMSprop(model.parameters(), lr = _learning_rate)
     
     # choose loss function
+
+    filter_threshold = 0.15 # write 1 if you don't want to filter out anything
+    filter_mask = u.gen_filter_mask(threshold = filter_threshold, num = output_dim, device = my_device)
+
     
     if _criterion =='MSE':
         criterion = torch.nn.MSELoss()
     if _criterion =='L1':
         criterion = torch.nn.L1Loss()
     if _criterion =='MSEsmooth':
-        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.2)
+        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.6)
     if _criterion =='MSEsmooth2':
         criterion = MSEsmooth2(device = my_device, dtype = my_dtype, c_factor = 0.5, s_factor = 0.5)
+    if _criterion =='MSElowpass':
+        criterion = MSElowpass(device = my_device, dtype = my_dtype, penalty_strength = 1, filter_mask = filter_mask)
     
     # prepare initial pulses (with nontrivial phases)
 
@@ -268,9 +274,6 @@ def main(_learning_rate,
     loss_list = []
     test_loss_global = 10000
     wandb.watch(model, criterion, log="all", log_freq=400)
-    noise = torch.ones((1, input_dim), requires_grad=True, dtype=my_dtype)
-    noise_=noise.clone().uniform_(1, 2)
-    print(noise_, input_dim)
 
     for epoch in range(_epoch_num):
         for pulse, _ in tqdm(dataloader_train):
@@ -282,7 +285,7 @@ def main(_learning_rate,
             reconstructed_intensity = u.evolve_pt(initial_intensity_pt, predicted_phase, device = my_device, dtype = my_dtype)
 
             # calculating back-propagation
-            if _criterion == "MSEsmooth" or _criterion == "MSEsmooth2":
+            if _criterion in ["MSEsmooth", "MSEsmooth2", "MSElowpass"]:
                 loss = criterion((predicted_phase, reconstructed_intensity.abs()[:,zeroes_num: input_dim + zeroes_num]), pulse)
             else:
                 loss = criterion(reconstructed_intensity.abs()[:,zeroes_num: input_dim + zeroes_num], pulse) # pulse intensity
@@ -308,7 +311,8 @@ def main(_learning_rate,
                     dtype = my_dtype,
                     iter_num = epoch,
                     save = True,
-                    x_type = _axis_type)
+                    x_type = _axis_type,
+                    filter_threshold = filter_threshold)
             
             cont_penalty = torch.sqrt(torch.sum(torch.square(u.diff_pt(u.unwrap(predicted_phase), device = my_device, dtype = my_dtype))))
             print("phase's variation MSE: {}.".format(cont_penalty))

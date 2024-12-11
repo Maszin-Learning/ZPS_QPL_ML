@@ -510,7 +510,7 @@ class spectrum:
         for i in range(self.__len__()):
             if norm == "L1": integral += np.abs(self.Y[i])
             if norm == "L2": integral += self.Y[i]*np.conjugate(self.Y[i])
-
+            x = 0
             if integral >= integral_infinite*q:
                 x = self.X[i]
                 break

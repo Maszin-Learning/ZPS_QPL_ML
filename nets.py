@@ -198,7 +198,7 @@ class network_11(nn.Module):
         x = self.leakyrelu(self.linear_1(x))
         x = self.linear_3(x)
 
-        return self.sigmoid(x)* np.pi*2
+        return 2*self.sigmoid(x)* np.pi*2
     
 class network_12(nn.Module):
     def __init__(self, input_size, n, output_size):
