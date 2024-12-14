@@ -125,14 +125,14 @@ def main(_learning_rate,
     input_dim = 5000    # number of points in a single pulse
     zeroes_num = 5000   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
 
-    bandwidth = [0, 1000]
+    bandwidth = [0, input_dim*11] # 11 ps is the resolution of EOPM
     centre_init = 500       # not used if initial signal is exponential
     width_init = 100        # not used if initial signal is exponential
 
     centre_target = 500     # centre of the target pulse defined in dataset_generator -> pulse_gen
     width_target = 200      # centre of the target pulse defined in dataset_generator -> pulse_gen
 
-    convolution_width = 2   # width of the gaussian convolved with the main signal
+    convolution_width = 0.1   # width of the gaussian convolved with the main signal
 
     initial_pulse = create_initial_pulse(bandwidth = bandwidth,
                                          centre = centre_init,

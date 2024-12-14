@@ -25,7 +25,7 @@ class spectrum:
 
     def __init__(self, X, Y, x_type, y_type):
 
-        if x_type not in ["time", "freq", "wl"]:
+        if x_type not in ["time", "THz", "wl"]:
             raise Exception("x_type must be either \"time\" or \"freq\" or \"wl\".")
         if y_type not in ["phase", "intensity"]:
             raise Exception("y_type must be either \"phase\" or \"intensity\".")
@@ -70,11 +70,11 @@ class spectrum:
         if inplace == True:
             self.X = freq
             self.Y = intensity
-            self.x_type = "freq"
+            self.x_type = "THz"
             self.spacing = self.calc_spacing()
         
         else:
-            return spectrum(freq, intensity, "freq", self.y_type)
+            return spectrum(freq, intensity, "THz", self.y_type)
         
         
     def constant_spacing(self, inplace = True):
@@ -118,7 +118,7 @@ class spectrum:
                     break
 
                 else:
-                    j += 1 # j is chosen in such a way, because for every new "freq" it will be greater than previous
+                    j += 1 # j is chosen in such a way, because for every new "THz" it will be greater than previous
 
             new_intens.append(interpolated_int)
 
@@ -240,10 +240,10 @@ class spectrum:
         if inplace == True:
             self.X = freq
             self.Y = FT_intens
-            self.x_type = "freq"
+            self.x_type = "THz"
             self.spacing = self.calc_spacing()
         else:
-            return spectrum(freq, FT_intens, "freq", self.y_type)
+            return spectrum(freq, FT_intens, "THz", self.y_type)
         
 
     def find_period(self, height = 0.5, hist = False):
@@ -785,8 +785,8 @@ def chirp_r2(phase_spectrum, fiber_length, plot = False):
     score = R2(Y_real, Y_pred)
 
     if plot:
-        reality = spectrum(phase_spectrum.X.copy(), Y_real, x_type = "freq", y_type = "phase")
-        prediction = spectrum(phase_spectrum.X.copy(), Y_pred, x_type = "freq", y_type = "phase")
+        reality = spectrum(phase_spectrum.X.copy(), Y_real, x_type = "THz", y_type = "phase")
+        prediction = spectrum(phase_spectrum.X.copy(), Y_pred, x_type = "THz", y_type = "phase")
 
         if np.mean(reality.Y) < 0:
             reality.Y *= -1
@@ -833,25 +833,31 @@ def find_maxima(fringes_spectrum):
     return spectrum(np.array(X), np.array(Y), fringes_spectrum.x_type, fringes_spectrum.y_type)
 
 
-def plot(spectrum, color = "darkviolet", title = "Spectrum", what_to_plot = "abs", start = None, end = None, save=False):
+def plot(spectrum, 
+         title = "Spectrum", 
+         what_to_plot = "trigonometric",
+         intensity_plot = "line", 
+         start = None, end = None, 
+         save = False,
+         show_grid = False):
     '''
-    Fast spectrum plotting using matplotlib.pyplot library.
+    ### Fast spectrum plotting using matplotlib.pyplot library.
 
     ARGUMENTS:
 
-    spectrum - DataFrame with Intensity on Y axis.
-
-    color - color of the plot.
+    spectrum - the spectrum object class to be plotted.
 
     title - title of the plot.
+
+    what_to_plot - either \"abs\", \"imag\", \"real\", \"complex\" or \"trigonometric\". In the last two cases two curves are plotted.
 
     start - starting point (in X-axis units) of a area to be shown on plot. If \"min\", then plot starts with lowest X-value in all spectra.
 
     end - ending point (in X-axis units) of a area to be shown on plot. If \"max\", then plot ends with highest X-value in all spectra.
-    
-    save = save plot or not
 
-    what_to_plot - either \"abs\" or \"imag\" or \"real\".
+    save - if to save the plot in the program's directory. The title of the plot will be by default used as the filename.
+
+    intensity_plot - how do you want to plot intensity spectrum (it might be either \"fill\" or \"line\").
     '''
 
     spectrum_safe = spectrum.copy()
@@ -859,12 +865,14 @@ def plot(spectrum, color = "darkviolet", title = "Spectrum", what_to_plot = "abs
     # simple function to round to significant digits
 
     def round_to_dig(x, n):
+        if x == 0:
+            return 0
         return round(x, -int(floor(log10(abs(x)))) + n - 1)
 
     # invalid arguments
-    
-    if what_to_plot not in ("abs", "imag", "real"):
-        raise Exception("Input \"what_to_plot\" not defined.")
+
+    if what_to_plot not in ("abs", "imag", "real", "complex", "trigonometric"):
+        raise Exception("Argument \"what_to_plot\" must be either \"abs\", \"imag\", \"real\", \"complex\" or \"trigonometric\".")
 
     # if we dont want to plot whole spectrum
 
@@ -886,7 +894,7 @@ def plot(spectrum, color = "darkviolet", title = "Spectrum", what_to_plot = "abs
         to_cut = True
 
     spectrum_safe.cut(s, e, how = "index") 
-    
+
     # what do we want to have on Y axis
 
     if what_to_plot == "abs":
@@ -896,43 +904,166 @@ def plot(spectrum, color = "darkviolet", title = "Spectrum", what_to_plot = "abs
     if what_to_plot == "imag":
         spectrum_safe.Y = np.imag(spectrum_safe.Y)
 
+    # a bit of aesthetics
+
+    if spectrum_safe.x_type == "THz":
+        main_color = "orange"
+    elif spectrum_safe.x_type == "time":
+        main_color = "limegreen"
+    elif spectrum_safe.x_type == "nm":
+        main_color = "aqua"
+    else:
+        main_color = "yellow"
+
     # start to plot
 
-    f, ax = plt.subplots()
-    plt.plot(spectrum_safe.X, spectrum_safe.Y, color = color)
-    plt.grid()
-    if to_cut:
-        plt.title(title + " [only part shown]")
+    fig, ax = plt.subplots()
+
+    if what_to_plot == "complex":
+        ax.plot(spectrum_safe.X, np.real(spectrum_safe.Y), color = "darkviolet")
+        ax.plot(spectrum_safe.X, np.imag(spectrum_safe.Y), color = "green")
+        ax.legend(["Real part", "Imaginary part"], bbox_to_anchor = [1, 0.17])
+
+    elif what_to_plot == "trigonometric":
+        phase = np.angle(spectrum_safe.Y)
+        intensity = np.abs(spectrum_safe.Y)
+
+        start_idx_phase = 0
+        end_idx_phase = len(phase) -1
+        for i in range(len(phase)): # we don't plot the phase in the area, where it is equal to zero
+            if np.abs(phase[i]) > 1e-5:
+                start_idx  = i
+                break
+        for i in reversed(range(len(phase))):
+            if np.abs(phase[i]) > 1e-5:
+                end_idx  = i
+                break
+
+        start_idx_intens = np.searchsorted(spectrum_safe.X, spectrum_safe.quantile(0.005, "L1"))
+        end_idx_intens = np.searchsorted(spectrum_safe.X, spectrum_safe.quantile(0.995, "L1"))
+        start_idx = np.max([start_idx_phase, start_idx_intens])
+        end_idx = np.min([end_idx_phase, end_idx_intens])
+
+        phase = np.unwrap(phase)
+        if intensity_plot == "fill":
+            ax.fill_between(spectrum_safe.X, intensity, color = main_color, alpha = 0.5, label = "Intensity")
+            phase_style = "solid"
+        elif intensity_plot == "line":
+            ax.plot(spectrum_safe.X, intensity, color = main_color, label = "Intensity")
+            phase_style = "dashed"
+        else:
+            raise Exception("\"intensity_plot\" must be either \"fill\" or \"line\"")
+        phase_ax = ax.twinx()
+        phase_ax.plot(spectrum_safe.X[start_idx: end_idx], phase[start_idx: end_idx], color = "darkviolet", label = "Phase", linestyle = phase_style)
+
+        lines, labels = ax.get_legend_handles_labels()
+        lines2, labels2 = phase_ax.get_legend_handles_labels()
+        phase_ax.legend(lines + lines2, labels + labels2, loc=0)
+
     else:
-        plt.title(title)
+        ax.plot(spectrum_safe.X, spectrum_safe.Y, color = main_color)
+        if spectrum_safe.y_type == "intensity":
+            ax.set_ylim([min([0, np.min(spectrum_safe.Y)]), 1.1*np.max(spectrum_safe.Y)])
+     
+    ax.grid()
+    if to_cut:
+        ax.set_title(title + " [only part shown]")
+    else:
+        ax.set_title(title)
     if spectrum_safe.y_type == "phase":
-        plt.ylabel("Spectral phase [rad]")
+        ax.set_ylabel("Phase (rad)")
     if spectrum_safe.y_type == "intensity":
-        plt.ylabel("Intensity")    
-    if spectrum_safe.x_type == "wl":
-        plt.xlabel("Wavelength (nm)")
+        ax.set_ylabel("Intensity (a.u.)")
+    if spectrum_safe.y_type == "e-field":
+        ax.set_ylabel("Electric Field")        
+    if spectrum_safe.x_type == "nm":
+        ax.set_xlabel("Wavelength (nm)")
         unit = "nm"
-    if spectrum_safe.x_type == "freq":
-        plt.xlabel("Frequency (THz)")
+    if spectrum_safe.x_type == "THz":
+        ax.set_xlabel("Frequency (THz)")
         unit = "THz"
+    if spectrum_safe.x_type == "Hz":
+        ax.set_xlabel("Frequency (Hz)")
+        unit = "Hz"
+    if spectrum_safe.x_type == "kHz":
+        ax.set_xlabel("Frequency (kHz)")
+        unit = "kHz"
     if spectrum_safe.x_type == "time":
-        plt.xlabel("Time (ps)")
+        ax.set_xlabel("Time (ps)")
         unit = "ps"
+
+    # grid
+
+    if show_grid and spectrum_safe.y_type != "phase":
+
+        left_idx = None
+        right_idx = None
+        peak = np.max(np.abs(spectrum_safe.Y))
+
+        for idx, y in enumerate(spectrum_safe.Y):
+            if np.abs(y) >= peak/2:
+                left_idx = idx
+                break
+
+        for idx, y in enumerate(np.flip(spectrum_safe.Y)):
+            if np.abs(y) >= peak/2:
+                right_idx = len(spectrum_safe) - idx
+                break
+
+        ax.axhline(y = peak, linestyle = "dashed", lw = 1, color = "grey")
+        ax.axhline(y = peak/2, linestyle = "dashed", lw = 1, color = "grey")
+        ax.axvline(x = spectrum_safe.comp_centre(), linestyle = "dashed", lw = 1, color = "black")
+        if left_idx != None: 
+            ax.axvline(x = spectrum_safe.X[left_idx], linestyle = "dashed", lw = 1, color = "grey")
+        if right_idx != None: 
+            ax.axvline(x = spectrum_safe.X[right_idx], linestyle = "dashed", lw = 1, color = "grey")
 
     # quick stats
     
     spacing = round_to_dig(spectrum_safe.spacing, 3)
     p_per_unit = floor(1/spectrum_safe.spacing)
+    if p_per_unit == 0:
+        p_per_unit = "< 1"
+    else:
+        p_per_unit = str(p_per_unit)
+
+    space = 0
+    if what_to_plot == "trigonometric":
+        space = 0.15
+
+    points_txt = "Number of points: {}".format(n_points)
+    spacing_txt = "\nX-axis spacing: {} ".format(spacing) + unit
+    per_1_txt = "\nPoints per 1 " + unit +": " + p_per_unit
+    full_range_txt = "\nFull X-axis range: {} : {} ".format(inf, sup) + unit
+    centr_txt = "\nCentroid: {} ".format(round(spectrum_safe.quantile(0.5, "L1"), 5)) + unit
+    fwhm_txt =  "\nFWHM: {} ".format(round_to_dig(spectrum_safe.FWHM(), 5)) + unit
 
     if to_cut:
-        plt.text(1.05, 0.85, "Number of points: {}\nX-axis spacing: {} ".format(n_points, spacing) + unit + "\nPoints per 1 " + unit +": {}".format(p_per_unit) + "\nFull X-axis range: {} - {} ".format(inf, sup) + unit , transform = ax.transAxes)
+        ax.text(1.05 + space, 0.65, 
+                points_txt + spacing_txt + per_1_txt + full_range_txt + centr_txt + fwhm_txt, 
+                transform = ax.transAxes)
     else:
-        plt.text(1.05, 0.9, "Number of points: {}\nX-axis spacing: {} ".format(n_points, spacing) + unit + "\nPoints per 1 " + unit +": {}".format(p_per_unit) , transform = ax.transAxes)
+        ax.text(1.05 + space, 0.7, 
+                points_txt + spacing_txt + per_1_txt + centr_txt + fwhm_txt, 
+                transform = ax.transAxes)
+
+
+    # additional info, what do you actually see
+
+    views = {
+        "abs" : r"$\it{Absolute}$" + " " + r"$\it{value}$",
+        "real" : r"$\it{Real}$",
+        "imag" : r"$\it{Imaginary}$",
+        "complex" : r"$\it{Complex}$",
+        "trigonometric" : r"$\it{Trigonometric}$"
+    }
+
+    ax.text(1.05 + space, 0.0, views[what_to_plot] + " view", transform = ax.transAxes)
 
     if save:
-        plt.savefig(f'fig_{title}.pdf')
-    else:
-        plt.show()
+        fig.savefig("{}.jpg".format(title))
+
+    fig.show()
 
 
 
@@ -1001,7 +1132,7 @@ def compare_plots(spectra, title = "Spectra", legend = None, colors = None, star
         plt.ylabel("Spectral phase (rad)")    
     if spectra[0].x_type == "wl":
         plt.xlabel("Wavelength (nm)")
-    if spectra[0].x_type == "freq":
+    if spectra[0].x_type == "THz":
         plt.xlabel("Frequency (THz)")
     if spectra[0].x_type == "time":
         plt.xlabel("Time (ps)")
@@ -1023,7 +1154,7 @@ def recover_pulse(phase_spectrum, intensity_spectrum):
     for i in range(len(complex_Y)):
         complex_Y[i] *= np.exp(1j*phase_spectrum.Y[i])
 
-    pulse_spectrum = spectrum(phase_spectrum.X.copy(), complex_Y, "freq", "intensity")
+    pulse_spectrum = spectrum(phase_spectrum.X.copy(), complex_Y, "THz", "intensity")
     pulse_spectrum.fourier()
     pulse_spectrum.Y = 2*np.real(pulse_spectrum.Y)
     return pulse_spectrum
@@ -1086,13 +1217,13 @@ def ratio(vis_value):
 
 
 
-def gaussian_pulse(bandwidth, centre, FWHM, x_type = "freq", num = 1000):
+def gaussian_pulse(bandwidth, centre, FWHM, x_type = "THz", num = 1000):
     '''
     Creates spectrum with gaussian intensity. "bandwidth" is a tuple with start and the end of the entire spectrum. 
     "centre" and "FWHM" characterize the pulse itself. The spectrum is composed of \"num\" = 1000 points on default.
     '''
 
-    if x_type not in ["freq", "wl", "time"]:
+    if x_type not in ["THz", "wl", "time"]:
         raise Exception("x_type must be either \"freq\", \"nm\" or \"time\"")
 
     X = np.linspace(bandwidth[0], bandwidth[1], num = num)
@@ -1105,7 +1236,7 @@ def gaussian_pulse(bandwidth, centre, FWHM, x_type = "freq", num = 1000):
 
 
 
-def hermitian_pulse(pol_num, bandwidth, centre, FWHM, num = 1000, x_type = "freq", broad = False):
+def hermitian_pulse(pol_num, bandwidth, centre, FWHM, num = 1000, x_type = "THz", broad = False):
     '''
     Creates spectrum with \"pol-num\"-th Hermit-Gauss intensity mode. "bandwidth" is a tuple with start and the end of the entire spectrum. 
     "centre" and "FWHM" characterize the pulse itself. The spectrum is composed of \"num\" = 1000 points on default.
@@ -1113,7 +1244,7 @@ def hermitian_pulse(pol_num, bandwidth, centre, FWHM, num = 1000, x_type = "freq
 
     # exceptions
 
-    if x_type not in ["freq", "wl", "time"]:
+    if x_type not in ["THz", "wl", "time"]:
         raise Exception("x_type must be either \"freq\", \"nm\" or \"time\"")
 
     # and calculations
@@ -1137,7 +1268,7 @@ def hermitian_pulse(pol_num, bandwidth, centre, FWHM, num = 1000, x_type = "freq
     return spectrum_out
 
 
-def chirp_phase(bandwidth, centre, fiber_length):
+def chirp_phase(bandwidth, centre, fiber_length, num):
     '''
     Creates spectrum class object with spectral phase corresponding to propagation of a pulse through "fiber_length" of PM fiber.
     "bandwidth" is a tuple with start and the end of the entire spectrum OR already created X-axis of the spectrum. 
@@ -1145,9 +1276,9 @@ def chirp_phase(bandwidth, centre, fiber_length):
     '''
     c = 299792458 
     l_0 = c/(centre*1e3)
-    D_l = 17
+    D_l = -29
     if len(bandwidth) == 2:
-        X = np.linspace(bandwidth[0], bandwidth[1], 1000)
+        X = np.linspace(bandwidth[0], bandwidth[1], num)
     else:
         X = bandwidth.copy()
     omega = X*2*np.pi
@@ -1289,7 +1420,7 @@ class ray:
     def OSA(self, start = None, end = None):
 
         Y = self.hor.Y*np.conjugate(self.hor.Y) + self.ver.Y*np.conjugate(self.ver.Y)
-        spectr = spectrum(self.hor.X, Y, "freq", "intensity")
+        spectr = spectrum(self.hor.X, Y, "THz", "intensity")
         spectr.spacing = np.abs(spectr.spacing)
         plot(spectr, title = "OSA", start = start, end = end, color = "green")
         
@@ -1472,7 +1603,7 @@ def spider(phase_spectrum,
         if plot_steps: 
             plot(s_freq,"orange", title = "Wavelength to frequency", start = min_freq, end = max_freq)
 
-    elif p_spectrum.x_type == "freq":
+    elif p_spectrum.x_type == "THz":
         s_freq = p_spectrum
         # we need following lines, because we want in every case have min_freq and max_freq defined for later
         min_freq = s_freq.quantile(0.1)
@@ -1489,7 +1620,7 @@ def spider(phase_spectrum,
         s_freq_t = t_spectrum.wl_to_freq(inplace = False)
         s_freq_t.constant_spacing()
 
-    elif t_spectrum.x_type == "freq":
+    elif t_spectrum.x_type == "THz":
         s_freq_t = t_spectrum
 
     # fourier transform
@@ -1621,7 +1752,7 @@ def spider(phase_spectrum,
     values -= np.mean(values)
 
     if smoothing_period != None:
-        V = spectrum(X_sampled, values, "freq", "phase")
+        V = spectrum(X_sampled, values, "THz", "phase")
         V.moving_average(smoothing_period)
         values = V.Y
 
@@ -1632,7 +1763,7 @@ def spider(phase_spectrum,
 
     # plot phase difference
 
-    diff_spectrum = spectrum(X_sampled, values, "freq", "phase")    # if you wish to return it later
+    diff_spectrum = spectrum(X_sampled, values, "THz", "phase")    # if you wish to return it later
     if plot_phase:
 
         plt.scatter(X_sampled, np.real(values), color = "orange", s = 1)
@@ -1681,7 +1812,7 @@ def spider(phase_spectrum,
     values = values[integration_start::integrate_interval]
     Y_sampled = np.cumsum(values)
 
-    phase_spectrum_first = spectrum(X_sampled, Y_sampled, "freq", "phase")
+    phase_spectrum_first = spectrum(X_sampled, Y_sampled, "THz", "phase")
 
     # firstly initial interpolation to translate spectrum to X-axis (global phase standarization)
 
@@ -1693,7 +1824,7 @@ def spider(phase_spectrum,
     else:
         Y_sampled -= np.max(Y_continuous)
 
-    phase_spectrum = spectrum(X_sampled, Y_sampled, "freq", "phase")
+    phase_spectrum = spectrum(X_sampled, Y_sampled, "THz", "phase")
 
     # proper interpolation
 

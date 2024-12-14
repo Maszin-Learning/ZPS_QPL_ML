@@ -572,13 +572,14 @@ def create_initial_pulse(bandwidth, centre, FWHM, num, pulse_type):
         return pulse
     
     elif pulse_type == "exponential":
-        Y = np.flip(np.exp(np.linspace(-10, 3, num)) - np.exp(-10))
+
+        Y = np.flip(np.exp(10*np.linspace(-10, 3, num)) - np.exp(-100))
         for i in range(0, floor(1/3*num)):
             Y[i] = 0
 
         X = np.linspace(bandwidth[0], bandwidth[1], num)
         spectrum_out = sa.spectrum(X = X, Y = Y, x_type ="time", y_type ="intensity")
-        spectrum_out.smart_shift(100, inplace = True)
+        spectrum_out.smart_shift(10000, inplace = True)
         spectrum_out.Y = np.abs(spectrum_out.Y)
         return spectrum_out
     
