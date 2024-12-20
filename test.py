@@ -573,15 +573,15 @@ def create_initial_pulse(bandwidth, centre, FWHM, num, pulse_type):
     
     elif pulse_type == "exponential":
 
-        Y = np.flip(np.exp(10*np.linspace(-10, 3, num)) - np.exp(-100))
+        Y = np.flip(np.exp(1*np.linspace(-10, 3, num)) - np.exp(-10))
         for i in range(0, floor(1/3*num)):
             Y[i] = 0
-
+        Y = Y/np.max(np.abs(Y))
+        Y = np.roll(Y, floor(600*num/5000)) # 600 shifts to center for num=5000
         X = np.linspace(bandwidth[0], bandwidth[1], num)
-        spectrum_out = sa.spectrum(X = X, Y = Y, x_type ="time", y_type ="intensity")
-        spectrum_out.smart_shift(10000, inplace = True)
-        spectrum_out.Y = np.abs(spectrum_out.Y)
-        return spectrum_out
+        pulse = sa.spectrum(X = X, Y = Y, x_type ="time", y_type ="intensity")
+        pulse.Y = np.abs(pulse.Y)
+        return pulse
     
     else:
         raise Exception("Pulse_type must be either \"gauss\", \"hermite\" or \"exponential\".")

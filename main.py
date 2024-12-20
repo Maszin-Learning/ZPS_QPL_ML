@@ -23,7 +23,7 @@ import argparse
 import wandb
 import shutil
 import warnings
-from utilities import MSEsmooth, MSEsmooth2, MSElowpass
+from loss_functions import MSEsmooth, MSEsmooth2, MSElowpass, MSEdouble
 
 def main(_learning_rate,
          _epoch_num,
@@ -120,24 +120,32 @@ def main(_learning_rate,
         
     model_save_PATH_dir='saved_models'
 
-    # initial pulse (that is to be transformed by some phase)
+    # metaparameters
 
-    input_dim = 5000    # number of points in a single pulse
-    zeroes_num = 5000   # number of zeroes we add on the left and on the right of the main pulse (to make FT intensity broader)
+    bandwidth = [-2500, 2500]   # (ps)
 
-    bandwidth = [0, input_dim*11] # 11 ps is the resolution of EOPM
-    centre_init = 500       # not used if initial signal is exponential
-    width_init = 100        # not used if initial signal is exponential
+    spectral_phase_len = 40     # so, assuming 1.5 GHz of pulse shaper's resolution, we get 60 GHz of bandwidth
+    temporal_phase_len = 200    # so, assuming 11 ps of modulator's resolution, we get 2200 ps of bandwidth
 
-    centre_target = 500     # centre of the target pulse defined in dataset_generator -> pulse_gen
-    width_target = 200      # centre of the target pulse defined in dataset_generator -> pulse_gen
+    comp_time_resolution = 1        # (ps) to avoid border effects we compute with higher resolution than the one of the modulator's
+    comp_freq_resolution = 0.0001   # (THz) as above
+
+    time_num = floor((bandwidth[1]-bandwidth[0])/comp_time_resolution)             # number of points in the initial pulse
+
+    centre_init = 500           # not used if initial signal is exponential
+    width_init = 100            # not used if initial signal is exponential
+
+    centre_target = 0           # (ps) centre of the target pulse defined in dataset_generator -> pulse_gen
+    width_target = 200          # (ps) FWHM of the target pulse defined in dataset_generator -> pulse_gen
 
     convolution_width = 0.1   # width of the gaussian convolved with the main signal
+
+    # initial pulse
 
     initial_pulse = create_initial_pulse(bandwidth = bandwidth,
                                          centre = centre_init,
                                          FWHM = width_init,
-                                         num = input_dim,
+                                         num = time_num,
                                          pulse_type = _initial_signal)
     
     # additional pulse to add to exp (gauss) so it makes it more physical
@@ -145,44 +153,22 @@ def main(_learning_rate,
     signal_correction = create_initial_pulse(bandwidth = bandwidth,
                                          centre = bandwidth[0]/2 + bandwidth[1]/2,
                                          FWHM = convolution_width,
-                                         num = input_dim,
+                                         num = time_num,
                                          pulse_type = 'gauss')
     
     initial_pulse.Y = np.convolve(initial_pulse.Y, signal_correction.Y, mode='same')
-    Y_initial = initial_pulse.Y.copy()
-
-    # normalize it in L2
-
     initial_pulse.Y = initial_pulse.Y / np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
 
-    # this serves only to generate FT pulse
+    Y_initial = initial_pulse.Y.copy()
+    initial_intensity_pt = u.np_to_complex_pt(initial_pulse.Y, device = my_device, dtype = my_dtype)
 
-    long_pulse = initial_pulse.zero_padding(length = zeroes_num, inplace = False) 
+    # we compute resolution stuff to be able later to match phase and intensity
 
-    # we want to find what is the bandwidth of intensity after FT, to estimate output dimension of NN
+    initial_pulse_FT = initial_pulse.inv_fourier(inplace = False)
+    init_freq_resolution = initial_pulse_FT.calc_spacing()
+    increase_freq_res = init_freq_resolution/comp_freq_resolution # at the beginning, we dont control the frequency resolution and later we will want to increase it to given level
 
-    trash_fraction = 0.001 # percent of FT transformed to be cut off - it will contribute to the noise
-
-    long_pulse_ft = long_pulse.inv_fourier(inplace = False)
-    fwhm_init_F = u.comp_FWHM(u.comp_std(initial_pulse.inv_fourier(inplace = False).X, initial_pulse.inv_fourier(inplace = False).Y))
-    x_start = long_pulse_ft.quantile(trash_fraction/2, norm = "L2")
-    x_end = long_pulse_ft.quantile(1-trash_fraction/2, norm = "L2")
-    idx_start = np.searchsorted(long_pulse_ft.X, x_start)
-    idx_end = np.searchsorted(long_pulse_ft.X, x_end)
-    if (idx_end - idx_start) % 2 == 1:
-        idx_end += 1
-    output_dim = idx_end - idx_start    # number of points of non-zero FT-intensity
-
-    print("\ninput_dim (spectrum length) = {}".format(input_dim))  
-    print("output_dim (phase length) = {}".format(output_dim))
-
-    # stuff for plots
-
-    pulse_ft = long_pulse.copy()
-    pulse_ft.inv_fourier()
-    pulse_ft.X = np.real(pulse_ft.X)
-    pulse_ft.Y = np.abs(pulse_ft.Y)
-    pulse_ft.cut(inplace = True, start = idx_start, end = idx_end, how = "index")    
+    temp_idx_start = np.searchsorted(initial_pulse.X, initial_pulse.quantile(1e-5)-10) # extra 10 ps just to be sure; from this index we start multiplication of phase
 
     # generate training data
 
@@ -191,22 +177,16 @@ def main(_learning_rate,
         
         the_generator = Generator(data_num = _dataset_size,
                                 initial_intensity = Y_initial,
-                                FT_X = pulse_ft.X,
-                                phase_len = output_dim,
+                                FT_X = None,        # this feature isn't called anymore
+                                phase_len = None,   # this feature isn't called anymore
                                 device = my_device,
                                 dtype = np.float32,
                                 target_type = _target_signal,
-                                target_metadata = [centre_target, width_target, bandwidth[0], bandwidth[1]] #czemu do cholery jak zmienie na center i width to przestaje się uczyć XDDD
+                                target_metadata = [centre_target, width_target, bandwidth[0], bandwidth[1]]
                                 )
 
         the_generator.generate_and_save()
         print("Successfully created training set containing {} spectra.\n".format(len(os.listdir('data/train_intensity'))))
-
-        #u.plot_dataset(_batch_size, pulse = initial_pulse, ft_pulse = pulse_ft)
-
-        print("Calculating mean Time-Bandwidth Product of the training set...")
-        TBP_mean, TBP_std = u.comp_mean_TBP(initial_pulse.X, fwhm_init_F)
-        print("Mean TBP of the transformation from initial pulse to a spectrum from dataset is equal to {} +- {}.\n".format(round(TBP_mean, 5), round(TBP_std, 5)))   
 
         exit()
 
@@ -218,20 +198,20 @@ def main(_learning_rate,
     # target pulse
 
     target_pulse = dataset_train[0]
-    target_pulse = target_pulse*(1 + trash_fraction)
     fwhm_target = u.comp_FWHM(u.comp_std(initial_pulse.X.copy(), target_pulse.clone().detach().cpu().numpy().ravel()))
     print("\nTime-bandwidth product of the transformation from the initial pulse to the target pulse is equal to {}.\n".format(round(fwhm_target*fwhm_init_F/2, 5)))   # WARNING: This "/2" is just empirical correction
+    '''
     if fwhm_target*fwhm_init_F/2 < 0.44:
         print("TRANSFORMATION IMPOSSIBLE\n")
-
+    '''
     # create NN
 
-    model = network(input_size = input_dim, 
+    model = network(input_size = time_num, 
                 n = _node_number, 
-                output_size = output_dim)
+                spectral_phase_len = spectral_phase_len,
+                temporal_phase_len = temporal_phase_len)
     model.to(device = my_device, dtype = my_dtype)
     
-
     print("Model parameters: {}\n".format(utilities.count_parameters(model)))
 
     # choose optimizer
@@ -248,8 +228,7 @@ def main(_learning_rate,
     # choose loss function
 
     filter_threshold = 0.15 # write 1 if you don't want to filter out anything
-    filter_mask = u.gen_filter_mask(threshold = filter_threshold, num = output_dim, device = my_device)
-
+    filter_mask = u.gen_filter_mask(threshold = filter_threshold, num = None, device = my_device)   # what is the num?
     
     if _criterion =='MSE':
         criterion = torch.nn.MSELoss()
@@ -261,13 +240,8 @@ def main(_learning_rate,
         criterion = MSEsmooth2(device = my_device, dtype = my_dtype, c_factor = 0.5, s_factor = 0.5)
     if _criterion =='MSElowpass':
         criterion = MSElowpass(device = my_device, dtype = my_dtype, penalty_strength = 1, filter_mask = filter_mask)
-    
-    # prepare initial pulses (with nontrivial phases)
-
-    initial_intensity = long_pulse.copy()
-    initial_phase = np.zeros(len(long_pulse))      # HERE YOU CAN ADD WHATEVER YOU WANT
-    initial_intensity.Y = initial_intensity.Y*np.exp(1j*initial_phase)
-    initial_intensity_pt = u.np_to_complex_pt(initial_intensity.Y, device = my_device, dtype = my_dtype)
+    if _criterion =='MSEdouble':
+        criterion = MSEdouble(device = my_device, dtype = my_dtype)
 
     # learning loop
 
@@ -278,17 +252,29 @@ def main(_learning_rate,
     for epoch in range(_epoch_num):
         for pulse, _ in tqdm(dataloader_train):
 
-            # pulse = pulse.to(my_device) # the pulse is already created on device by dataset, uncomment if not using designated dataset for this problem
-            predicted_phase = model(pulse)
+            temp_phase_pred, spectr_phase_pred = model(pulse)
 
-            # transform gauss into something using this phase
-            reconstructed_intensity = u.evolve_pt(initial_intensity_pt, predicted_phase, device = my_device, dtype = my_dtype)
+            # we apply temporal phase
+            temp_phase_pred = u.increase_resolution(temp_phase_pred, 11/comp_time_resolution, device = my_device, dtype = my_dtype) # 11 ps is the resolution of EOPM
+            temp_intens_pred = u.multiply_by_phase(initial_intensity_pt, temp_phase_pred, index_start = temp_idx_start, device = my_device, dtype = my_dtype)
+
+            # we apply spectral phase
+            spectr_intens_pred = torch.fft.fftshift(temp_intens_pred)
+            spectr_intens_pred = torch.fft.fft(spectr_intens_pred)
+            spectr_intens_pred = torch.fft.fftshift(spectr_intens_pred)
+
+            spectr_intens_pred = u.cut(spectr_intens_pred, 50/init_freq_resolution) # we leave central 50 GHz, we delete the rest in order to save GPU
+            spectr_intens_pred = u.increase_resolution(spectr_intens_pred, increase_freq_res, device = my_device, dtype = my_dtype)
+            spectr_intens_pred = u.increase_resolution(spectr_intens_pred, 0.0015/comp_freq_resolution, device = my_device, dtype = my_dtype)  # 1.5 GHz is the resolution of the pulse shaper
+            spectr_intens_pred = u.multiply_by_phase(spectr_intens_pred, spectr_phase_pred, index_start = floor((spectr_intens_pred.shape[-1]-spectr_phase_pred.shape[-1])/2), device = my_device, dtype = my_dtype)
+
+            # and back to time domain
+            temp_intens_pred = torch.fft.fftshift(temp_intens_pred)
+            temp_intens_pred = torch.fft.fft(spectr_intens_pred)
+            temp_intens_pred = torch.fft.fftshift(temp_intens_pred)
 
             # calculating back-propagation
-            if _criterion in ["MSEsmooth", "MSEsmooth2", "MSElowpass"]:
-                loss = criterion((predicted_phase, reconstructed_intensity.abs()[:,zeroes_num: input_dim + zeroes_num]), pulse)
-            else:
-                loss = criterion(reconstructed_intensity.abs()[:,zeroes_num: input_dim + zeroes_num], pulse) # pulse intensity
+            loss = criterion(temp_phase_pred, spectr_phase_pred, temp_intens_pred, spectr_intens_pred, temp_intens_target, spectr_intens_target) # define fuckers
             
             loss.backward()
             optimizer.step()
@@ -306,7 +292,7 @@ def main(_learning_rate,
 
             fig, test_loss = test(model = model,
                     target_pulse = target_pulse,
-                    initial_pulse = initial_intensity,
+                    initial_pulse = initial_pulse,
                     device = my_device, 
                     dtype = my_dtype,
                     iter_num = epoch,
@@ -314,7 +300,7 @@ def main(_learning_rate,
                     x_type = _axis_type,
                     filter_threshold = filter_threshold)
             
-            cont_penalty = torch.sqrt(torch.sum(torch.square(u.diff_pt(u.unwrap(predicted_phase), device = my_device, dtype = my_dtype))))
+            cont_penalty = 0
             print("phase's variation MSE: {}.".format(cont_penalty))
 
             if test_loss < test_loss_global:

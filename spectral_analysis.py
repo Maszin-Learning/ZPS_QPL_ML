@@ -199,11 +199,17 @@ class spectrum:
         if self.x_type == "time":
             raise Exception("Sticking to the convention: use Inverse Fourier Transform.")
 
+        # prepare input
+
+        intens = self.Y.copy()
+        intens = np.sqrt(np.abs(intens))*np.exp(1j*np.angle(intens))  # in order to have same powers in both domains
+        intens = fftshift(intens)
+
         # Fourier Transform
 
-        FT_intens = fftshift(self.Y)
-        FT_intens = fft(FT_intens, norm = "ortho")
+        FT_intens = fft(intens, norm = "ortho")
         FT_intens = fftshift(FT_intens)
+        FT_intens = FT_intens*np.abs(FT_intens)
         time = fftfreq(self.__len__(), self.spacing)
         time = fftshift(time)
 
@@ -214,7 +220,7 @@ class spectrum:
             self.spacing = self.calc_spacing()
         else:
             return spectrum(time, FT_intens, "time", self.y_type)
-            
+
 
     def inv_fourier(self, inplace = True):
         '''
@@ -227,12 +233,14 @@ class spectrum:
         # prepare input
 
         intens = self.Y.copy()
+        intens = np.sqrt(np.abs(intens))*np.exp(1j*np.angle(intens)) # in order to have same powers in both domains
         intens = ifftshift(intens)
 
         # Fourier Transform
 
         FT_intens = ifft(intens, norm = "ortho")
         FT_intens = ifftshift(FT_intens)
+        FT_intens = FT_intens*np.abs(FT_intens)
 
         freq = fftfreq(self.__len__(), self.spacing)
         freq = ifftshift(freq)
@@ -510,7 +518,7 @@ class spectrum:
         for i in range(self.__len__()):
             if norm == "L1": integral += np.abs(self.Y[i])
             if norm == "L2": integral += self.Y[i]*np.conjugate(self.Y[i])
-            x = 0
+            x = self.X[0]
             if integral >= integral_infinite*q:
                 x = self.X[i]
                 break
@@ -733,6 +741,17 @@ def interpolate(old_spectrum, new_X):
     new_Y = model(np.real(new_X))
 
     return spectrum(new_X, new_Y, old_spectrum.x_type, old_spectrum.y_type)
+
+
+def div(x, by):
+    if x == 0 and by == 0:
+        return 0
+    elif by != 0:
+        return x/by
+    else:
+        raise Exception("You can not divide non-zero number by zero.")
+
+divide = np.vectorize(div)
 
 
 def fit_fiber_length(phase_spectrum):
