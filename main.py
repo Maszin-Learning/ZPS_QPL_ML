@@ -1,5 +1,7 @@
 # modules
 
+print("Loading modules...")
+
 import spectral_analysis as sa
 import numpy as np
 import pandas as pd
@@ -23,7 +25,10 @@ import argparse
 import wandb
 import shutil
 import warnings
+import loss_functions as lf
 from loss_functions import MSEsmooth, MSEsmooth2, MSElowpass, MSEdouble
+
+print("Modules loaded successfully!")
 
 def main(_learning_rate,
          _epoch_num,
@@ -157,7 +162,7 @@ def main(_learning_rate,
                                          pulse_type = 'gauss')
     
     initial_pulse.Y = np.convolve(initial_pulse.Y, signal_correction.Y, mode='same')
-    initial_pulse.Y = initial_pulse.Y / np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
+    initial_pulse.Y = initial_pulse.Y / np.sum(initial_pulse.Y)
 
     Y_initial = initial_pulse.Y.copy()
     initial_intensity_pt = u.np_to_complex_pt(initial_pulse.Y, device = my_device, dtype = my_dtype)
@@ -168,7 +173,7 @@ def main(_learning_rate,
     init_freq_resolution = initial_pulse_FT.calc_spacing()
     increase_freq_res = init_freq_resolution/comp_freq_resolution # at the beginning, we dont control the frequency resolution and later we will want to increase it to given level
 
-    temp_idx_start = np.searchsorted(initial_pulse.X, initial_pulse.quantile(1e-5)-10) # extra 10 ps just to be sure; from this index we start multiplication of phase
+    temp_idx_start = np.searchsorted(initial_pulse.X, initial_pulse.quantile(1e-5, "L1")-10) # extra 10 ps just to be sure; from this index we start multiplication of phase
 
     # generate training data
 
@@ -194,16 +199,7 @@ def main(_learning_rate,
     
     dataset_train = Dataset_train(root='', transform=True, device = my_device)
     dataloader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size=_batch_size, num_workers=0, shuffle=True)
-
-    # target pulse
-
-    target_pulse = dataset_train[0]
-    fwhm_target = u.comp_FWHM(u.comp_std(initial_pulse.X.copy(), target_pulse.clone().detach().cpu().numpy().ravel()))
-    print("\nTime-bandwidth product of the transformation from the initial pulse to the target pulse is equal to {}.\n".format(round(fwhm_target*fwhm_init_F/2, 5)))   # WARNING: This "/2" is just empirical correction
-    '''
-    if fwhm_target*fwhm_init_F/2 < 0.44:
-        print("TRANSFORMATION IMPOSSIBLE\n")
-    '''
+ 
     # create NN
 
     model = network(input_size = time_num, 
@@ -227,8 +223,8 @@ def main(_learning_rate,
     
     # choose loss function
 
-    filter_threshold = 0.15 # write 1 if you don't want to filter out anything
-    filter_mask = u.gen_filter_mask(threshold = filter_threshold, num = None, device = my_device)   # what is the num?
+    #filter_threshold = 0.15 # write 1 if you don't want to filter out anything
+    #filter_mask = lf.gen_filter_mask(threshold = filter_threshold, num = None, device = my_device)   # what is the num?
     
     if _criterion =='MSE':
         criterion = torch.nn.MSELoss()
@@ -243,6 +239,16 @@ def main(_learning_rate,
     if _criterion =='MSEdouble':
         criterion = MSEdouble(device = my_device, dtype = my_dtype)
 
+    # prepare targets
+
+    temp_intens_target = dataset_train[0]
+    temp_intens_target = torch.tensor(temp_intens_target, requires_grad = False, device = my_device, dtype = my_dtype)  # well, it was a tensor even before, but now we know its properties
+    temp_intens_target = temp_intens_target/np.sum(temp_intens_target.clone().detach().cpu().numpy())
+
+    spectr_intens_target = u.fourier(temp_intens_target)
+    spectr_intens_target = u.cut(spectr_intens_target, 50/init_freq_resolution) # we leave central 50 GHz, we delete the rest in order to save GPU
+    spectr_intens_target = u.increase_resolution(spectr_intens_target, increase_freq_res, device = my_device, dtype = my_dtype)
+    
     # learning loop
 
     loss_list = []
@@ -259,19 +265,17 @@ def main(_learning_rate,
             temp_intens_pred = u.multiply_by_phase(initial_intensity_pt, temp_phase_pred, index_start = temp_idx_start, device = my_device, dtype = my_dtype)
 
             # we apply spectral phase
-            spectr_intens_pred = torch.fft.fftshift(temp_intens_pred)
-            spectr_intens_pred = torch.fft.fft(spectr_intens_pred)
-            spectr_intens_pred = torch.fft.fftshift(spectr_intens_pred)
-
+            spectr_intens_pred = u.fourier(temp_intens_pred)
             spectr_intens_pred = u.cut(spectr_intens_pred, 50/init_freq_resolution) # we leave central 50 GHz, we delete the rest in order to save GPU
             spectr_intens_pred = u.increase_resolution(spectr_intens_pred, increase_freq_res, device = my_device, dtype = my_dtype)
-            spectr_intens_pred = u.increase_resolution(spectr_intens_pred, 0.0015/comp_freq_resolution, device = my_device, dtype = my_dtype)  # 1.5 GHz is the resolution of the pulse shaper
+            spectr_phase_pred = u.increase_resolution(spectr_phase_pred, 0.0015/comp_freq_resolution, device = my_device, dtype = my_dtype)  # 1.5 GHz is the resolution of the pulse shaper
             spectr_intens_pred = u.multiply_by_phase(spectr_intens_pred, spectr_phase_pred, index_start = floor((spectr_intens_pred.shape[-1]-spectr_phase_pred.shape[-1])/2), device = my_device, dtype = my_dtype)
 
             # and back to time domain
-            temp_intens_pred = torch.fft.fftshift(temp_intens_pred)
-            temp_intens_pred = torch.fft.fft(spectr_intens_pred)
-            temp_intens_pred = torch.fft.fftshift(temp_intens_pred)
+            print(np.sum(spectr_intens_pred.clone().abs().cpu().detach().numpy()))
+            temp_intens_pred = u.inv_fourier(spectr_intens_pred)
+            print(np.sum(temp_intens_pred.clone().abs().cpu().detach().numpy()))
+            temp_intens_pred = u.cut(temp_intens_pred, np.array(temp_intens_target.shape)[-1])
 
             # calculating back-propagation
             loss = criterion(temp_phase_pred, spectr_phase_pred, temp_intens_pred, spectr_intens_pred, temp_intens_target, spectr_intens_target) # define fuckers
@@ -289,7 +293,13 @@ def main(_learning_rate,
             model.eval()
 
             print("Epoch no. {}. Loss {}.".format(epoch, np.mean(np.array(loss_list[epoch*len(dataloader_train): (epoch+1)*len(dataloader_train)]))))
+            
+            plt.plot(range(np.array(temp_intens_pred.shape)[-1]), temp_intens_pred.clone().cpu().detach().abs().numpy()[0,:], color = "red")
+            plt.plot(range(np.array(temp_intens_target.shape)[-1]), temp_intens_target.clone().cpu().detach().abs().numpy(), color = "green")
+            plt.grid()
+            plt.show()
 
+            '''
             fig, test_loss = test(model = model,
                     target_pulse = target_pulse,
                     initial_pulse = initial_pulse,
@@ -312,7 +322,7 @@ def main(_learning_rate,
             print('test_loss',test_loss)
             wandb.log({"test_loss": test_loss})
             fig.close()
-
+            '''
             model.train()
 
 if __name__ == "__main__":

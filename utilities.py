@@ -329,7 +329,7 @@ def multiply_by_phase(intensity, phase, index_start, device, dtype):
     zeroes_shape_left = np.array(phase.shape)
     zeroes_shape_right = np.array(phase.shape)
     zeroes_shape_left[-1] = index_start
-    zeroes_shape_right[-1] = np.array(intensity.shape)[-1] - index_start
+    zeroes_shape_right[-1] = np.array(intensity.shape)[-1] - index_start - np.array(phase.shape)[-1]
 
     if zeroes_shape_right[-1] < 0:
         raise Exception("Cannot multiply intensity by the phase, because phase is longer than intensity.")
@@ -350,10 +350,28 @@ def cut(pt_array, num):
 
     size = pt_array.shape[-1]
     if len(pt_array.shape) == 1:
-        return pt_array[floor(size-num/2):ceil(size+num/2)]
+        return pt_array[floor(size/2-num/2):ceil(size/2+num/2)]
     elif len(pt_array.shape) == 2:
-        return pt_array[:,floor(size-num/2):ceil(size+num/2)]
+        return pt_array[:,floor(size/2-num/2):ceil(size/2+num/2)]
     elif len(pt_array.shape) == 3:
-        return pt_array[:,:,floor(size-num/2):ceil(size+num/2)]
+        return pt_array[:,:,floor(size/2-num/2):ceil(size/2+num/2)]
     else:
         raise Exception("WTF, the shape of this tensor is wild.")
+    
+def fourier(tensor):
+    tensor = tensor.clone()
+    tensor = torch.mul(torch.sqrt(tensor.abs()), torch.exp(1j*tensor.angle()))
+    tensor = torch.fft.fftshift(tensor)
+    tensor = torch.fft.fft(tensor)
+    tensor = torch.fft.fftshift(tensor)
+    tensor = tensor*tensor.abs()
+    return tensor
+
+def inv_fourier(tensor):
+    tensor = tensor.clone()
+    tensor = torch.mul(torch.sqrt(tensor.abs()), torch.exp(1j*tensor.angle()))
+    tensor = torch.fft.ifftshift(tensor)
+    tensor = torch.fft.ifft(tensor)
+    tensor = torch.fft.ifftshift(tensor)
+    tensor = tensor*tensor.abs()
+    return tensor
