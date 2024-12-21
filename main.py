@@ -272,9 +272,7 @@ def main(_learning_rate,
             spectr_intens_pred = u.multiply_by_phase(spectr_intens_pred, spectr_phase_pred, index_start = floor((spectr_intens_pred.shape[-1]-spectr_phase_pred.shape[-1])/2), device = my_device, dtype = my_dtype)
 
             # and back to time domain
-            print(np.sum(spectr_intens_pred.clone().abs().cpu().detach().numpy()))
             temp_intens_pred = u.inv_fourier(spectr_intens_pred)
-            print(np.sum(temp_intens_pred.clone().abs().cpu().detach().numpy()))
             temp_intens_pred = u.cut(temp_intens_pred, np.array(temp_intens_target.shape)[-1])
 
             # calculating back-propagation
@@ -294,11 +292,12 @@ def main(_learning_rate,
 
             print("Epoch no. {}. Loss {}.".format(epoch, np.mean(np.array(loss_list[epoch*len(dataloader_train): (epoch+1)*len(dataloader_train)]))))
             
+            '''
             plt.plot(range(np.array(temp_intens_pred.shape)[-1]), temp_intens_pred.clone().cpu().detach().abs().numpy()[0,:], color = "red")
             plt.plot(range(np.array(temp_intens_target.shape)[-1]), temp_intens_target.clone().cpu().detach().abs().numpy(), color = "green")
             plt.grid()
             plt.show()
-
+            '''
             '''
             fig, test_loss = test(model = model,
                     target_pulse = target_pulse,

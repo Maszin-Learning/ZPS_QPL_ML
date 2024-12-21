@@ -11,196 +11,6 @@ from scipy.interpolate import CubicSpline
 from scipy.interpolate import splrep, BSpline
 from torch.fft import ifft, ifftshift
 
-def reverse_transformation(model, test_pulse, initial_pulse, device, dtype, save, test_phase = None, iter_num = 0, x_type = "freq"):
-    mse = MSELoss()
-
-    input_dim = model.input
-    output_dim = model.output
-    spectrum_len = len(initial_pulse)
-    zeros_num = floor((spectrum_len - input_dim)/2)
-
-    initial_pulse_short = initial_pulse.cut(start = zeros_num, end = zeros_num+input_dim, inplace = False, how = "index")
-
-    plot_from = floor(0*input_dim)
-    plot_to = floor(1*input_dim)
-
-    # generate test chirp pulse
-
-    test_phase_pred = model(test_pulse.abs())
-    test_phase_pred = test_phase_pred.reshape([output_dim]) #spectral phase of transformation
-
-    # evolve
-
-    initial_intensity = np_to_complex_pt(np.abs(initial_pulse.Y.copy()), device = device, dtype = dtype)
-    test_intensity = evolve_pt(initial_intensity, test_phase_pred, device = device, dtype = dtype, abs = False)
-    reconstructed = test_intensity.abs()[:, zeros_num: zeros_num+input_dim]
-    temporal_phase = torch.angle(test_intensity)[:, zeros_num: zeros_num+input_dim] #of reconstructed signal
-    # reverse
-    test_pulse_complex = test_pulse.clone()
-    test_pulse_temporal = torch.mul(test_pulse_complex, torch.exp(1j*temporal_phase))
-    test_pulse_reversed = evolve_pt(test_pulse_temporal, -test_phase_pred, device = device, dtype = dtype, abs = False)
-    test_pulse_reversed_detached=test_pulse_reversed.detach().numpy()
-    
-    
-    # create plots
-
-    plt.figure(figsize = (10, 5), constrained_layout=True )
-
-    plt.subplot(1, 2, 1)
-    plt.title("Time domain")
-
-    # constant to normalize the time plot
-
-    norm_const = max([np.max(np.abs(initial_pulse_short.Y[plot_from:plot_to])),
-                     np.max(np.abs(np.reshape(test_pulse.clone().cpu().detach().numpy(), input_dim))[plot_from:plot_to]),
-                     np.max(np.abs(np.reshape(reconstructed.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to]))])
-   
-    # initial intensity
-    plt.plot(initial_pulse_short.X[plot_from:plot_to], 
-                np.abs(initial_pulse_short.Y[plot_from:plot_to])/norm_const, 
-                color = "blue", 
-                zorder = 5)
-    
-    # target intensity
-    plt.plot(initial_pulse_short.X[plot_from:plot_to], 
-                    np.abs(np.reshape(test_pulse.clone().cpu().detach().numpy(), input_dim))[plot_from:plot_to]/norm_const, 
-                    color = "red")
-    
-    # transformed intensity
-    plt.scatter(initial_pulse_short.X[plot_from:plot_to], 
-            np.abs(np.reshape(reconstructed.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to])/norm_const, 
-            color = "green", 
-            s = 0.25,
-            zorder = 10)
-    
-    #reversed intensity
-    plt.plot(initial_pulse_short.X[plot_from:plot_to], 
-                np.abs(test_pulse_reversed_detached[plot_from:plot_to]).reshape(test_pulse_reversed.shape[1],)/norm_const, 
-                color = "black", 
-                zorder = 5)
-
-    
-    plt.xlabel("Time (ps)")
-    plt.ylabel("Normalized intensity")
-    plt.legend(["Initial intensity", "Target intensity", "Transformed intensity", "Reverse transformation"], bbox_to_anchor = [1, -0.12], ncol = 2)
-    plt.grid()
-
-    # temporal phase
-
-    ax = plt.gca()
-    ax2 = ax.twinx()
-
-    ax2.scatter(initial_pulse_short.X[plot_from:plot_to], 
-            np.unwrap(np.reshape(temporal_phase.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to]), 
-            color = "burlywood",
-            s = 0.25,
-            zorder = 0)
-    
-    ax2.legend(["Phase of transformed spectrum"], bbox_to_anchor = [0.721, -0.25])
-    ax2.set_ylabel("Temporal phase (rad)")
-    
-    # second plot in frequency
-
-    plt.subplot(1, 2, 2)
-    
-    if x_type == "freq":
-        plt.title("Frequency domain")
-        plt.xlabel("Frequency (THz)")
-    elif x_type == "wl":
-        plt.title("Wavelength domain")
-        plt.xlabel("Wavelength (nm)")
-    else:
-        raise Exception("x_type must be either \"wl\" or \"freq\"")
-    
-    plt.ylabel("Normalized intensity")
-    plt.grid()
-
-    # preprocessing
-
-    reconstructed_phase = np.unwrap(test_phase_pred.clone().cpu().detach().numpy().reshape(output_dim))
-    reconstructed_phase -= reconstructed_phase[floor(output_dim/2)]
-
-    idx_start = floor(zeros_num + input_dim/2 - output_dim/2)
-    idx_end = floor(zeros_num + input_dim/2 + output_dim/2)
-
-    FT_pulse = initial_pulse.inv_fourier(inplace = False)
-    FT_Y = FT_pulse.Y.copy()
-    FT_X = FT_pulse.X.copy()
-
-    FT_Y /= np.max(FT_Y[idx_start: idx_end])
-
-    # FT intensity
-
-    if x_type == "freq":
-        plt.fill_between(FT_X[idx_start: idx_end] + 375, 
-                            np.abs(FT_Y[idx_start: idx_end]),
-                            color='orange',
-                            alpha = 0.5)
-        
-    elif x_type == "wl":
-        plt.fill_between(freq_to_wl(FT_X[idx_start: idx_end] + 375), 
-                    np.flip(np.abs(FT_Y[idx_start: idx_end])),
-                    color='orange',
-                    alpha = 0.5)
-        
-    else:
-        raise Exception("x_type must be either \"wl\" or \"freq\"")
-
-
-    plt.legend(["FT initial intensity"], bbox_to_anchor = [0.665, -0.12])
-
-    # transforming phase
-
-    ax3 = plt.gca()
-    ax4 = ax3.twinx()
-
-    if x_type == "freq":
-        ax4.scatter(FT_X[idx_start: idx_end] + 375, 
-                    reconstructed_phase, 
-                    s = 1, 
-                    color = "firebrick",
-                    zorder = 10)
-        
-    elif x_type == "wl":
-        ax4.scatter(wl_to_freq(FT_X[idx_start: idx_end] + 375), 
-                    np.flip(reconstructed_phase), 
-                    s = 1, 
-                    color = "firebrick",
-                    zorder = 10)
-        
-    else:
-        raise Exception("x_type must be either \"wl\" or \"freq\"")
-
-    ax4.set_ylabel("Spectral phase (rad)")
-    ax4.legend(["Transforming phase (rad)"], bbox_to_anchor = [0.8, -0.19])
-
-    # the below part of the code isn't always executed and when is, won't probably work correctly
-
-    if type(test_phase) == type(np.array([])):
-        test_phase_np = test_phase.copy()
-        #test_phase_np -= test_phase_np[floor(output_dim/2)]
-        plt.plot(FT_X[idx_start: idx_end] + 375,
-                    np.real(test_phase_np),
-                    color = "black",
-                    lw = 1,
-                    linestyle = "dashed",
-                    zorder = 5)
-    
-        
-    '''
-    if type(test_phase) == type(np.array([])):
-        plt.legend(["Reconstructed phase", "Initial phase", "FT intensity"], bbox_to_anchor = [0.95, -0.15])
-    else:
-        plt.legend(["Reconstructed phase", "FT intensity"], bbox_to_anchor = [0.95, -0.15])
-    '''
-    
-    if save:
-        if not os.path.isdir("pics"):
-            os.mkdir("pics")
-        plt.savefig("pics/reverse_transformation{}.jpg".format(iter_num), bbox_inches = "tight", dpi = 200)
-
-    return plt, mse(test_pulse.abs(), reconstructed.abs()).clone().cpu().detach().numpy()
-    
 def test(model, 
          target_pulse, 
          initial_pulse, 
@@ -261,181 +71,33 @@ def test(model,
     
     # create plots
 
-    plt.figure(figsize = (10, 5), constrained_layout = True)
+    plt.figure(figsize = (10, 10), constrained_layout = True)
 
-    plt.subplot(1, 2, 1)
-    plt.title("Time domain")
-
-    # just for the legend
-
-    x_far_away = 2*initial_pulse_short.X[plot_to]
-    plt.plot([x_far_away],[0], color = "blue", lw = 2)
-    plt.plot([x_far_away],[0], color = "red", lw = 2)
-    plt.plot([x_far_away],[0], color = "green", lw = 6, alpha = 0.5)
-    #plt.plot([x_far_away],[0], color = "skyblue")   
-    plt.plot([x_far_away],[0], color = "lightcoral", lw = 2, linestyle = "dashed")
-    plt.legend(["Initial intensity", "Transformed intensity", "Target intensity", "Phase of transformed spectrum"], 
-               bbox_to_anchor = [1.2, -0.12], ncol = 2)
-
-    # constant to normalize the time plot
-    norm_const = max([np.max(np.abs(initial_pulse_short.Y[plot_from:plot_to])),
-                     np.max(np.abs(np.reshape(target_pulse.clone().cpu().detach().numpy(), input_dim))[plot_from:plot_to]),
-                     np.max(np.abs(np.reshape(reconstructed.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to]))])
-   
-    # initial intensity
-    plt.plot(initial_pulse_short.X[plot_from:plot_to], 
-                np.abs(initial_pulse_short.Y[plot_from:plot_to])/norm_const, 
-                color = "blue", 
-                zorder = 5,
-                lw = 2)
-    
-    # target intensity
-    plt.plot(initial_pulse_short.X[plot_from:plot_to], 
-                    np.abs(np.reshape(target_pulse.clone().cpu().detach().numpy(), input_dim))[plot_from:plot_to]/norm_const, 
-                    color = "green",
-                    lw = 6,
-                    alpha = 0.5)
-    
-    # transformed intensity
-    plt.scatter(initial_pulse_short.X[plot_from:plot_to], 
-            np.abs(np.reshape(reconstructed.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to])/norm_const, 
-            color = "red", 
-            s = 0.25,
-            zorder = 10)
+    plt.subplot(2, 2, 1)
+    plt.title("Step 1")
     
     plt.xlabel("Time (ps)")
     plt.ylabel("Normalized intensity")
-    #plt.legend(["Initial intensity", "Target intensity", "Transformed intensity"], bbox_to_anchor = [1, -0.12], ncol = 2)
     plt.grid()
-    plt.xlim([initial_pulse_short.X[plot_from], initial_pulse_short.X[plot_to]])
 
-    # temporal phase, firstly we want to find non-zero intensity
-
-    left = initial_pulse_short.quantile(0.02, norm = "L1") 
-    right = initial_pulse_short.quantile(0.98, norm = "L1")
-    left_idx = np.searchsorted(initial_pulse_short.X, left)
-    right_idx = np.searchsorted(initial_pulse_short.X, right)
-
-    ax = plt.gca()
-    ax2 = ax.twinx()
-
-    # initial temporal phase
-    '''
-    ax2.plot(initial_pulse_short.X[left_idx: right_idx], 
-            np.unwrap((np.angle(initial_pulse_short.Y[left_idx: right_idx]))), 
-            color = "skyblue",
-            lw = 1,
-            zorder = 0)
-    '''
-    # temporal phase
-
-    reconstr_spectrum = sa.spectrum(initial_pulse_short.X[plot_from:plot_to], np.abs(np.reshape(reconstructed.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to])/norm_const, "time", "intensity")
-    
-    left_2 = reconstr_spectrum.quantile(0.02, norm = "L1") 
-    right_2 = reconstr_spectrum.quantile(0.98, norm = "L1")
-    left_idx_2 = np.searchsorted(reconstr_spectrum.X, left_2)
-    right_idx_2 = np.searchsorted(reconstr_spectrum.X, right_2)
-
-    ax2.plot(initial_pulse_short.X[left_idx_2: right_idx_2], 
-            np.unwrap(np.reshape(temporal_phase.clone().cpu().detach().numpy(), input_dim)[left_idx_2:right_idx_2]), 
-            color = "lightcoral",
-            lw = 2,
-            zorder = 0,
-            linestyle = "dashed")
-    
-    #ax2.legend(["Phase of transformed spectrum"], bbox_to_anchor = [0.721, -0.25])
-    ax2.set_ylabel("Temporal phase (rad)")
-    
-    # second plot in frequency
-
-    plt.subplot(1, 2, 2)
-    
-    if x_type == "freq":
-        plt.title("Frequency domain")
-        plt.xlabel("Frequency (THz)")
-    elif x_type == "wl":
-        plt.title("Wavelength domain")
-        plt.xlabel("Wavelength (nm)")
-    else:
-        raise Exception("x_type must be either \"wl\" or \"freq\"")
-    
+    plt.subplot(2, 2, 2)
+    plt.title("Step 2")
+    plt.xlabel("Frequency (THz)")
     plt.ylabel("Normalized intensity")
     plt.grid()
 
-    # just for the legend
+    plt.subplot(2, 2, 3)
+    plt.title("Step 3")
+    plt.xlabel("Time (ps)")
+    plt.ylabel("Normalized intensity")
+    plt.grid()
 
-    plt.fill_between([500], 
-                     [0],
-                     color = 'orange')
-    plt.plot([500], 
-             [0],
-             lw = 2, 
-             color = "firebrick",
-             zorder = 10)
-    plt.legend(["FT initial intensity", "Transforming phase"], bbox_to_anchor = [0.665, -0.12])
+    plt.subplot(2, 2, 4)
+    plt.title("Step 4")
+    plt.xlabel("Frequency (THz)")
+    plt.ylabel("Normalized intensity")
+    plt.grid()
 
-    # preprocessing
-
-    reconstructed_phase = np.unwrap(target_phase_pred.clone().cpu().detach().numpy().reshape(output_dim))
-    reconstructed_phase -= reconstructed_phase[floor(output_dim/2)]
-    
-    reconstructed_phase = u.low_pass_np(reconstructed_phase, filter_mask)
-
-    idx_start = floor(zeros_num + input_dim/2 - output_dim/2)
-    idx_end = floor(zeros_num + input_dim/2 + output_dim/2)
-
-    FT_X = initial_pulse.inv_fourier(inplace = False).X
-    FT_Y = ifftshift(ifft(ifftshift(torch.flatten(initial_intensity))))
-    FT_Y = FT_Y.clone().detach().cpu().numpy()
-
-    FT_Y /= np.max(FT_Y[idx_start: idx_end])
-
-    if x_type == "freq":
-        plt.xlim([FT_X[idx_start] + 375, FT_X[idx_end] + 375])
-    if x_type == "wl":
-        plt.xlim([freq_to_wl(FT_X[idx_end] + 375), freq_to_wl(FT_X[idx_start] + 375)])
-
-    # FT intensity
-
-    if x_type == "freq":
-        plt.fill_between(FT_X[idx_start: idx_end] + 375, 
-                            np.abs(FT_Y[idx_start: idx_end]),
-                            color='orange')
-        
-    elif x_type == "wl":
-        plt.fill_between(freq_to_wl(FT_X[idx_start: idx_end] + 375), 
-                    np.flip(np.abs(FT_Y[idx_start: idx_end])),
-                    color='orange')
-        
-    else:
-        raise Exception("x_type must be either \"wl\" or \"freq\"")
-
-    # transforming phase
-
-    ax3 = plt.gca()
-    ax4 = ax3.twinx()
-
-    if x_type == "freq":
-        ax4.plot(FT_X[idx_start: idx_end] + 375, 
-                    reconstructed_phase, 
-                    lw = 2, 
-                    color = "firebrick",
-                    zorder = 10)
-        
-    elif x_type == "wl":
-        ax4.plot(wl_to_freq(FT_X[idx_start: idx_end] + 375), 
-                    np.flip(reconstructed_phase), 
-                    lw = 2, 
-                    color = "firebrick",
-                    zorder = 10)
-        
-    else:
-        raise Exception("x_type must be either \"wl\" or \"freq\"")
-
-    ax4.set_ylabel("Spectral phase (rad)")
-
-    # the below part of the code isn't always executed and when is, won't probably work correctly
-    
     if save:
         if not os.path.isdir("pics"):
             os.mkdir("pics")
@@ -585,23 +247,3 @@ def create_initial_pulse(bandwidth, centre, FWHM, num, pulse_type):
     
     else:
         raise Exception("Pulse_type must be either \"gauss\", \"hermite\" or \"exponential\".")
-    
-
-
-def create_test_set(initial_pulse, phase_len, device, dtype):
-    '''
-    ## Returns a list with predefined test intensities.
-
-    initial_pulse - a spectrum class object containing the initial spectrum that is - possibly - transformed into test_pulse.
-
-    phase_len - the length of significant part of the Fourier transformed initial_pulse
-    '''
-    test_set = []
-    for pulse_type in ["hermite", "chirp", "exponential", "gauss"]:
-        test_set.append(create_test_pulse(pulse_type = pulse_type, 
-                                          initial_pulse = initial_pulse.copy(),
-                                          phase_len = phase_len, 
-                                          device = device, 
-                                          dtype = dtype)[0])
-        
-    return test_set

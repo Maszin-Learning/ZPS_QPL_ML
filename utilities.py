@@ -362,7 +362,7 @@ def fourier(tensor):
     tensor = tensor.clone()
     tensor = torch.mul(torch.sqrt(tensor.abs()), torch.exp(1j*tensor.angle()))
     tensor = torch.fft.fftshift(tensor)
-    tensor = torch.fft.fft(tensor)
+    tensor = torch.fft.fft(tensor, norm = "ortho")
     tensor = torch.fft.fftshift(tensor)
     tensor = tensor*tensor.abs()
     return tensor
@@ -371,7 +371,7 @@ def inv_fourier(tensor):
     tensor = tensor.clone()
     tensor = torch.mul(torch.sqrt(tensor.abs()), torch.exp(1j*tensor.angle()))
     tensor = torch.fft.ifftshift(tensor)
-    tensor = torch.fft.ifft(tensor)
+    tensor = torch.fft.ifft(tensor, norm = "ortho")
     tensor = torch.fft.ifftshift(tensor)
     tensor = tensor*tensor.abs()
     return tensor

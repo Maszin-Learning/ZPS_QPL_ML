@@ -207,4 +207,4 @@ class MSEdouble(nn.modules.loss._Loss):
         MSE_t = torch.sum(torch.square(torch.abs(temp_intens_pred - temp_intens_target)))
         MSE_s = torch.sum(torch.square(torch.abs(spectr_intens_pred - spectr_intens_target)))
 
-        return MSE_t#+MSE_s
+        return MSE_t + MSE_s
