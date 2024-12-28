@@ -17,12 +17,16 @@ def test(model,
          device, 
          dtype, 
          save, 
-         iter_num = 0, 
-         x_type = "freq",
-         filter_threshold = 1):
+         comp_time_resolution,
+         temp_idx_start,
+         init_freq_resolution,
+         increase_freq_res,
+         comp_freq_resolution,
+         iter_num = 0):
     '''
-    ## Test how the model transforms initial pulse to the target pulse.
+    # OLD LEGEND
 
+    ## Test how the model transforms initial pulse to the target pulse.
     # Arguments:
 
     model - the model of the neural network.
@@ -43,50 +47,48 @@ def test(model,
 
     mse = MSELoss()
 
-    input_dim = model.input
-    output_dim = model.output
-    spectrum_len = len(initial_pulse)
-    zeros_num = floor((spectrum_len - input_dim)/2)
-
-    initial_pulse_short = initial_pulse.cut(start = zeros_num, end = zeros_num+input_dim, inplace = False, how = "index")
-
-    plot_from = floor(0*input_dim)
-    plot_to = floor(1*input_dim)-1
-
     # generate test chirp pulse
 
-    target_phase_pred = model(target_pulse.abs())
-    target_phase_pred = target_phase_pred.reshape([output_dim])
+    temp_phase_pred, spectr_phase_pred = model(target_pulse)
 
-    filter_mask = u.gen_filter_mask(threshold = filter_threshold, num = len(target_phase_pred), device = device)
-    target_phase_pred = u.low_pass_pt(target_phase_pred, filter_mask)
+    # we apply temporal phase
+    temp_phase_pred = u.increase_resolution(temp_phase_pred, 11/comp_time_resolution, device = device, dtype = dtype) # 11 ps is the resolution of EOPM
+    initial_intensity_pt = u.np_to_complex_pt(initial_pulse.Y, device = device, dtype = dtype)
+    temp_intens_pred = u.multiply_by_phase(initial_intensity_pt, temp_phase_pred, index_start = temp_idx_start, device = device, dtype = dtype)
 
-    # evolve
+    # we apply spectral phase
+    spectr_intens_pred = u.fourier(temp_intens_pred)
+    spectr_intens_pred = u.cut(spectr_intens_pred, 50/init_freq_resolution) # we leave central 50 GHz, we delete the rest in order to save GPU
+    spectr_intens_pred = u.increase_resolution(spectr_intens_pred, increase_freq_res, device = device, dtype = dtype)
+    spectr_phase_pred = u.increase_resolution(spectr_phase_pred, 0.0015/comp_freq_resolution, device = device, dtype = dtype)  # 1.5 GHz is the resolution of the pulse shaper
+    spectr_intens_pred = u.multiply_by_phase(spectr_intens_pred, spectr_phase_pred, index_start = floor((spectr_intens_pred.shape[-1]-spectr_phase_pred.shape[-1])/2), device = device, dtype = dtype)
 
-    initial_intensity = np_to_complex_pt(np.abs(initial_pulse.Y.copy()), device = device, dtype = dtype)
-
-    target_intensity_pred = evolve_pt(initial_intensity, target_phase_pred, device = device, dtype = dtype, abs = False)
-    reconstructed = target_intensity_pred.abs()[:, zeros_num: zeros_num+input_dim]
-    temporal_phase = torch.angle(target_intensity_pred)[:, zeros_num: zeros_num+input_dim]
+    # and back to time domain
+    temp_intens_pred2 = u.inv_fourier(spectr_intens_pred)
+    temp_intens_pred2 = u.cut(temp_intens_pred2, np.array(len(target_pulse)))
     
     # create plots
 
     plt.figure(figsize = (10, 10), constrained_layout = True)
 
     plt.subplot(2, 2, 1)
+
+    plt.plot(initial_pulse.X, initial_pulse.Y, color = "darkviolet")
     plt.title("Step 1")
-    
     plt.xlabel("Time (ps)")
     plt.ylabel("Normalized intensity")
     plt.grid()
 
     plt.subplot(2, 2, 2)
+
+    plt.plot(range(spectr_intens_pred.shape[-1]), np.abs(spectr_intens_pred.clone().detach().cpu().numpy().flatten()), color = "darkorange")
     plt.title("Step 2")
     plt.xlabel("Frequency (THz)")
     plt.ylabel("Normalized intensity")
     plt.grid()
 
     plt.subplot(2, 2, 3)
+    plt.plot(range(temp_intens_pred2.shape[-1]), np.abs(temp_intens_pred2.clone().detach().cpu().numpy().flatten()), color = "darkviolet")
     plt.title("Step 3")
     plt.xlabel("Time (ps)")
     plt.ylabel("Normalized intensity")
@@ -103,7 +105,7 @@ def test(model,
             os.mkdir("pics")
         plt.savefig("pics/reconstructed_{}.svg".format(iter_num), bbox_inches = "tight", dpi = 200)
 
-    return plt, mse(target_pulse.abs(), reconstructed.abs()).clone().cpu().detach().numpy()
+    return plt, 0
     
 
 def create_target_pulse(pulse_type, initial_pulse, phase_len, device, dtype):

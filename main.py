@@ -292,23 +292,18 @@ def main(_learning_rate,
 
             print("Epoch no. {}. Loss {}.".format(epoch, np.mean(np.array(loss_list[epoch*len(dataloader_train): (epoch+1)*len(dataloader_train)]))))
             
-            '''
-            plt.plot(range(np.array(temp_intens_pred.shape)[-1]), temp_intens_pred.clone().cpu().detach().abs().numpy()[0,:], color = "red")
-            plt.plot(range(np.array(temp_intens_target.shape)[-1]), temp_intens_target.clone().cpu().detach().abs().numpy(), color = "green")
-            plt.grid()
-            plt.show()
-            '''
-            '''
             fig, test_loss = test(model = model,
-                    target_pulse = target_pulse,
-                    initial_pulse = initial_pulse,
-                    device = my_device, 
-                    dtype = my_dtype,
-                    iter_num = epoch,
-                    save = True,
-                    x_type = _axis_type,
-                    filter_threshold = filter_threshold)
-            
+                                target_pulse = dataset_train[0],
+                                initial_pulse = initial_pulse,
+                                device = my_device, 
+                                dtype = my_dtype,
+                                iter_num = epoch,
+                                comp_freq_resolution = comp_freq_resolution,
+                                comp_time_resolution = comp_time_resolution,
+                                increase_freq_res = increase_freq_res,
+                                init_freq_resolution = init_freq_resolution,
+                                temp_idx_start = temp_idx_start,
+                                save = True)                        
             cont_penalty = 0
             print("phase's variation MSE: {}.".format(cont_penalty))
 
@@ -321,7 +316,7 @@ def main(_learning_rate,
             print('test_loss',test_loss)
             wandb.log({"test_loss": test_loss})
             fig.close()
-            '''
+
             model.train()
 
 if __name__ == "__main__":
