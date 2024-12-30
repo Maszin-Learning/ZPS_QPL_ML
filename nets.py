@@ -12,12 +12,10 @@ class network_0(nn.Module):
         # super function. It inherits from nn.Module and we can access everything in nn.Module
         super(network_0, self).__init__()
         self.input = input_size
-        self.s_len = spectral_phase_len
-        self.s_len = spectral_phase_len
 
         self.linear_1 = nn.Linear(input_size, n)
-        self.linear_2 = nn.Linear(n, spectral_phase_len) 
-        self.linear_3 = nn.Linear(n, temporal_phase_len) 
+        self.linear_s = nn.Linear(n, spectral_phase_len) 
+        self.linear_t = nn.Linear(n, temporal_phase_len) 
 
         self.sigmoid = nn.Sigmoid()
         self.leakyrelu=nn.LeakyReLU(1, inplace=True)
@@ -26,11 +24,11 @@ class network_0(nn.Module):
     def forward(self, x):
         t = self.normal_1(x)
         t = self.leakyrelu(self.linear_1(t))
-        t = self.linear_2(t)
+        t = self.linear_t(t)
 
         s = self.normal_1(x)
         s = self.leakyrelu(self.linear_1(s))
-        s = self.linear_3(s)
+        s = self.linear_s(s)
 
         return (6*np.pi*self.sigmoid(t), 6*np.pi*self.sigmoid(s))
 

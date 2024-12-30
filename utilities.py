@@ -242,8 +242,8 @@ def shift_to_centre(intensity_to_shift, intensity_ref):
     num = len(intensity_ref)
 
     x_axis = np.linspace(1, 2, num) # doesn't matter what we take here; I just want to create spectrum
-    spectrum_to_shift = sa.spectrum(x_axis, intensity_to_shift, "freq", "intensity")
-    spectrum_ref = sa.spectrum(x_axis, intensity_ref, "freq", "intensity")
+    spectrum_to_shift = sa.spectrum(x_axis, intensity_to_shift, "THz", "intensity")
+    spectrum_ref = sa.spectrum(x_axis, intensity_ref, "THz", "intensity")
 
     com_s = spectrum_to_shift.comp_center(norm = "L2")
     com_r = spectrum_ref.comp_center(norm = "L2")
@@ -332,7 +332,7 @@ def multiply_by_phase(intensity, phase, index_start, device, dtype):
     zeroes_shape_right[-1] = np.array(intensity.shape)[-1] - index_start - np.array(phase.shape)[-1]
 
     if zeroes_shape_right[-1] < 0:
-        raise Exception("Cannot multiply intensity by the phase, because phase is longer than intensity.")
+        raise Exception("Cannot multiply intensity by the phase ({}), because it is longer than intensity ({}).".format(phase.shape[-1], intensity.shape[-1]))
     
     zeroes_shape_left = tuple(zeroes_shape_left)
     zeroes_shape_right = tuple(zeroes_shape_right)
@@ -375,3 +375,28 @@ def inv_fourier(tensor):
     tensor = torch.fft.ifftshift(tensor)
     tensor = tensor*tensor.abs()
     return tensor
+
+class Parameters:
+    '''
+    ## Storage for some metaparameters.
+
+    comp_time_resolution - time domain resolution used for computation. It's much higher than the real one to avoid numerical errors.
+
+    comp_freq_resolution - frequency domain resolution used for computation. Higher than the \"physical\" one.
+
+    init_freq_resolution - frequency domain resolution determined by the signal properties in time. Cannot be arbitrary defined.
+
+    temp_idx_start - index of the \"first\" non-zero intensity point in the time domain with respect to comp_time_resolution. Starting
+    with this index we multiply intensity by the phase.
+
+    increase_freq_res - comp_freq_resolution/init_freq_resolution
+    '''
+
+    def __init__(self):
+        self.comp_time_res = None 
+        self.temp_idx_start = None
+        self.init_freq_res = None
+        self.increase_freq_res = None
+        self.comp_freq_res = None
+        self.eopm_res = None
+        self.pulse_shaper_res = None

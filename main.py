@@ -16,7 +16,7 @@ import utilities
 from dataset import Dataset
 from torch.utils.data import DataLoader #Dataloader module
 import torchaudio
-from test import create_target_pulse, test, create_initial_pulse
+from test import test, create_initial_pulse
 import torchvision.transforms as transforms  # Transformations and augmentations
 from dataset import Dataset_train
 from dataset_generator import Generator
@@ -116,6 +116,8 @@ def main(_learning_rate,
             my_device = torch.device("cpu")
             print (f"Using {my_device}")
 
+    torch.autograd.set_detect_anomaly(True)
+
     # data type
     my_dtype = torch.float32
     
@@ -127,15 +129,19 @@ def main(_learning_rate,
 
     # metaparameters
 
+    meta = u.Parameters()
+
     bandwidth = [-2500, 2500]   # (ps)
 
     spectral_phase_len = 40     # so, assuming 1.5 GHz of pulse shaper's resolution, we get 60 GHz of bandwidth
     temporal_phase_len = 200    # so, assuming 11 ps of modulator's resolution, we get 2200 ps of bandwidth
 
-    comp_time_resolution = 1        # (ps) to avoid border effects we compute with higher resolution than the one of the modulator's
-    comp_freq_resolution = 0.0001   # (THz) as above
+    meta.comp_time_res = 1          # (ps) to avoid border effects we compute with higher resolution than the one of the modulator's
+    meta.comp_freq_res = 0.0001     # (THz) as above
+    meta.eopm_res = 11              # (ps)
+    meta.pulse_shaper_res = 0.0015  # (THZ)
 
-    time_num = floor((bandwidth[1]-bandwidth[0])/comp_time_resolution)             # number of points in the initial pulse
+    time_num = floor((bandwidth[1]-bandwidth[0])/meta.comp_time_res)             # number of points in the initial pulse
 
     centre_init = 500           # not used if initial signal is exponential
     width_init = 100            # not used if initial signal is exponential
@@ -170,10 +176,10 @@ def main(_learning_rate,
     # we compute resolution stuff to be able later to match phase and intensity
 
     initial_pulse_FT = initial_pulse.inv_fourier(inplace = False)
-    init_freq_resolution = initial_pulse_FT.calc_spacing()
-    increase_freq_res = init_freq_resolution/comp_freq_resolution # at the beginning, we dont control the frequency resolution and later we will want to increase it to given level
+    meta.init_freq_res= initial_pulse_FT.calc_spacing()
+    meta.increase_freq_res = meta.init_freq_res/meta.comp_freq_res # at the beginning, we dont control the frequency resolution and later we will want to increase it to given level
 
-    temp_idx_start = np.searchsorted(initial_pulse.X, initial_pulse.quantile(1e-5, "L1")-10) # extra 10 ps just to be sure; from this index we start multiplication of phase
+    meta.temp_idx_start = np.searchsorted(initial_pulse.X, initial_pulse.quantile(1e-3, "L1")-20) # extra 20 ps just to be sure; from this index we start multiplication of phase
 
     # generate training data
 
@@ -246,8 +252,8 @@ def main(_learning_rate,
     temp_intens_target = temp_intens_target/np.sum(temp_intens_target.clone().detach().cpu().numpy())
 
     spectr_intens_target = u.fourier(temp_intens_target)
-    spectr_intens_target = u.cut(spectr_intens_target, 50/init_freq_resolution) # we leave central 50 GHz, we delete the rest in order to save GPU
-    spectr_intens_target = u.increase_resolution(spectr_intens_target, increase_freq_res, device = my_device, dtype = my_dtype)
+    spectr_intens_target = u.cut(spectr_intens_target, 0.1/meta.init_freq_res) # we leave central 100 GHz, we delete the rest in order to save GPU
+    spectr_intens_target = u.increase_resolution(spectr_intens_target, meta.increase_freq_res, device = my_device, dtype = my_dtype)
     
     # learning loop
 
@@ -257,26 +263,36 @@ def main(_learning_rate,
 
     for epoch in range(_epoch_num):
         for pulse, _ in tqdm(dataloader_train):
-
             temp_phase_pred, spectr_phase_pred = model(pulse)
 
             # we apply temporal phase
-            temp_phase_pred = u.increase_resolution(temp_phase_pred, 11/comp_time_resolution, device = my_device, dtype = my_dtype) # 11 ps is the resolution of EOPM
-            temp_intens_pred = u.multiply_by_phase(initial_intensity_pt, temp_phase_pred, index_start = temp_idx_start, device = my_device, dtype = my_dtype)
+            temp_phase_pred = u.increase_resolution(temp_phase_pred, meta.eopm_res/meta.comp_time_res, device = my_device, dtype = my_dtype) # 11 ps is the resolution of EOPM
+            temp_intens_pred = u.multiply_by_phase(initial_intensity_pt, temp_phase_pred, index_start = meta.temp_idx_start, device = my_device, dtype = my_dtype)
 
             # we apply spectral phase
             spectr_intens_pred = u.fourier(temp_intens_pred)
-            spectr_intens_pred = u.cut(spectr_intens_pred, 50/init_freq_resolution) # we leave central 50 GHz, we delete the rest in order to save GPU
-            spectr_intens_pred = u.increase_resolution(spectr_intens_pred, increase_freq_res, device = my_device, dtype = my_dtype)
-            spectr_phase_pred = u.increase_resolution(spectr_phase_pred, 0.0015/comp_freq_resolution, device = my_device, dtype = my_dtype)  # 1.5 GHz is the resolution of the pulse shaper
+
+            old_length = np.array(spectr_intens_pred.shape)[-1]
+            spectr_intens_pred = u.cut(spectr_intens_pred, 0.1/meta.init_freq_res) # we leave central 100 GHz, we delete the rest in order to save GPU
+            new_length = np.array(spectr_intens_pred.shape)[-1]
+            increase_time_res = old_length/new_length
+
+            spectr_intens_pred = u.increase_resolution(spectr_intens_pred, meta.increase_freq_res, device = my_device, dtype = my_dtype)
+            spectr_phase_pred = u.increase_resolution(spectr_phase_pred, meta.pulse_shaper_res/meta.comp_freq_res, device = my_device, dtype = my_dtype)  # 1.5 GHz is the resolution of the pulse shaper
             spectr_intens_pred = u.multiply_by_phase(spectr_intens_pred, spectr_phase_pred, index_start = floor((spectr_intens_pred.shape[-1]-spectr_phase_pred.shape[-1])/2), device = my_device, dtype = my_dtype)
 
             # and back to time domain
             temp_intens_pred = u.inv_fourier(spectr_intens_pred)
+            temp_intens_pred = u.increase_resolution(temp_intens_pred, increase_time_res, device = my_device, dtype = my_dtype)
             temp_intens_pred = u.cut(temp_intens_pred, np.array(temp_intens_target.shape)[-1])
 
             # calculating back-propagation
-            loss = criterion(temp_phase_pred, spectr_phase_pred, temp_intens_pred, spectr_intens_pred, temp_intens_target, spectr_intens_target) # define fuckers
+            loss = criterion(temp_phase_pred,
+                             spectr_phase_pred, 
+                             temp_intens_pred,
+                             spectr_intens_pred,
+                             temp_intens_target, 
+                             spectr_intens_target)
             
             loss.backward()
             optimizer.step()
@@ -298,11 +314,7 @@ def main(_learning_rate,
                                 device = my_device, 
                                 dtype = my_dtype,
                                 iter_num = epoch,
-                                comp_freq_resolution = comp_freq_resolution,
-                                comp_time_resolution = comp_time_resolution,
-                                increase_freq_res = increase_freq_res,
-                                init_freq_resolution = init_freq_resolution,
-                                temp_idx_start = temp_idx_start,
+                                param = meta,
                                 save = True)                        
             cont_penalty = 0
             print("phase's variation MSE: {}.".format(cont_penalty))
