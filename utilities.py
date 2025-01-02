@@ -360,24 +360,24 @@ def cut(pt_array, num):
         raise Exception("WTF, the shape of this tensor is wild.")
     
 def soft_abs(x, epsilon=1e-6):
-    return torch.sqrt(x**2 + epsilon)
+    return torch.sqrt(x*torch.conj(x) + epsilon)
     
 def fourier(tensor):
     tensor2 = tensor.clone()
-    tensor2 = torch.mul(torch.sqrt(soft_abs(tensor2)), torch.exp(1j*tensor2.angle()))
+    #tensor2 = torch.mul(torch.sqrt(soft_abs(tensor2)), torch.exp(1j*tensor2.angle()))
     tensor2 = torch.fft.fftshift(tensor2)
     tensor2 = torch.fft.fft(tensor2, norm = "ortho")
     tensor2 = torch.fft.fftshift(tensor2)
-    tensor2 = tensor2*soft_abs(tensor2)
+    #tensor2 = tensor2*soft_abs(tensor2)
     return tensor2
 
 def inv_fourier(tensor):
     tensor2 = tensor.clone()
-    tensor2 = torch.mul(torch.sqrt(soft_abs(tensor2)), torch.exp(1j*tensor2.angle()))
+    #tensor2 = torch.mul(torch.sqrt(soft_abs(tensor2)), torch.exp(1j*tensor2.angle()))
     tensor2 = torch.fft.ifftshift(tensor2)
     tensor2 = torch.fft.ifft(tensor2, norm = "ortho")
     tensor2 = torch.fft.ifftshift(tensor2)
-    tensor2 = tensor2*soft_abs(tensor2)
+    #tensor2 = tensor2*soft_abs(tensor2)
     return tensor2
 
 

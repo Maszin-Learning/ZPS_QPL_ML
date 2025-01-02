@@ -252,7 +252,7 @@ def main(_learning_rate,
     temp_intens_target = temp_intens_target/np.sum(temp_intens_target.clone().detach().cpu().numpy())
 
     spectr_intens_target = u.fourier(temp_intens_target)
-    spectr_intens_target = u.cut(spectr_intens_target, 0.1/meta.init_freq_res) # we leave central 100 GHz, we delete the rest in order to save GPU
+    spectr_intens_target = u.cut(spectr_intens_target, 0.05/meta.init_freq_res) # we leave central 100 GHz, we delete the rest in order to save GPU
     spectr_intens_target = u.increase_resolution(spectr_intens_target, meta.increase_freq_res, device = my_device, dtype = my_dtype)
     
     # learning loop
@@ -273,7 +273,7 @@ def main(_learning_rate,
             # we apply spectral phase
             spectr_intens_pred = u.fourier(temp_intens_pred)
             old_length = np.array(spectr_intens_pred.shape)[-1]
-            spectr_intens_pred = u.cut(spectr_intens_pred, 0.1/meta.init_freq_res) # we leave central 100 GHz, we delete the rest in order to save GPU
+            spectr_intens_pred = u.cut(spectr_intens_pred, 0.05/meta.init_freq_res) # we leave central 100 GHz, we delete the rest in order to save GPU
             new_length = np.array(spectr_intens_pred.shape)[-1]
             increase_time_res = old_length/new_length
 
