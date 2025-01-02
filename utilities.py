@@ -339,7 +339,8 @@ def multiply_by_phase(intensity, phase, index_start, device, dtype):
 
     long_phase = torch.concat([torch.zeros(size = zeroes_shape_left, requires_grad = True, device = device, dtype = dtype), 
                           phase,
-                          torch.zeros(size = zeroes_shape_right, requires_grad = True, device = device, dtype = dtype)], dim=phase.ndim-1)
+                          torch.zeros(size = zeroes_shape_right, requires_grad = True, device = device, dtype = dtype)], 
+                          dim=phase.ndim-1)
 
     return torch.mul(intensity, torch.exp(1j*long_phase))
 
@@ -358,23 +359,27 @@ def cut(pt_array, num):
     else:
         raise Exception("WTF, the shape of this tensor is wild.")
     
+def soft_abs(x, epsilon=1e-6):
+    return torch.sqrt(x**2 + epsilon)
+    
 def fourier(tensor):
-    tensor = tensor.clone()
-    tensor = torch.mul(torch.sqrt(tensor.abs()), torch.exp(1j*tensor.angle()))
-    tensor = torch.fft.fftshift(tensor)
-    tensor = torch.fft.fft(tensor, norm = "ortho")
-    tensor = torch.fft.fftshift(tensor)
-    tensor = tensor*tensor.abs()
-    return tensor
+    tensor2 = tensor.clone()
+    tensor2 = torch.mul(torch.sqrt(soft_abs(tensor2)), torch.exp(1j*tensor2.angle()))
+    tensor2 = torch.fft.fftshift(tensor2)
+    tensor2 = torch.fft.fft(tensor2, norm = "ortho")
+    tensor2 = torch.fft.fftshift(tensor2)
+    tensor2 = tensor2*soft_abs(tensor2)
+    return tensor2
 
 def inv_fourier(tensor):
-    tensor = tensor.clone()
-    tensor = torch.mul(torch.sqrt(tensor.abs()), torch.exp(1j*tensor.angle()))
-    tensor = torch.fft.ifftshift(tensor)
-    tensor = torch.fft.ifft(tensor, norm = "ortho")
-    tensor = torch.fft.ifftshift(tensor)
-    tensor = tensor*tensor.abs()
-    return tensor
+    tensor2 = tensor.clone()
+    tensor2 = torch.mul(torch.sqrt(soft_abs(tensor2)), torch.exp(1j*tensor2.angle()))
+    tensor2 = torch.fft.ifftshift(tensor2)
+    tensor2 = torch.fft.ifft(tensor2, norm = "ortho")
+    tensor2 = torch.fft.ifftshift(tensor2)
+    tensor2 = tensor2*soft_abs(tensor2)
+    return tensor2
+
 
 class Parameters:
     '''
@@ -400,3 +405,27 @@ class Parameters:
         self.comp_freq_res = None
         self.eopm_res = None
         self.pulse_shaper_res = None
+
+def plot(tensor):
+    X = np.array(range(np.array(tensor.shape)[-1]))
+    Y = np.abs(tensor.clone().detach().cpu().numpy())
+    plt.scatter(X, Y, color = "red", s = 1)
+    plt.show()
+
+def plot2(tensor1, tensor2):
+    X = np.array(range(np.array(tensor1.shape)[-1]))
+    Y1 = np.abs(tensor1.clone().detach().cpu().numpy())
+    Y2 = np.abs(tensor2.clone().detach().cpu().numpy())
+    plt.scatter(X, Y1, color = "red", s = 1)
+    plt.scatter(X, Y2, color = "blue", s = 1)
+    plt.show()
+
+def print_gradient_after(tensor, name = "So far"):
+    """
+    Registers a backward hook to log gradient norms after backpropagation.
+    """
+    def hook_fn(grad):
+        grad_norm = grad.abs().max().item()
+        print(f"{name} | Max Gradient Norm: {grad_norm}")
+    print(" Computing gradient norm...")
+    tensor.register_hook(hook_fn)

@@ -263,15 +263,15 @@ def main(_learning_rate,
 
     for epoch in range(_epoch_num):
         for pulse, _ in tqdm(dataloader_train):
+
             temp_phase_pred, spectr_phase_pred = model(pulse)
 
             # we apply temporal phase
             temp_phase_pred = u.increase_resolution(temp_phase_pred, meta.eopm_res/meta.comp_time_res, device = my_device, dtype = my_dtype) # 11 ps is the resolution of EOPM
-            temp_intens_pred = u.multiply_by_phase(initial_intensity_pt, temp_phase_pred, index_start = meta.temp_idx_start, device = my_device, dtype = my_dtype)
+            temp_intens_pred = u.multiply_by_phase(initial_intensity_pt.clone(), temp_phase_pred, index_start = meta.temp_idx_start, device = my_device, dtype = my_dtype)
 
             # we apply spectral phase
             spectr_intens_pred = u.fourier(temp_intens_pred)
-
             old_length = np.array(spectr_intens_pred.shape)[-1]
             spectr_intens_pred = u.cut(spectr_intens_pred, 0.1/meta.init_freq_res) # we leave central 100 GHz, we delete the rest in order to save GPU
             new_length = np.array(spectr_intens_pred.shape)[-1]
@@ -282,18 +282,20 @@ def main(_learning_rate,
             spectr_intens_pred = u.multiply_by_phase(spectr_intens_pred, spectr_phase_pred, index_start = floor((spectr_intens_pred.shape[-1]-spectr_phase_pred.shape[-1])/2), device = my_device, dtype = my_dtype)
 
             # and back to time domain
-            temp_intens_pred = u.inv_fourier(spectr_intens_pred)
-            temp_intens_pred = u.increase_resolution(temp_intens_pred, increase_time_res, device = my_device, dtype = my_dtype)
-            temp_intens_pred = u.cut(temp_intens_pred, np.array(temp_intens_target.shape)[-1])
+            temp_intens_pred_2 = u.inv_fourier(spectr_intens_pred)
+            temp_intens_pred_2 = u.increase_resolution(temp_intens_pred_2, increase_time_res, device = my_device, dtype = my_dtype)
+            temp_intens_pred_2 = u.cut(temp_intens_pred_2, np.array(temp_intens_target.shape)[-1])
+
 
             # calculating back-propagation
             loss = criterion(temp_phase_pred,
                              spectr_phase_pred, 
-                             temp_intens_pred,
+                             temp_intens_pred_2,
                              spectr_intens_pred,
                              temp_intens_target, 
                              spectr_intens_target)
-            
+ 
+
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
@@ -327,7 +329,6 @@ def main(_learning_rate,
             wandb.log({"chart": fig})
             print('test_loss',test_loss)
             wandb.log({"test_loss": test_loss})
-            fig.close()
 
             model.train()
 

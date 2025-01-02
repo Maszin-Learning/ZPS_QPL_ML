@@ -83,37 +83,36 @@ def test(model,
     
     # create plots
 
-    plt.figure(figsize = (10, 10), constrained_layout = True)
+    fig, axes = plt.subplots(2, 2, figsize=(10, 10), constrained_layout=True)
 
-    plt.subplot(2, 2, 1)
+    # plot 1
+    axes[0, 0].plot(initial_pulse.X, initial_pulse.Y, color="darkviolet")
+    axes[0, 0].set_title("Step 1")
+    axes[0, 0].set_xlabel("Time (ps)")
+    axes[0, 0].set_ylabel("Normalized intensity")
+    axes[0, 0].grid()
 
-    plt.plot(initial_pulse.X, initial_pulse.Y, color = "darkviolet")
-    plt.title("Step 1")
-    plt.xlabel("Time (ps)")
-    plt.ylabel("Normalized intensity")
-    plt.grid()
+    # plot 2
+    axes[0, 1].plot(spectr_X, np.abs(spectr_intens_pred.clone().detach().cpu().numpy().flatten()), color="darkorange")
+    axes[0, 1].set_title("Step 2")
+    axes[0, 1].set_xlabel("Frequency (THz)")
+    axes[0, 1].set_ylabel("Normalized intensity")
+    axes[0, 1].grid()
 
-    plt.subplot(2, 2, 2)
+    # plot 3
+    axes[1, 0].plot(range(temp_intens_pred2.shape[-1]), np.abs(temp_intens_pred2.clone().detach().cpu().numpy().flatten()), color="darkviolet")
+    axes[1, 0].set_title("Step 3")
+    axes[1, 0].set_xlabel("Time (ps)")
+    axes[1, 0].set_ylabel("Normalized intensity")
+    axes[1, 0].grid()
 
-    plt.plot(spectr_X, np.abs(spectr_intens_pred.clone().detach().cpu().numpy().flatten()), color = "darkorange")
-    plt.title("Step 2")
-    plt.xlabel("Frequency (THz)")
-    plt.ylabel("Normalized intensity")
-    plt.grid()
-
-    plt.subplot(2, 2, 3)
-    plt.plot(range(temp_intens_pred2.shape[-1]), np.abs(temp_intens_pred2.clone().detach().cpu().numpy().flatten()), color = "darkviolet")
-    plt.title("Step 3")
-    plt.xlabel("Time (ps)")
-    plt.ylabel("Normalized intensity")
-    plt.grid()
-
+    # save the figure if needed
     if save:
         if not os.path.isdir("pics"):
             os.mkdir("pics")
-        plt.savefig("pics/reconstructed_{}.svg".format(iter_num), bbox_inches = "tight", dpi = 200)
+        fig.savefig(f"pics/reconstructed_{iter_num}.svg", bbox_inches="tight", dpi=200)
 
-    return plt, 0
+    return fig, 0
 
 
 def create_initial_pulse(bandwidth, centre, FWHM, num, pulse_type):
