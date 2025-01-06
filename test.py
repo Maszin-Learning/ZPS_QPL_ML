@@ -64,19 +64,17 @@ def test(model,
     spectr_intens_pred = u.cut(spectr_intens_pred, param.freq_width/param.init_freq_res) # we leave central 100 GHz, we delete the rest in order to save GPU
     new_length = np.array(spectr_intens_pred.shape)[-1]
     increase_time_res = old_length/new_length
-    print(torch.sum(torch.mul(spectr_intens_pred, torch.conj(spectr_intens_pred))))   
+
     spectr_intens_pred = u.increase_resolution(spectr_intens_pred, param.increase_freq_res, device = device, dtype = dtype)
     spectr_phase_pred = u.increase_resolution(spectr_phase_pred, param.pulse_shaper_res/param.comp_freq_res, device = device, dtype = dtype)  # 1.5 GHz is the resolution of the pulse shaper
-    print(torch.sum(torch.mul(spectr_intens_pred, torch.conj(spectr_intens_pred))))    
-    spectr_intens_pred = u.multiply_by_phase(spectr_intens_pred, spectr_phase_pred, index_start = floor((spectr_intens_pred.shape[-1]-spectr_phase_pred.shape[-1])/2), device = device, dtype = dtype)
+    spectr_idx_start = floor((spectr_intens_pred.shape[-1]-spectr_phase_pred.shape[-1])/2)
+    spectr_intens_pred = u.multiply_by_phase(spectr_intens_pred, spectr_phase_pred, index_start = spectr_idx_start, device = device, dtype = dtype)
 
     spectr_X = np.array([-param.freq_width*1000/2 + param.comp_freq_res*1000*n for n in range(spectr_intens_pred.shape[-1])])# this is in GHz!!!
 
     # and back to time domain
-    print(torch.sum(torch.mul(spectr_intens_pred, torch.conj(spectr_intens_pred))))
     temp_intens_pred2 = u.inv_fourier(spectr_intens_pred)
     temp_intens_pred2 = u.increase_resolution(temp_intens_pred2, increase_time_res, device = device, dtype = dtype)
-    print(torch.sum(torch.mul(temp_intens_pred2, torch.conj(temp_intens_pred2))))
     temp_intens_pred2 = u.cut(temp_intens_pred2, np.array(len(target_pulse)))
 
     # create plots
@@ -108,7 +106,12 @@ def test(model,
     ax2.set_title("Step 2")
     ax2.set_xlabel("Frequency (THz)")
     ax2.set_ylabel("Normalized intensity")
+    ax2.set_xlim([110, 140])
     ax2.grid()
+
+    spectr_X_ph = spectr_X[spectr_idx_start: spectr_idx_start + len(spectr_phase_pred)]
+    ax2_ph = plt.twinx(ax2) # ax2 for the phase
+    ax2_ph.plot(spectr_X_ph, spectr_phase_pred.clone().detach().cpu().numpy().flatten(), linestyle = "dashed", color = "green", zorder = 5)
 
     # plot 3
     ax3.plot(initial_pulse.X, np.abs(temp_intens_pred2.clone().detach().cpu().numpy().flatten())**2, color="red", lw = 2)

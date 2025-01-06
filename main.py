@@ -138,9 +138,10 @@ def main(_learning_rate,
 
     meta.comp_time_res = 1          # (ps) to avoid border effects we compute with higher resolution than the one of the modulator's
     meta.comp_freq_res = 0.0001     # (THz) as above
-    meta.eopm_res = 11              # (ps)
+    meta.eopm_res = 11               # (ps)
     meta.pulse_shaper_res = 0.0015  # (THz)
-    meta.freq_width = 0.05          # (THz) estimated range of the area in the frequency domain where all the spectrum is contained
+    meta.freq_width = 0.5           # (THz) estimated range of the area in the frequency domain where all the spectrum is contained
+                                    # WARNING: if initial lr is big and phase is crazy, the spectrum can get VERY broad
 
     time_num = floor((bandwidth[1]-bandwidth[0])/meta.comp_time_res)             # number of points in the initial pulse
 
@@ -272,6 +273,7 @@ def main(_learning_rate,
 
             # we apply spectral phase
             spectr_intens_pred = u.fourier(temp_intens_pred)
+        
             old_length = np.array(spectr_intens_pred.shape)[-1]
             spectr_intens_pred = u.cut(spectr_intens_pred, meta.freq_width/meta.init_freq_res) # we leave central 100 GHz, we delete the rest in order to save GPU
             new_length = np.array(spectr_intens_pred.shape)[-1]
@@ -286,7 +288,6 @@ def main(_learning_rate,
             temp_intens_pred_2 = u.increase_resolution(temp_intens_pred_2, increase_time_res, device = my_device, dtype = my_dtype)
             temp_intens_pred_2 = u.cut(temp_intens_pred_2, np.array(temp_intens_target.shape)[-1])
 
-
             # calculating back-propagation
             loss = criterion(temp_phase_pred,
                              spectr_phase_pred, 
@@ -294,7 +295,6 @@ def main(_learning_rate,
                              spectr_intens_pred,
                              temp_intens_target, 
                              spectr_intens_target)
- 
 
             loss.backward()
             optimizer.step()

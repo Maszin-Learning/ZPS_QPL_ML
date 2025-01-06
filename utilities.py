@@ -311,7 +311,7 @@ def increase_resolution(pt_tensor, times, device, dtype, keep_norm = True):
     long_tensor = pt_tensor.clone()
 
     long_tensor = torch.fft.fftshift(long_tensor)
-    long_tensor = torch.fft.fft(long_tensor)
+    long_tensor = torch.fft.fft(long_tensor, norm = "ortho")
     long_tensor = torch.fft.fftshift(long_tensor)
 
     zeroes_shape = np.array(long_tensor.shape)
@@ -322,7 +322,7 @@ def increase_resolution(pt_tensor, times, device, dtype, keep_norm = True):
                           torch.zeros(size = zeroes_shape, requires_grad = True, device = device, dtype = dtype)], dim=long_tensor.ndim-1)
 
     long_tensor = torch.fft.ifftshift(long_tensor)
-    long_tensor = torch.fft.ifft(long_tensor)
+    long_tensor = torch.fft.ifft(long_tensor, norm = "ortho")
     long_tensor = torch.fft.ifftshift(long_tensor)
 
     return long_tensor
@@ -420,6 +420,7 @@ def plot(tensor):
     X = np.array(range(np.array(tensor.shape)[-1]))
     Y = np.abs(tensor.clone().detach().cpu().numpy())
     plt.scatter(X, Y, color = "red", s = 1)
+    plt.grid()
     plt.show()
 
 def plot2(tensor1, tensor2):
@@ -428,6 +429,7 @@ def plot2(tensor1, tensor2):
     Y2 = np.abs(tensor2.clone().detach().cpu().numpy())
     plt.scatter(X, Y1, color = "red", s = 1)
     plt.scatter(X, Y2, color = "blue", s = 1)
+    plt.grid()
     plt.show()
 
 def print_gradient_after(tensor, name = "So far"):
@@ -439,3 +441,6 @@ def print_gradient_after(tensor, name = "So far"):
         print(f"{name} | Max Gradient Norm: {grad_norm}")
     print(" Computing gradient norm...")
     tensor.register_hook(hook_fn)
+
+def power(tensor):
+    return torch.sum(torch.square(torch.abs(tensor)), axis = -1).detach().cpu().numpy()
