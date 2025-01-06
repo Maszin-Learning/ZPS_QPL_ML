@@ -182,8 +182,8 @@ class Generator():
                                 FWHM = self.target_metadata[1],
                                 num = len(intensity)).Y
             
-        intensity = intensity/np.sum(np.sqrt(intensity*np.conjugate(intensity)))
         intensity = shift_to_centre(intensity_to_shift = intensity,
                                     intensity_ref = self.initial_intensity)
+        intensity = intensity/np.sum(intensity)
 
-        return np.abs(intensity)
+        return np.sqrt(intensity)

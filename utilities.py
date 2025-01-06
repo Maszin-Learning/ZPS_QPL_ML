@@ -302,11 +302,14 @@ def freq_to_wl(freq):
     else:
         return 299792458/freq/1000
     
-def increase_resolution(pt_tensor, times, device, dtype):
+def increase_resolution(pt_tensor, times, device, dtype, keep_norm = True):
     '''
     Returns initial tensor with resolution increased \"times\" times.
     '''
+    if times < 1:
+        raise Exception("\"times\" must be greater or equal to 1.")
     long_tensor = pt_tensor.clone()
+
     long_tensor = torch.fft.fftshift(long_tensor)
     long_tensor = torch.fft.fft(long_tensor)
     long_tensor = torch.fft.fftshift(long_tensor)
@@ -359,25 +362,29 @@ def cut(pt_array, num):
     else:
         raise Exception("WTF, the shape of this tensor is wild.")
     
-def soft_abs(x, epsilon=1e-6):
+def soft_abs(x, epsilon=1e-10):
     return torch.sqrt(x*torch.conj(x) + epsilon)
     
-def fourier(tensor):
+def fourier(tensor, keep_norm = False):
     tensor2 = tensor.clone()
-    #tensor2 = torch.mul(torch.sqrt(soft_abs(tensor2)), torch.exp(1j*tensor2.angle()))
+    if keep_norm:
+        tensor2 = torch.mul(torch.sqrt(soft_abs(tensor2)), torch.exp(1j*tensor2.angle()))
     tensor2 = torch.fft.fftshift(tensor2)
     tensor2 = torch.fft.fft(tensor2, norm = "ortho")
     tensor2 = torch.fft.fftshift(tensor2)
-    #tensor2 = tensor2*soft_abs(tensor2)
+    if keep_norm:
+        tensor2 = tensor2*soft_abs(tensor2)
     return tensor2
 
-def inv_fourier(tensor):
+def inv_fourier(tensor, keep_norm = False):
     tensor2 = tensor.clone()
-    #tensor2 = torch.mul(torch.sqrt(soft_abs(tensor2)), torch.exp(1j*tensor2.angle()))
+    if keep_norm:
+        tensor2 = torch.mul(torch.sqrt(soft_abs(tensor2)), torch.exp(1j*tensor2.angle()))
     tensor2 = torch.fft.ifftshift(tensor2)
     tensor2 = torch.fft.ifft(tensor2, norm = "ortho")
     tensor2 = torch.fft.ifftshift(tensor2)
-    #tensor2 = tensor2*soft_abs(tensor2)
+    if keep_norm:
+        tensor2 = tensor2*soft_abs(tensor2)
     return tensor2
 
 
@@ -405,6 +412,9 @@ class Parameters:
         self.comp_freq_res = None
         self.eopm_res = None
         self.pulse_shaper_res = None
+        self.freq_width = None
+
+# debugging functions
 
 def plot(tensor):
     X = np.array(range(np.array(tensor.shape)[-1]))

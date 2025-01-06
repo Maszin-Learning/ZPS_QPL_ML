@@ -44,10 +44,9 @@ def test(model,
     # prepare targets
     temp_intens_target = target_pulse.clone()
     temp_intens_target = torch.tensor(temp_intens_target, requires_grad = False, device = device, dtype = dtype)  # well, it was a tensor even before, but now we know its properties
-    temp_intens_target = temp_intens_target/np.sum(temp_intens_target.clone().detach().cpu().numpy())
 
     spectr_intens_target = u.fourier(temp_intens_target)
-    spectr_intens_target = u.cut(spectr_intens_target, 0.05/param.init_freq_res) # we leave central 100 GHz, we delete the rest in order to save GPU
+    spectr_intens_target = u.cut(spectr_intens_target, param.freq_width/param.init_freq_res) # we leave central 100 GHz, we delete the rest in order to save GPU
     spectr_intens_target = u.increase_resolution(spectr_intens_target, param.increase_freq_res, device = device, dtype = dtype)
 
     # generate phases
@@ -62,21 +61,24 @@ def test(model,
     spectr_intens_pred = u.fourier(temp_intens_pred)
 
     old_length = np.array(spectr_intens_pred.shape)[-1]
-    spectr_intens_pred = u.cut(spectr_intens_pred, 0.05/param.init_freq_res) # we leave central 100 GHz, we delete the rest in order to save GPU
+    spectr_intens_pred = u.cut(spectr_intens_pred, param.freq_width/param.init_freq_res) # we leave central 100 GHz, we delete the rest in order to save GPU
     new_length = np.array(spectr_intens_pred.shape)[-1]
     increase_time_res = old_length/new_length
-    
+    print(torch.sum(torch.mul(spectr_intens_pred, torch.conj(spectr_intens_pred))))   
     spectr_intens_pred = u.increase_resolution(spectr_intens_pred, param.increase_freq_res, device = device, dtype = dtype)
     spectr_phase_pred = u.increase_resolution(spectr_phase_pred, param.pulse_shaper_res/param.comp_freq_res, device = device, dtype = dtype)  # 1.5 GHz is the resolution of the pulse shaper
+    print(torch.sum(torch.mul(spectr_intens_pred, torch.conj(spectr_intens_pred))))    
     spectr_intens_pred = u.multiply_by_phase(spectr_intens_pred, spectr_phase_pred, index_start = floor((spectr_intens_pred.shape[-1]-spectr_phase_pred.shape[-1])/2), device = device, dtype = dtype)
 
-    spectr_X = np.array([-50 + param.comp_freq_res*1000*n for n in range(spectr_intens_pred.shape[-1])])# this is in GHz!!!
+    spectr_X = np.array([-param.freq_width*1000/2 + param.comp_freq_res*1000*n for n in range(spectr_intens_pred.shape[-1])])# this is in GHz!!!
 
     # and back to time domain
+    print(torch.sum(torch.mul(spectr_intens_pred, torch.conj(spectr_intens_pred))))
     temp_intens_pred2 = u.inv_fourier(spectr_intens_pred)
     temp_intens_pred2 = u.increase_resolution(temp_intens_pred2, increase_time_res, device = device, dtype = dtype)
+    print(torch.sum(torch.mul(temp_intens_pred2, torch.conj(temp_intens_pred2))))
     temp_intens_pred2 = u.cut(temp_intens_pred2, np.array(len(target_pulse)))
-    
+
     # create plots
 
     fig, axes = plt.subplots(2, 2, figsize=(10, 10), constrained_layout=True)
@@ -86,7 +88,8 @@ def test(model,
     axes[1, 1].axis('off')
 
     # plot 1
-    ax1.plot(initial_pulse.X, initial_pulse.Y, color="darkviolet")
+    ax1.plot(initial_pulse.X, np.abs(initial_pulse.Y)**2, color="red", zorder = 10, lw = 2)     
+    ax1.plot(initial_pulse.X, (temp_intens_target.clone().detach().cpu().numpy().flatten())**2, color = "blue", alpha = 0.5, lw =5, zorder = 0)            
     ax1.set_title("Step 1")
     ax1.set_xlabel("Time (ps)")
     ax1.set_ylabel("Normalized intensity")
@@ -96,17 +99,20 @@ def test(model,
     temp_idx_end = np.array(temp_phase_pred.shape)[-1] + param.temp_idx_start   # we want to find the indices of the interval in
     ax1_ph.plot(initial_pulse.X[param.temp_idx_start: temp_idx_end],
                  np.real(temp_phase_pred.clone().detach().cpu().numpy()),
-                   linestyle = "dashed", color = "darkorange")
+                   linestyle = "dashed", color = "darkorange", zorder = 5)
+    ax1.legend(["You are a dick", "And you a cunt"])
 
     # plot 2
-    ax2.plot(spectr_X, np.abs(spectr_intens_pred.clone().detach().cpu().numpy().flatten()), color="darkorange")
+    ax2.plot(spectr_X, np.abs(spectr_intens_pred.clone().detach().cpu().numpy().flatten())**2, color="red", zorder = 10, lw =2)
+    ax2.plot(spectr_X, np.abs(spectr_intens_target.clone().detach().cpu().numpy().flatten())**2, color = "darkorange", alpha = 0.7, lw = 5, zorder = 0)
     ax2.set_title("Step 2")
     ax2.set_xlabel("Frequency (THz)")
     ax2.set_ylabel("Normalized intensity")
     ax2.grid()
 
     # plot 3
-    ax3.plot(range(temp_intens_pred2.shape[-1]), np.abs(temp_intens_pred2.clone().detach().cpu().numpy().flatten()), color="darkviolet")
+    ax3.plot(initial_pulse.X, np.abs(temp_intens_pred2.clone().detach().cpu().numpy().flatten())**2, color="red", lw = 2)
+    ax3.plot(initial_pulse.X, (temp_intens_target.clone().detach().cpu().numpy().flatten())**2, color = "blue", alpha = 0.5, lw =5, zorder = 0)            
     ax3.set_title("Step 3")
     ax3.set_xlabel("Time (ps)")
     ax3.set_ylabel("Normalized intensity")

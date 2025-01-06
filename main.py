@@ -139,7 +139,8 @@ def main(_learning_rate,
     meta.comp_time_res = 1          # (ps) to avoid border effects we compute with higher resolution than the one of the modulator's
     meta.comp_freq_res = 0.0001     # (THz) as above
     meta.eopm_res = 11              # (ps)
-    meta.pulse_shaper_res = 0.0015  # (THZ)
+    meta.pulse_shaper_res = 0.0015  # (THz)
+    meta.freq_width = 0.05          # (THz) estimated range of the area in the frequency domain where all the spectrum is contained
 
     time_num = floor((bandwidth[1]-bandwidth[0])/meta.comp_time_res)             # number of points in the initial pulse
 
@@ -169,6 +170,7 @@ def main(_learning_rate,
     
     initial_pulse.Y = np.convolve(initial_pulse.Y, signal_correction.Y, mode='same')
     initial_pulse.Y = initial_pulse.Y / np.sum(initial_pulse.Y)
+    initial_pulse.Y = np.sqrt(initial_pulse.Y) # the computations are on field and not the intensity
 
     Y_initial = initial_pulse.Y.copy()
     initial_intensity_pt = u.np_to_complex_pt(initial_pulse.Y, device = my_device, dtype = my_dtype)
@@ -178,8 +180,7 @@ def main(_learning_rate,
     initial_pulse_FT = initial_pulse.inv_fourier(inplace = False)
     meta.init_freq_res= initial_pulse_FT.calc_spacing()
     meta.increase_freq_res = meta.init_freq_res/meta.comp_freq_res # at the beginning, we dont control the frequency resolution and later we will want to increase it to given level
-
-    meta.temp_idx_start = np.searchsorted(initial_pulse.X, initial_pulse.quantile(1e-3, "L1")-20) # extra 20 ps just to be sure; from this index we start multiplication of phase
+    meta.temp_idx_start = np.searchsorted(initial_pulse.X, initial_pulse.quantile(1e-3, "L2")-20) # extra 20 ps just to be sure; from this index we start multiplication of phase
 
     # generate training data
 
@@ -193,7 +194,7 @@ def main(_learning_rate,
                                 device = my_device,
                                 dtype = np.float32,
                                 target_type = _target_signal,
-                                target_metadata = [centre_target, width_target, bandwidth[0], bandwidth[1]]
+                                target_metadata = [centre_target, width_target, bandwidth[0], bandwidth[1], meta.comp_freq_res]
                                 )
 
         the_generator.generate_and_save()
@@ -247,14 +248,13 @@ def main(_learning_rate,
 
     # prepare targets
 
-    temp_intens_target = dataset_train[0]
+    temp_intens_target = dataset_train[0].clone()
     temp_intens_target = torch.tensor(temp_intens_target, requires_grad = False, device = my_device, dtype = my_dtype)  # well, it was a tensor even before, but now we know its properties
-    temp_intens_target = temp_intens_target/np.sum(temp_intens_target.clone().detach().cpu().numpy())
 
     spectr_intens_target = u.fourier(temp_intens_target)
-    spectr_intens_target = u.cut(spectr_intens_target, 0.05/meta.init_freq_res) # we leave central 100 GHz, we delete the rest in order to save GPU
+    spectr_intens_target = u.cut(spectr_intens_target, meta.freq_width/meta.init_freq_res) # we leave central 100 GHz, we delete the rest in order to save GPU
     spectr_intens_target = u.increase_resolution(spectr_intens_target, meta.increase_freq_res, device = my_device, dtype = my_dtype)
-    
+
     # learning loop
 
     loss_list = []
@@ -273,7 +273,7 @@ def main(_learning_rate,
             # we apply spectral phase
             spectr_intens_pred = u.fourier(temp_intens_pred)
             old_length = np.array(spectr_intens_pred.shape)[-1]
-            spectr_intens_pred = u.cut(spectr_intens_pred, 0.05/meta.init_freq_res) # we leave central 100 GHz, we delete the rest in order to save GPU
+            spectr_intens_pred = u.cut(spectr_intens_pred, meta.freq_width/meta.init_freq_res) # we leave central 100 GHz, we delete the rest in order to save GPU
             new_length = np.array(spectr_intens_pred.shape)[-1]
             increase_time_res = old_length/new_length
 
