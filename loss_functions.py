@@ -207,3 +207,18 @@ class MSEdouble(nn.modules.loss._Loss):
         MSE_s = torch.sum(torch.square(torch.abs(spectr_intens_pred - spectr_intens_target)))
 
         return MSE_t + MSE_s
+    
+class HOM(nn.modules.loss._Loss):
+    '''
+    Coincidence rate in Hong-Ou-Mandel effect (50% for completely different pulses, 0% for identical).
+    '''
+    
+    def __init__(self, device, dtype):
+        super(HOM, self).__init__()
+
+        self.device = device
+        self.dtype = dtype
+
+    def forward(self, temp_phase_pred, spectr_phase_pred, temp_intens_pred, spectr_intens_pred, temp_intens_target, spectr_intens_target):
+        p = torch.sum(temp_intens_pred*torch.conj(temp_intens_target))*torch.sum(temp_intens_target*torch.conj(temp_intens_pred))
+        return 1/2-1/2*p

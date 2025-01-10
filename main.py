@@ -26,7 +26,7 @@ import wandb
 import shutil
 import warnings
 import loss_functions as lf
-from loss_functions import MSEsmooth, MSEsmooth2, MSElowpass, MSEdouble
+from loss_functions import MSEsmooth, MSEsmooth2, MSElowpass, MSEdouble, HOM
 
 print("Modules loaded successfully!")
 
@@ -133,8 +133,8 @@ def main(_learning_rate,
 
     bandwidth = [-2500, 2500]   # (ps)
 
-    spectral_phase_len = 40     # so, assuming 1.5 GHz of pulse shaper's resolution, we get 60 GHz of bandwidth
-    temporal_phase_len = 200    # so, assuming 11 ps of modulator's resolution, we get 2200 ps of bandwidth
+    meta.spectral_phase_len = 14     # so, assuming 1.5 GHz of pulse shaper's resolution, we get 60 GHz of bandwidth
+    meta.temporal_phase_len = 140    # so, assuming 11 ps of modulator's resolution, we get 2200 ps of bandwidth
 
     meta.comp_time_res = 1          # (ps) to avoid border effects we compute with higher resolution than the one of the modulator's
     meta.comp_freq_res = 0.0001     # (THz) as above
@@ -160,7 +160,7 @@ def main(_learning_rate,
                                          FWHM = width_init,
                                          num = time_num,
                                          pulse_type = _initial_signal)
-    
+
     # additional pulse to add to exp (gauss) so it makes it more physical
 
     signal_correction = create_initial_pulse(bandwidth = bandwidth,
@@ -180,7 +180,7 @@ def main(_learning_rate,
 
     initial_pulse_FT = initial_pulse.inv_fourier(inplace = False)
     meta.init_freq_res= initial_pulse_FT.calc_spacing()
-    meta.increase_freq_res = meta.init_freq_res/meta.comp_freq_res # at the beginning, we dont control the frequency resolution and later we will want to increase it to given level
+    meta.increase_freq_res = meta.init_freq_res/meta.comp_freq_res # at the beginning, we dont control the frequency resolution and later we will want to increase it to the computational resolution level
     meta.temp_idx_start = np.searchsorted(initial_pulse.X, initial_pulse.quantile(1e-3, "L2")-20) # extra 20 ps just to be sure; from this index we start multiplication of phase
 
     # generate training data
@@ -212,8 +212,8 @@ def main(_learning_rate,
 
     model = network(input_size = time_num, 
                 n = _node_number, 
-                spectral_phase_len = spectral_phase_len,
-                temporal_phase_len = temporal_phase_len)
+                spectral_phase_len = meta.spectral_phase_len,
+                temporal_phase_len = meta.temporal_phase_len)
     model.to(device = my_device, dtype = my_dtype)
     
     print("Model parameters: {}\n".format(utilities.count_parameters(model)))
@@ -242,10 +242,10 @@ def main(_learning_rate,
         criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.6)
     if _criterion =='MSEsmooth2':
         criterion = MSEsmooth2(device = my_device, dtype = my_dtype, c_factor = 0.5, s_factor = 0.5)
-    if _criterion =='MSElowpass':
-        criterion = MSElowpass(device = my_device, dtype = my_dtype, penalty_strength = 1, filter_mask = filter_mask)
     if _criterion =='MSEdouble':
         criterion = MSEdouble(device = my_device, dtype = my_dtype)
+    if _criterion =='HOM':
+        criterion = HOM(device = my_device, dtype = my_dtype)
 
     # prepare targets
 

@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from math import floor
+from math import floor, ceil
 import os
 import spectral_analysis as sa
 from utilities import np_to_complex_pt, evolve_np, evolve_pt, shift_to_centre, wl_to_freq, freq_to_wl, complex_intensity
@@ -47,7 +47,7 @@ def test(model,
 
     spectr_intens_target = u.fourier(temp_intens_target)
     spectr_intens_target = u.cut(spectr_intens_target, param.freq_width/param.init_freq_res) # we leave central 100 GHz, we delete the rest in order to save GPU
-    spectr_intens_target = u.increase_resolution(spectr_intens_target, param.increase_freq_res, device = device, dtype = dtype)
+    spectr_intens_target = u.increase_resolution(spectr_intens_target, param.increase_freq_res, device = device, dtype = dtype) # now it's comp_resolution               
 
     # generate phases
     temp_phase_pred, spectr_phase_pred = model(target_pulse)
@@ -62,6 +62,7 @@ def test(model,
 
     old_length = np.array(spectr_intens_pred.shape)[-1]
     spectr_intens_pred = u.cut(spectr_intens_pred, param.freq_width/param.init_freq_res) # we leave central 100 GHz, we delete the rest in order to save GPU
+
     new_length = np.array(spectr_intens_pred.shape)[-1]
     increase_time_res = old_length/new_length
 
@@ -69,7 +70,6 @@ def test(model,
     spectr_phase_pred = u.increase_resolution(spectr_phase_pred, param.pulse_shaper_res/param.comp_freq_res, device = device, dtype = dtype)  # 1.5 GHz is the resolution of the pulse shaper
     spectr_idx_start = floor((spectr_intens_pred.shape[-1]-spectr_phase_pred.shape[-1])/2)
     spectr_intens_pred = u.multiply_by_phase(spectr_intens_pred, spectr_phase_pred, index_start = spectr_idx_start, device = device, dtype = dtype)
-
     spectr_X = np.array([-param.freq_width*1000/2 + param.comp_freq_res*1000*n for n in range(spectr_intens_pred.shape[-1])])# this is in GHz!!!
 
     # and back to time domain
@@ -91,35 +91,79 @@ def test(model,
     ax1.set_title("Step 1")
     ax1.set_xlabel("Time (ps)")
     ax1.set_ylabel("Normalized intensity")
+    ax1.set_xlim([-1000, 2000])
     ax1.grid()
 
     ax1_ph = plt.twinx(ax1) # ax1 for the phase
     temp_idx_end = np.array(temp_phase_pred.shape)[-1] + param.temp_idx_start   # we want to find the indices of the interval in
     ax1_ph.plot(initial_pulse.X[param.temp_idx_start: temp_idx_end],
-                 np.real(temp_phase_pred.clone().detach().cpu().numpy()),
-                   linestyle = "dashed", color = "darkorange", zorder = 5)
-    ax1.legend(["You are a dick", "And you a cunt"])
+                 np.unwrap(np.real(temp_phase_pred.clone().detach().cpu().numpy())),
+                   linestyle = "dashed", color = "darkorange", zorder = 1)
+    
+    # legend for ax1
+    x = [initial_pulse.X[param.temp_idx_start: temp_idx_end][0]]
+    y = [np.real(temp_phase_pred.clone().detach().cpu().numpy())[0]]
+    ax1_ph.plot(x, y, color="red", zorder = 10, lw = 2)     
+    ax1_ph.plot(x, y, color = "blue", alpha = 0.5, lw =5, zorder = 0)    
+
+    ax1_ph.legend(["Initial signal", "Target signal", "Temporal phase in EOPM"], 
+                        facecolor="white", framealpha=1, loc="upper right")
 
     # plot 2
+    xlim = [110, 140]
     ax2.plot(spectr_X, np.abs(spectr_intens_pred.clone().detach().cpu().numpy().flatten())**2, color="red", zorder = 10, lw =2)
     ax2.plot(spectr_X, np.abs(spectr_intens_target.clone().detach().cpu().numpy().flatten())**2, color = "darkorange", alpha = 0.7, lw = 5, zorder = 0)
     ax2.set_title("Step 2")
-    ax2.set_xlabel("Frequency (THz)")
+    ax2.set_xlabel("Frequency around centre (GHz)")
     ax2.set_ylabel("Normalized intensity")
-    ax2.set_xlim([110, 140])
+    ax2.set_xlim(xlim)
     ax2.grid()
+    
+    spectr_X_ph = np.linspace(np.mean(spectr_X) - 1000*(param.pulse_shaper_res*param.spectral_phase_len/2), 
+                              np.mean(spectr_X) + 1000*(param.pulse_shaper_res*param.spectral_phase_len/2),
+                              spectr_phase_pred.shape[-1])
+    spectr_X_ph = spectr_X_ph[np.searchsorted(spectr_X_ph, xlim[0]): np.searchsorted(spectr_X_ph, xlim[1])]
 
-    spectr_X_ph = spectr_X[spectr_idx_start: spectr_idx_start + len(spectr_phase_pred)]
     ax2_ph = plt.twinx(ax2) # ax2 for the phase
-    ax2_ph.plot(spectr_X_ph, spectr_phase_pred.clone().detach().cpu().numpy().flatten(), linestyle = "dashed", color = "green", zorder = 5)
+
+    # ax2 phase plot + legend
+    x = [spectr_X_ph[0]]
+    y = [spectr_phase_pred.clone().detach().cpu().numpy()[np.searchsorted(spectr_X_ph, xlim[0]): np.searchsorted(spectr_X_ph, xlim[1])][0]]
+    ax2_ph.plot(x, y, color="red", zorder = 10, lw = 2)     
+    ax2_ph.plot(x, y, color = "darkorange", alpha = 0.7, lw = 5, zorder = 0)       
+
+    ax2_ph.plot(spectr_X_ph,
+                 spectr_phase_pred.clone().detach().cpu().numpy()[np.searchsorted(spectr_X_ph, xlim[0]): np.searchsorted(spectr_X_ph, xlim[1])], 
+                 linestyle = "dashed", color = "green", zorder = 0)
+    ax2_ph.legend(["Initial signal", "Target signal", "Spectral phase in P-Sh"],
+                                          facecolor="white", framealpha=1, loc="upper right")
 
     # plot 3
-    ax3.plot(initial_pulse.X, np.abs(temp_intens_pred2.clone().detach().cpu().numpy().flatten())**2, color="red", lw = 2)
-    ax3.plot(initial_pulse.X, (temp_intens_target.clone().detach().cpu().numpy().flatten())**2, color = "blue", alpha = 0.5, lw =5, zorder = 0)            
+    target = temp_intens_target.clone().detach().cpu().numpy().flatten()
+    pred = temp_intens_pred2.clone().detach().cpu().numpy().flatten()
+    initial = initial_pulse.Y
+    print("Target power:", np.sum(target*np.conjugate(target)))
+    print("Prediction power:", np.real(np.sum(pred*np.conjugate(pred))))
+    print("HOM before", 1/2-1/2*np.sum(initial*np.conjugate(target))*np.sum(np.conjugate(initial)*target))
+    print("HOM after:", 1/2-1/2*np.sum(target*np.conjugate(pred))*np.sum(np.conjugate(target)*pred))
+
+    ax3.plot(initial_pulse.X, np.abs(temp_intens_target.clone().detach().cpu().numpy().flatten())**2, color = "blue", alpha = 0.5, lw =5, zorder = 0)            
+    ax3.plot(initial_pulse.X, np.abs(temp_intens_pred2.clone().detach().cpu().numpy().flatten())**2, color="red", lw = 2)    
     ax3.set_title("Step 3")
     ax3.set_xlabel("Time (ps)")
     ax3.set_ylabel("Normalized intensity")
     ax3.grid()
+    ax3.set_xlim([-1000, 1500])
+
+    ax3_ph = plt.twinx(ax3)
+    idx_sp_ph_start = np.searchsorted(initial_pulse.X, -150)
+    idx_sp_ph_end = np.searchsorted(initial_pulse.X, 550)
+
+    ax3_ph.plot(initial_pulse.X[idx_sp_ph_start:idx_sp_ph_end],
+                 np.angle(temp_intens_pred2.clone().detach().cpu().numpy().flatten())[idx_sp_ph_start:idx_sp_ph_end], 
+                 color = "green", alpha = 1, linestyle = "dashed")            
+    
+    # statistics
 
     # save the figure if needed
     if save:

@@ -413,6 +413,8 @@ class Parameters:
         self.eopm_res = None
         self.pulse_shaper_res = None
         self.freq_width = None
+        self.spectral_phase_len = None
+        self.temporal_phase_len = None
 
 # debugging functions
 
