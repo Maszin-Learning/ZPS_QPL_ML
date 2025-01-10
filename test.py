@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 from math import floor, ceil
 import os
 import spectral_analysis as sa
@@ -83,7 +84,7 @@ def test(model,
     ax1 = axes[0, 0]
     ax2 = axes[0, 1]
     ax3 = axes[1, 0]
-    axes[1, 1].axis('off')
+    ax4 = axes[1, 1]
 
     # plot 1
     ax1.plot(initial_pulse.X, np.abs(initial_pulse.Y)**2, color="red", zorder = 10, lw = 2)     
@@ -93,19 +94,20 @@ def test(model,
     ax1.set_ylabel("Normalized intensity")
     ax1.set_xlim([-1000, 2000])
     ax1.grid()
+    
+    # legend and phase for ax1
 
     ax1_ph = plt.twinx(ax1) # ax1 for the phase
     temp_idx_end = np.array(temp_phase_pred.shape)[-1] + param.temp_idx_start   # we want to find the indices of the interval in
-    ax1_ph.plot(initial_pulse.X[param.temp_idx_start: temp_idx_end],
-                 np.unwrap(np.real(temp_phase_pred.clone().detach().cpu().numpy())),
-                   linestyle = "dashed", color = "darkorange", zorder = 1)
-    
-    # legend for ax1
+
     x = [initial_pulse.X[param.temp_idx_start: temp_idx_end][0]]
     y = [np.real(temp_phase_pred.clone().detach().cpu().numpy())[0]]
     ax1_ph.plot(x, y, color="red", zorder = 10, lw = 2)     
     ax1_ph.plot(x, y, color = "blue", alpha = 0.5, lw =5, zorder = 0)    
-
+    ax1_ph.plot(initial_pulse.X[param.temp_idx_start: temp_idx_end],
+                 np.unwrap(np.real(temp_phase_pred.clone().detach().cpu().numpy())),
+                   linestyle = "dashed", color = "darkorange", zorder = 1)
+    
     ax1_ph.legend(["Initial signal", "Target signal", "Temporal phase in EOPM"], 
                         facecolor="white", framealpha=1, loc="upper right")
 
@@ -135,17 +137,10 @@ def test(model,
     ax2_ph.plot(spectr_X_ph,
                  spectr_phase_pred.clone().detach().cpu().numpy()[np.searchsorted(spectr_X_ph, xlim[0]): np.searchsorted(spectr_X_ph, xlim[1])], 
                  linestyle = "dashed", color = "green", zorder = 0)
-    ax2_ph.legend(["Initial signal", "Target signal", "Spectral phase in P-Sh"],
+    ax2_ph.legend(["Transformed signal", "Target signal", "Spectral phase in P-Sh"],
                                           facecolor="white", framealpha=1, loc="upper right")
 
     # plot 3
-    target = temp_intens_target.clone().detach().cpu().numpy().flatten()
-    pred = temp_intens_pred2.clone().detach().cpu().numpy().flatten()
-    initial = initial_pulse.Y
-    print("Target power:", np.sum(target*np.conjugate(target)))
-    print("Prediction power:", np.real(np.sum(pred*np.conjugate(pred))))
-    print("HOM before", 1/2-1/2*np.sum(initial*np.conjugate(target))*np.sum(np.conjugate(initial)*target))
-    print("HOM after:", 1/2-1/2*np.sum(target*np.conjugate(pred))*np.sum(np.conjugate(target)*pred))
 
     ax3.plot(initial_pulse.X, np.abs(temp_intens_target.clone().detach().cpu().numpy().flatten())**2, color = "blue", alpha = 0.5, lw =5, zorder = 0)            
     ax3.plot(initial_pulse.X, np.abs(temp_intens_pred2.clone().detach().cpu().numpy().flatten())**2, color="red", lw = 2)    
@@ -155,21 +150,61 @@ def test(model,
     ax3.grid()
     ax3.set_xlim([-1000, 1500])
 
+    # phase of ax3 and legend
+
     ax3_ph = plt.twinx(ax3)
     idx_sp_ph_start = np.searchsorted(initial_pulse.X, -150)
     idx_sp_ph_end = np.searchsorted(initial_pulse.X, 550)
 
+    x = [initial_pulse.X[idx_sp_ph_start:idx_sp_ph_end][0]]
+    y = [np.angle(temp_intens_pred2.clone().detach().cpu().numpy().flatten())[idx_sp_ph_start:idx_sp_ph_end][0]]
+
+    ax3_ph.plot(x, y, color = "red", lw = 2) 
+    ax3_ph.plot(x, y, color = "blue", alpha = 0.5, lw =5, zorder = 0)            
     ax3_ph.plot(initial_pulse.X[idx_sp_ph_start:idx_sp_ph_end],
                  np.angle(temp_intens_pred2.clone().detach().cpu().numpy().flatten())[idx_sp_ph_start:idx_sp_ph_end], 
-                 color = "green", alpha = 1, linestyle = "dashed")            
+                 color = "darkorange", alpha = 1, linestyle = "dashed")      
+
+    ax3_ph.legend(["Transformed signal", "Target signal", "Residual temporal phase"],
+                                        facecolor="white", framealpha=1, loc="upper right")      
     
     # statistics
 
+    t_target = temp_intens_target.clone().detach().cpu().numpy().flatten()
+    t_pred = temp_intens_pred2.clone().detach().cpu().numpy().flatten()
+    s_target = spectr_intens_target.clone().detach().cpu().numpy().flatten()
+    s_pred = spectr_intens_pred.clone().detach().cpu().numpy().flatten()
+    initial = initial_pulse.Y
+
+    init_power = "\nInitial power: " + str(round(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)), 5))
+    trg_power = "\nTarget power: " + str(round(np.sum(t_target*np.conjugate(t_target)), 5))
+    pred_power = "\nPrediction power: " + str(round(np.real(np.sum(t_pred*np.conjugate(t_pred))), 5))
+    
+    t_MSE = np.sum(np.abs(t_target-t_pred)**2)
+    s_MSE = np.sum(np.abs(s_target-s_pred)**2)
+    all_MSE = t_MSE + s_MSE
+
+    temp_MSE = "\n\nTemporal MSE: " + str(t_MSE)
+    spectr_MSE = "\nSpectral MSE: " + str(s_MSE)
+    tot_MSE = "\nTotal MSE: " + str(all_MSE)
+
+    init_hom_value =  1/2-1/2*np.sum(initial*np.conjugate(t_target))*np.sum(np.conjugate(initial)*t_target)
+    final_hom_value = np.abs(1/2-1/2*np.sum(t_target*np.conjugate(t_pred))*np.sum(np.conjugate(t_target)*t_pred)) # abs to kill 0j
+
+    init_hom = "\n\nInitial HOM coincidence rate: " + str(round(init_hom_value, 3))
+    final_hom = "\nFinal HOM coincidence rate: " + str(round(final_hom_value, 3))
+
+
+    ax4.axis('off')
+    ax4.text(x = 0, y = 0.5, 
+             s = "STATISTICS:\n" + init_power + trg_power + pred_power + temp_MSE + spectr_MSE + tot_MSE + init_hom + final_hom,
+             transform = ax4.transAxes)
+    
     # save the figure if needed
     if save:
         if not os.path.isdir("pics"):
             os.mkdir("pics")
-        fig.savefig(f"pics/reconstructed_{iter_num}.svg", bbox_inches="tight", dpi=200)
+        fig.savefig(f"pics/reconstructed_{iter_num}.svg", bbox_inches="tight", dpi=1600)
 
     return fig, 0
 
