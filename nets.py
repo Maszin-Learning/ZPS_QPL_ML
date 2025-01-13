@@ -7,11 +7,39 @@ import torchaudio
 Simple nonlinear networks
 '''
 
-
 class network_0(nn.Module):
-    def __init__(self, input_size, n, output_size):
+    def __init__(self, input_size, n, spectral_phase_len, temporal_phase_len):
         # super function. It inherits from nn.Module and we can access everything in nn.Module
         super(network_0, self).__init__()
+        self.input = input_size
+
+        self.linear_1 = nn.Linear(input_size, n)
+        self.linear_2 = nn.Linear(n,n)
+        self.linear_s = nn.Linear(n, spectral_phase_len) 
+        self.linear_t = nn.Linear(n, temporal_phase_len) 
+
+        self.sigmoid = nn.Sigmoid()
+        self.leakyrelu=nn.LeakyReLU(1, inplace=True)
+        self.normal_1 = nn.LayerNorm(input_size)
+
+    def forward(self, x):
+        t = self.normal_1(x)
+        t = self.leakyrelu(self.linear_1(t))
+        t = self.leakyrelu(self.linear_2(t))
+        t = self.linear_t(t)
+
+        s = self.normal_1(x)
+        s = self.leakyrelu(self.linear_1(s))
+        s = self.leakyrelu(self.linear_2(s))
+        s = self.linear_s(s)
+
+        return (6*np.pi*self.sigmoid(t), 6*np.pi*self.sigmoid(s))
+
+
+class network_20(nn.Module):
+    def __init__(self, input_size, n, output_size):
+        # super function. It inherits from nn.Module and we can access everything in nn.Module
+        super(network_20, self).__init__()
         self.input = input_size
         self.output = output_size
         self.linear_1 = nn.Linear(input_size,n)
