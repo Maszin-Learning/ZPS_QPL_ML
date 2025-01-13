@@ -93,6 +93,10 @@ def main(_learning_rate,
         from nets import network_12 as network
     if _net_architecture == 'network_UNET_1D':
         from nets import UNET_1D as network  
+        
+    if _net_architecture == 'network_2':
+        from nets_d import network_2_1 as network  
+    
 
     # Choose device, disclaimer! on cpu network will not run due to batch normalization
 
@@ -209,6 +213,17 @@ def main(_learning_rate,
     dataloader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size=_batch_size, num_workers=0, shuffle=True)
  
     # create NN
+    
+    net_temporal = network__1(input_size = time_num, 
+                              n = _node_number,
+                              output_size = meta.temporal_phase_len)
+    net_spectral = network__2(input_size = 2*meta.temporal_phase_len, #TODO change output size
+                              n = _node_number, 
+                              output_size = meta.spectral_phase_len)
+    
+    net_temporal.to(device = my_device, dtype = my_dtype)
+    net_spectral.to(device = my_device, dtype = my_dtype)
+    
 
     model = network(input_size = time_num, 
                 n = _node_number, 
@@ -264,6 +279,10 @@ def main(_learning_rate,
 
     for epoch in range(_epoch_num):
         for pulse, _ in tqdm(dataloader_train):
+
+            temporal_phase=net_temporal(pulse)
+            signal_evolved=evolve(signal, temporal_phase)
+            spectral_phase = net_spectal(signal_evolved)
 
             temp_phase_pred, spectr_phase_pred = model(pulse)
 
