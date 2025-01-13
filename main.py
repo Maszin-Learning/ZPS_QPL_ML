@@ -94,8 +94,10 @@ def main(_learning_rate,
     if _net_architecture == 'network_UNET_1D':
         from nets import UNET_1D as network  
         
-    if _net_architecture == 'network_2':
-        from nets_d import network_2_1 as network  
+    if _net_architecture == 'network_2_':
+        from nets_d import network_2_1 as network__1  
+        from nets_d import network_2_2 as network__2
+
     
 
     # Choose device, disclaimer! on cpu network will not run due to batch normalization
@@ -217,7 +219,7 @@ def main(_learning_rate,
     net_temporal = network__1(input_size = time_num, 
                               n = _node_number,
                               output_size = meta.temporal_phase_len)
-    net_spectral = network__2(input_size = 2*meta.temporal_phase_len, #TODO change output size
+    net_spectral = network__2(input_size = time_num, #TODO change output size
                               n = _node_number, 
                               output_size = meta.spectral_phase_len)
     
@@ -225,24 +227,25 @@ def main(_learning_rate,
     net_spectral.to(device = my_device, dtype = my_dtype)
     
 
-    model = network(input_size = time_num, 
-                n = _node_number, 
-                spectral_phase_len = meta.spectral_phase_len,
-                temporal_phase_len = meta.temporal_phase_len)
-    model.to(device = my_device, dtype = my_dtype)
+    # model = network(input_size = time_num, 
+    #             n = _node_number, 
+    #             spectral_phase_len = meta.spectral_phase_len,
+    #             temporal_phase_len = meta.temporal_phase_len)
+    # model.to(device = my_device, dtype = my_dtype)
     
-    print("Model parameters: {}\n".format(utilities.count_parameters(model)))
+    print("Model parameters: {}\n".format("temporal: "+str(utilities.count_parameters(net_temporal))+ "spectral: "+str(utilities.count_parameters(net_spectral))))
 
     # choose optimizer
 
     if _optimalizer =='Adam':
-        optimizer = torch.optim.Adam(model.parameters(), lr = _learning_rate, weight_decay=_weight_decay)
-    if _optimalizer =='NAdam':
-        optimizer = torch.optim.NAdam(model.parameters(), lr = _learning_rate)
-    if _optimalizer =='SGD':
-        optimizer = torch.optim.SGD(model.parameters(), lr = _learning_rate)
-    if _optimalizer =='RSMprop':
-        optimizer = torch.optim.RMSprop(model.parameters(), lr = _learning_rate)
+        optimizer_temporal = torch.optim.Adam(net_temporal.parameters(), lr = _learning_rate, weight_decay=_weight_decay)
+        optimizer_spectral = torch.optim.Adam(net_spectral.parameters(), lr = _learning_rate, weight_decay=_weight_decay)
+    # if _optimalizer =='NAdam':
+    #     optimizer = torch.optim.NAdam(model.parameters(), lr = _learning_rate)
+    # if _optimalizer =='SGD':
+    #     optimizer = torch.optim.SGD(model.parameters(), lr = _learning_rate)
+    # if _optimalizer =='RSMprop':
+    #     optimizer = torch.optim.RMSprop(model.parameters(), lr = _learning_rate)
     
     # choose loss function
 
@@ -250,17 +253,18 @@ def main(_learning_rate,
     #filter_mask = lf.gen_filter_mask(threshold = filter_threshold, num = None, device = my_device)   # what is the num?
     
     if _criterion =='MSE':
-        criterion = torch.nn.MSELoss()
-    if _criterion =='L1':
-        criterion = torch.nn.L1Loss()
-    if _criterion =='MSEsmooth':
-        criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.6)
-    if _criterion =='MSEsmooth2':
-        criterion = MSEsmooth2(device = my_device, dtype = my_dtype, c_factor = 0.5, s_factor = 0.5)
-    if _criterion =='MSEdouble':
-        criterion = MSEdouble(device = my_device, dtype = my_dtype)
-    if _criterion =='HOM':
-        criterion = HOM(device = my_device, dtype = my_dtype)
+        criterion_temporal = torch.nn.MSELoss()
+        criterion_spectral = torch.nn.MSELoss()
+    # if _criterion =='L1':
+    #     criterion = torch.nn.L1Loss()
+    # if _criterion =='MSEsmooth':
+    #     criterion = MSEsmooth(device = my_device, dtype = my_dtype, c_factor = 0.6)
+    # if _criterion =='MSEsmooth2':
+    #     criterion = MSEsmooth2(device = my_device, dtype = my_dtype, c_factor = 0.5, s_factor = 0.5)
+    # if _criterion =='MSEdouble':
+    #     criterion = MSEdouble(device = my_device, dtype = my_dtype)
+    # if _criterion =='HOM':
+    #     criterion = HOM(device = my_device, dtype = my_dtype)
 
     # prepare targets
 
@@ -273,22 +277,24 @@ def main(_learning_rate,
 
     # learning loop
 
-    loss_list = []
+    loss_list_temporal = []
+    loss_list_spectral = []
     test_loss_global = 10000
-    wandb.watch(model, criterion, log="all", log_freq=400)
+    # wandb.watch(model, criterion, log="all", log_freq=400)
 
     for epoch in range(_epoch_num):
         for pulse, _ in tqdm(dataloader_train):
-
-            temporal_phase=net_temporal(pulse)
-            signal_evolved=evolve(signal, temporal_phase)
-            spectral_phase = net_spectal(signal_evolved)
-
-            temp_phase_pred, spectr_phase_pred = model(pulse)
+            
+            
+            # get temporal phase
+            temp_phase_pred=net_temporal(pulse)
 
             # we apply temporal phase
             temp_phase_pred = u.increase_resolution(temp_phase_pred, meta.eopm_res/meta.comp_time_res, device = my_device, dtype = my_dtype) # 11 ps is the resolution of EOPM
             temp_intens_pred = u.multiply_by_phase(initial_intensity_pt.clone(), temp_phase_pred, index_start = meta.temp_idx_start, device = my_device, dtype = my_dtype)
+
+            # get spectral phase
+            spectr_phase_pred = net_spectral(temp_intens_pred.abs())
 
             # we apply spectral phase
             spectr_intens_pred = u.fourier(temp_intens_pred)
@@ -307,49 +313,62 @@ def main(_learning_rate,
             temp_intens_pred_2 = u.increase_resolution(temp_intens_pred_2, increase_time_res, device = my_device, dtype = my_dtype)
             temp_intens_pred_2 = u.cut(temp_intens_pred_2, np.array(temp_intens_target.shape)[-1])
 
-            # calculating back-propagation
-            loss = criterion(temp_phase_pred,
-                             spectr_phase_pred, 
-                             temp_intens_pred_2,
-                             spectr_intens_pred,
-                             temp_intens_target, 
-                             spectr_intens_target)
-
-            loss.backward()
-            optimizer.step()
-            optimizer.zero_grad()
+            # # calculating back-propagation
+            # loss = criterion(temp_phase_pred,
+            #                  spectr_phase_pred, 
+            #                  temp_intens_pred_2,
+            #                  spectr_intens_pred,
+            #                  temp_intens_target, 
+            #                  spectr_intens_target)
+            
+            
+            
+            loss_temporal = criterion_temporal(temp_intens_pred_2, temp_intens_target)
+            loss_temporal.backward()
+            optimizer_temporal.step()
+            optimizer_temporal.zero_grad()
+            
+            
+            loss_spectral = criterion_spectral(spectr_intens_pred, spectr_intens_target)
+            loss_spectral.backward()
+            optimizer_spectral.step()
+            optimizer_spectral.zero_grad()
 
             # stats
-            _loss = loss.clone().cpu().detach().numpy()
-            wandb.log({"loss": _loss}) # log loss to wandb
-            loss_list.append(_loss)
+            _loss_spectral = loss_spectral.clone().cpu().detach().numpy()
+            loss_list_spectral.append(_loss_spectral)
+            _loss_temporal = loss_temporal.clone().cpu().detach().numpy()
+            loss_list_temporal.append(_loss_temporal)
+            #wandb.log({"loss": _loss}) # log loss to wandb
 
-        if epoch%_plot_freq == 0: # plot and test model
-            model.eval()
 
-            print("Epoch no. {}. Loss {}.".format(epoch, np.mean(np.array(loss_list[epoch*len(dataloader_train): (epoch+1)*len(dataloader_train)]))))
+        # if epoch%_plot_freq == 0: # plot and test model
+        #     model.eval()
+
+        #     print("Epoch no. {}. Loss {}.".format(epoch, np.mean(np.array(loss_list[epoch*len(dataloader_train): (epoch+1)*len(dataloader_train)]))))
             
-            fig, test_loss = test(model = model,
-                                target_pulse = dataset_train[0],
-                                initial_pulse = initial_pulse,
-                                device = my_device, 
-                                dtype = my_dtype,
-                                iter_num = epoch,
-                                param = meta,
-                                save = True)                        
-            cont_penalty = 0
-            print("phase's variation MSE: {}.".format(cont_penalty))
+        #     fig, test_loss = test(model = model,
+        #                         target_pulse = dataset_train[0],
+        #                         initial_pulse = initial_pulse,
+        #                         device = my_device, 
+        #                         dtype = my_dtype,
+        #                         iter_num = epoch,
+        #                         param = meta,
+        #                         save = True)                        
+        #     cont_penalty = 0
+        #     print("phase's variation MSE: {}.".format(cont_penalty))
 
-            if test_loss < test_loss_global:
-                # shutil.rmtree(model_save_PATH_dir)
-                utilities.clear_folder('saved_models')
-                torch.save(model.state_dict(), os.path.join(model_save_PATH_dir, f'{_net_architecture}_ep{epoch}.pt'))
-            test_loss_global = test_loss
-            wandb.log({"chart": fig})
-            print('test_loss',test_loss)
-            wandb.log({"test_loss": test_loss})
+        #     if test_loss < test_loss_global:
+        #         # shutil.rmtree(model_save_PATH_dir)
+        #         utilities.clear_folder('saved_models')
+        #         torch.save(model.state_dict(), os.path.join(model_save_PATH_dir, f'{_net_architecture}_ep{epoch}.pt'))
+        #     test_loss_global = test_loss
+        #     wandb.log({"chart": fig})
+        #     print('test_loss',test_loss)
+        #     wandb.log({"test_loss": test_loss})
 
-            model.train()
+            net_spectral.train()
+            net_temporal.train()
 
 if __name__ == "__main__":
     warnings.simplefilter("ignore", UserWarning) # ignore warnings from plotly
