@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from math import floor
+import matplotlib as mpl
+from math import floor, ceil
 import os
 import spectral_analysis as sa
 from utilities import np_to_complex_pt, evolve_np, evolve_pt, shift_to_centre, wl_to_freq, freq_to_wl, complex_intensity
@@ -11,207 +12,18 @@ from scipy.interpolate import CubicSpline
 from scipy.interpolate import splrep, BSpline
 from torch.fft import ifft, ifftshift
 
-def reverse_transformation(model, test_pulse, initial_pulse, device, dtype, save, test_phase = None, iter_num = 0, x_type = "freq"):
-    mse = MSELoss()
-
-    input_dim = model.input
-    output_dim = model.output
-    spectrum_len = len(initial_pulse)
-    zeros_num = floor((spectrum_len - input_dim)/2)
-
-    initial_pulse_short = initial_pulse.cut(start = zeros_num, end = zeros_num+input_dim, inplace = False, how = "index")
-
-    plot_from = floor(0*input_dim)
-    plot_to = floor(1*input_dim)
-
-    # generate test chirp pulse
-
-    test_phase_pred = model(test_pulse.abs())
-    test_phase_pred = test_phase_pred.reshape([output_dim]) #spectral phase of transformation
-
-    # evolve
-
-    initial_intensity = np_to_complex_pt(np.abs(initial_pulse.Y.copy()), device = device, dtype = dtype)
-    test_intensity = evolve_pt(initial_intensity, test_phase_pred, device = device, dtype = dtype, abs = False)
-    reconstructed = test_intensity.abs()[:, zeros_num: zeros_num+input_dim]
-    temporal_phase = torch.angle(test_intensity)[:, zeros_num: zeros_num+input_dim] #of reconstructed signal
-    # reverse
-    test_pulse_complex = test_pulse.clone()
-    test_pulse_temporal = torch.mul(test_pulse_complex, torch.exp(1j*temporal_phase))
-    test_pulse_reversed = evolve_pt(test_pulse_temporal, -test_phase_pred, device = device, dtype = dtype, abs = False)
-    test_pulse_reversed_detached=test_pulse_reversed.detach().numpy()
-    
-    
-    # create plots
-
-    plt.figure(figsize = (10, 5), constrained_layout=True )
-
-    plt.subplot(1, 2, 1)
-    plt.title("Time domain")
-
-    # constant to normalize the time plot
-
-    norm_const = max([np.max(np.abs(initial_pulse_short.Y[plot_from:plot_to])),
-                     np.max(np.abs(np.reshape(test_pulse.clone().cpu().detach().numpy(), input_dim))[plot_from:plot_to]),
-                     np.max(np.abs(np.reshape(reconstructed.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to]))])
-   
-    # initial intensity
-    plt.plot(initial_pulse_short.X[plot_from:plot_to], 
-                np.abs(initial_pulse_short.Y[plot_from:plot_to])/norm_const, 
-                color = "blue", 
-                zorder = 5)
-    
-    # target intensity
-    plt.plot(initial_pulse_short.X[plot_from:plot_to], 
-                    np.abs(np.reshape(test_pulse.clone().cpu().detach().numpy(), input_dim))[plot_from:plot_to]/norm_const, 
-                    color = "red")
-    
-    # transformed intensity
-    plt.scatter(initial_pulse_short.X[plot_from:plot_to], 
-            np.abs(np.reshape(reconstructed.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to])/norm_const, 
-            color = "green", 
-            s = 0.25,
-            zorder = 10)
-    
-    #reversed intensity
-    plt.plot(initial_pulse_short.X[plot_from:plot_to], 
-                np.abs(test_pulse_reversed_detached[plot_from:plot_to]).reshape(test_pulse_reversed.shape[1],)/norm_const, 
-                color = "black", 
-                zorder = 5)
-
-    
-    plt.xlabel("Time (ps)")
-    plt.ylabel("Normalized intensity")
-    plt.legend(["Initial intensity", "Target intensity", "Transformed intensity", "Reverse transformation"], bbox_to_anchor = [1, -0.12], ncol = 2)
-    plt.grid()
-
-    # temporal phase
-
-    ax = plt.gca()
-    ax2 = ax.twinx()
-
-    ax2.scatter(initial_pulse_short.X[plot_from:plot_to], 
-            np.unwrap(np.reshape(temporal_phase.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to]), 
-            color = "burlywood",
-            s = 0.25,
-            zorder = 0)
-    
-    ax2.legend(["Phase of transformed spectrum"], bbox_to_anchor = [0.721, -0.25])
-    ax2.set_ylabel("Temporal phase (rad)")
-    
-    # second plot in frequency
-
-    plt.subplot(1, 2, 2)
-    
-    if x_type == "freq":
-        plt.title("Frequency domain")
-        plt.xlabel("Frequency (THz)")
-    elif x_type == "wl":
-        plt.title("Wavelength domain")
-        plt.xlabel("Wavelength (nm)")
-    else:
-        raise Exception("x_type must be either \"wl\" or \"freq\"")
-    
-    plt.ylabel("Normalized intensity")
-    plt.grid()
-
-    # preprocessing
-
-    reconstructed_phase = np.unwrap(test_phase_pred.clone().cpu().detach().numpy().reshape(output_dim))
-    reconstructed_phase -= reconstructed_phase[floor(output_dim/2)]
-
-    idx_start = floor(zeros_num + input_dim/2 - output_dim/2)
-    idx_end = floor(zeros_num + input_dim/2 + output_dim/2)
-
-    FT_pulse = initial_pulse.inv_fourier(inplace = False)
-    FT_Y = FT_pulse.Y.copy()
-    FT_X = FT_pulse.X.copy()
-
-    FT_Y /= np.max(FT_Y[idx_start: idx_end])
-
-    # FT intensity
-
-    if x_type == "freq":
-        plt.fill_between(FT_X[idx_start: idx_end] + 375, 
-                            np.abs(FT_Y[idx_start: idx_end]),
-                            color='orange',
-                            alpha = 0.5)
-        
-    elif x_type == "wl":
-        plt.fill_between(freq_to_wl(FT_X[idx_start: idx_end] + 375), 
-                    np.flip(np.abs(FT_Y[idx_start: idx_end])),
-                    color='orange',
-                    alpha = 0.5)
-        
-    else:
-        raise Exception("x_type must be either \"wl\" or \"freq\"")
-
-
-    plt.legend(["FT initial intensity"], bbox_to_anchor = [0.665, -0.12])
-
-    # transforming phase
-
-    ax3 = plt.gca()
-    ax4 = ax3.twinx()
-
-    if x_type == "freq":
-        ax4.scatter(FT_X[idx_start: idx_end] + 375, 
-                    reconstructed_phase, 
-                    s = 1, 
-                    color = "firebrick",
-                    zorder = 10)
-        
-    elif x_type == "wl":
-        ax4.scatter(wl_to_freq(FT_X[idx_start: idx_end] + 375), 
-                    np.flip(reconstructed_phase), 
-                    s = 1, 
-                    color = "firebrick",
-                    zorder = 10)
-        
-    else:
-        raise Exception("x_type must be either \"wl\" or \"freq\"")
-
-    ax4.set_ylabel("Spectral phase (rad)")
-    ax4.legend(["Transforming phase (rad)"], bbox_to_anchor = [0.8, -0.19])
-
-    # the below part of the code isn't always executed and when is, won't probably work correctly
-
-    if type(test_phase) == type(np.array([])):
-        test_phase_np = test_phase.copy()
-        #test_phase_np -= test_phase_np[floor(output_dim/2)]
-        plt.plot(FT_X[idx_start: idx_end] + 375,
-                    np.real(test_phase_np),
-                    color = "black",
-                    lw = 1,
-                    linestyle = "dashed",
-                    zorder = 5)
-    
-        
-    '''
-    if type(test_phase) == type(np.array([])):
-        plt.legend(["Reconstructed phase", "Initial phase", "FT intensity"], bbox_to_anchor = [0.95, -0.15])
-    else:
-        plt.legend(["Reconstructed phase", "FT intensity"], bbox_to_anchor = [0.95, -0.15])
-    '''
-    
-    if save:
-        if not os.path.isdir("pics"):
-            os.mkdir("pics")
-        plt.savefig("pics/reverse_transformation{}.jpg".format(iter_num), bbox_inches = "tight", dpi = 200)
-
-    return plt, mse(test_pulse.abs(), reconstructed.abs()).clone().cpu().detach().numpy()
-    
 def test(model, 
          target_pulse, 
          initial_pulse, 
          device, 
          dtype, 
          save, 
-         iter_num = 0, 
-         x_type = "freq"):
+         param,
+         iter_num = 0):
     '''
-    ## Test how the model transforms initial pulse to the target pulse.
+    # OLD LEGEND
 
+    ## Test how the model transforms initial pulse to the target pulse.
     # Arguments:
 
     model - the model of the neural network.
@@ -230,317 +42,171 @@ def test(model,
     # Note: initial_pulse_Y, initial_pulse_X and target_pulse must have the same length.
     '''
 
-    mse = MSELoss()
+    # prepare targets
+    temp_intens_target = target_pulse.clone()
+    temp_intens_target = torch.tensor(temp_intens_target, requires_grad = False, device = device, dtype = dtype)  # well, it was a tensor even before, but now we know its properties
 
-    input_dim = model.input
-    output_dim = model.output
-    spectrum_len = len(initial_pulse)
-    zeros_num = floor((spectrum_len - input_dim)/2)
+    spectr_intens_target = u.fourier(temp_intens_target)
+    spectr_intens_target = u.cut(spectr_intens_target, param.freq_width/param.init_freq_res) # we leave central 100 GHz, we delete the rest in order to save GPU
+    spectr_intens_target = u.increase_resolution(spectr_intens_target, param.increase_freq_res, device = device, dtype = dtype) # now it's comp_resolution               
 
-    initial_pulse_short = initial_pulse.cut(start = zeros_num, end = zeros_num+input_dim, inplace = False, how = "index")
+    # generate phases
+    temp_phase_pred, spectr_phase_pred = model(target_pulse)
 
-    plot_from = floor(0*input_dim)
-    plot_to = floor(1*input_dim)-1
+    # we apply temporal phase
+    temp_phase_pred = u.increase_resolution(temp_phase_pred, param.eopm_res/param.comp_time_res, device = device, dtype = dtype) # 11 ps is the resolution of EOPM
+    initial_intensity_pt = u.np_to_complex_pt(initial_pulse.Y, device = device, dtype = dtype)
+    temp_intens_pred = u.multiply_by_phase(initial_intensity_pt, temp_phase_pred, index_start = param.temp_idx_start, device = device, dtype = dtype)
 
-    # generate test chirp pulse
+    # we apply spectral phase
+    spectr_intens_pred = u.fourier(temp_intens_pred)
 
-    target_phase_pred = model(target_pulse.abs())
-    target_phase_pred = target_phase_pred.reshape([output_dim])
+    old_length = np.array(spectr_intens_pred.shape)[-1]
+    spectr_intens_pred = u.cut(spectr_intens_pred, param.freq_width/param.init_freq_res) # we leave central 100 GHz, we delete the rest in order to save GPU
 
-    # evolve
+    new_length = np.array(spectr_intens_pred.shape)[-1]
+    increase_time_res = old_length/new_length
 
-    initial_intensity = np_to_complex_pt(np.abs(initial_pulse.Y.copy()), device = device, dtype = dtype)
+    spectr_intens_pred = u.increase_resolution(spectr_intens_pred, param.increase_freq_res, device = device, dtype = dtype)
+    spectr_phase_pred = u.increase_resolution(spectr_phase_pred, param.pulse_shaper_res/param.comp_freq_res, device = device, dtype = dtype)  # 1.5 GHz is the resolution of the pulse shaper
+    spectr_idx_start = floor((spectr_intens_pred.shape[-1]-spectr_phase_pred.shape[-1])/2)
+    spectr_intens_pred = u.multiply_by_phase(spectr_intens_pred, spectr_phase_pred, index_start = spectr_idx_start, device = device, dtype = dtype)
+    spectr_X = np.array([-param.freq_width*1000/2 + param.comp_freq_res*1000*n for n in range(spectr_intens_pred.shape[-1])])# this is in GHz!!!
 
-    target_intensity_pred = evolve_pt(initial_intensity, target_phase_pred, device = device, dtype = dtype, abs = False)
-    reconstructed = target_intensity_pred.abs()[:, zeros_num: zeros_num+input_dim]
-    temporal_phase = torch.angle(target_intensity_pred)[:, zeros_num: zeros_num+input_dim]
-    
+    # and back to time domain
+    temp_intens_pred2 = u.inv_fourier(spectr_intens_pred)
+    temp_intens_pred2 = u.increase_resolution(temp_intens_pred2, increase_time_res, device = device, dtype = dtype)
+    temp_intens_pred2 = u.cut(temp_intens_pred2, np.array(len(target_pulse)))
+
     # create plots
 
-    plt.figure(figsize = (10, 5), constrained_layout = True)
+    fig, axes = plt.subplots(2, 2, figsize=(10, 10), constrained_layout=True)
+    ax1 = axes[0, 0]
+    ax2 = axes[0, 1]
+    ax3 = axes[1, 0]
+    ax4 = axes[1, 1]
 
-    plt.subplot(1, 2, 1)
-    plt.title("Time domain")
-
-    # just for the legend
-
-    x_far_away = 2*initial_pulse_short.X[plot_to]
-    plt.plot([x_far_away],[0], color = "blue", lw = 2)
-    plt.plot([x_far_away],[0], color = "red", lw = 2)
-    plt.plot([x_far_away],[0], color = "green", lw = 6, alpha = 0.5)
-    #plt.plot([x_far_away],[0], color = "skyblue")   
-    plt.plot([x_far_away],[0], color = "lightcoral", lw = 2, linestyle = "dashed")
-    plt.legend(["Initial intensity", "Transformed intensity", "Target intensity", "Phase of transformed spectrum"], 
-               bbox_to_anchor = [1.2, -0.12], ncol = 2)
-
-    # constant to normalize the time plot
-    norm_const = max([np.max(np.abs(initial_pulse_short.Y[plot_from:plot_to])),
-                     np.max(np.abs(np.reshape(target_pulse.clone().cpu().detach().numpy(), input_dim))[plot_from:plot_to]),
-                     np.max(np.abs(np.reshape(reconstructed.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to]))])
-   
-    # initial intensity
-    plt.plot(initial_pulse_short.X[plot_from:plot_to], 
-                np.abs(initial_pulse_short.Y[plot_from:plot_to])/norm_const, 
-                color = "blue", 
-                zorder = 5,
-                lw = 2)
+    # plot 1
+    ax1.plot(initial_pulse.X, np.abs(initial_pulse.Y)**2, color="red", zorder = 10, lw = 2)     
+    ax1.plot(initial_pulse.X, (temp_intens_target.clone().detach().cpu().numpy().flatten())**2, color = "blue", alpha = 0.5, lw =5, zorder = 0)            
+    ax1.set_title("Step 1")
+    ax1.set_xlabel("Time (ps)")
+    ax1.set_ylabel("Normalized intensity")
+    ax1.set_xlim([-1000, 2000])
+    ax1.grid()
     
-    # target intensity
-    plt.plot(initial_pulse_short.X[plot_from:plot_to], 
-                    np.abs(np.reshape(target_pulse.clone().cpu().detach().numpy(), input_dim))[plot_from:plot_to]/norm_const, 
-                    color = "green",
-                    lw = 6,
-                    alpha = 0.5)
+    # legend and phase for ax1
+
+    ax1_ph = plt.twinx(ax1) # ax1 for the phase
+    temp_idx_end = np.array(temp_phase_pred.shape)[-1] + param.temp_idx_start   # we want to find the indices of the interval in
+
+    x = [initial_pulse.X[param.temp_idx_start: temp_idx_end][0]]
+    y = [np.real(temp_phase_pred.clone().detach().cpu().numpy())[0]]
+    ax1_ph.plot(x, y, color="red", zorder = 10, lw = 2)     
+    ax1_ph.plot(x, y, color = "blue", alpha = 0.5, lw =5, zorder = 0)    
+    ax1_ph.plot(initial_pulse.X[param.temp_idx_start: temp_idx_end],
+                 np.unwrap(np.real(temp_phase_pred.clone().detach().cpu().numpy())),
+                   linestyle = "dashed", color = "darkorange", zorder = 1)
     
-    # transformed intensity
-    plt.scatter(initial_pulse_short.X[plot_from:plot_to], 
-            np.abs(np.reshape(reconstructed.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to])/norm_const, 
-            color = "red", 
-            s = 0.25,
-            zorder = 10)
+    ax1_ph.legend(["Initial signal", "Target signal", "Temporal phase in EOPM"], 
+                        facecolor="white", framealpha=1, loc="upper right")
+
+    # plot 2
+    xlim = [110, 140]
+    ax2.plot(spectr_X, np.abs(spectr_intens_pred.clone().detach().cpu().numpy().flatten())**2, color="red", zorder = 10, lw =2)
+    ax2.plot(spectr_X, np.abs(spectr_intens_target.clone().detach().cpu().numpy().flatten())**2, color = "darkorange", alpha = 0.7, lw = 5, zorder = 0)
+    ax2.set_title("Step 2")
+    ax2.set_xlabel("Frequency around centre (GHz)")
+    ax2.set_ylabel("Normalized intensity")
+    ax2.set_xlim(xlim)
+    ax2.grid()
     
-    plt.xlabel("Time (ps)")
-    plt.ylabel("Normalized intensity")
-    #plt.legend(["Initial intensity", "Target intensity", "Transformed intensity"], bbox_to_anchor = [1, -0.12], ncol = 2)
-    plt.grid()
-    plt.xlim([initial_pulse_short.X[plot_from], initial_pulse_short.X[plot_to]])
+    spectr_X_ph = np.linspace(np.mean(spectr_X) - 1000*(param.pulse_shaper_res*param.spectral_phase_len/2), 
+                              np.mean(spectr_X) + 1000*(param.pulse_shaper_res*param.spectral_phase_len/2),
+                              spectr_phase_pred.shape[-1])
+    spectr_X_ph = spectr_X_ph[np.searchsorted(spectr_X_ph, xlim[0]): np.searchsorted(spectr_X_ph, xlim[1])]
 
-    # temporal phase, firstly we want to find non-zero intensity
+    ax2_ph = plt.twinx(ax2) # ax2 for the phase
 
-    left = initial_pulse_short.quantile(0.02, norm = "L1") 
-    right = initial_pulse_short.quantile(0.98, norm = "L1")
-    left_idx = np.searchsorted(initial_pulse_short.X, left)
-    right_idx = np.searchsorted(initial_pulse_short.X, right)
+    # ax2 phase plot + legend
+    x = [spectr_X_ph[0]]
+    y = [spectr_phase_pred.clone().detach().cpu().numpy()[np.searchsorted(spectr_X_ph, xlim[0]): np.searchsorted(spectr_X_ph, xlim[1])][0]]
+    ax2_ph.plot(x, y, color="red", zorder = 10, lw = 2)     
+    ax2_ph.plot(x, y, color = "darkorange", alpha = 0.7, lw = 5, zorder = 0)       
 
-    ax = plt.gca()
-    ax2 = ax.twinx()
+    ax2_ph.plot(spectr_X_ph,
+                 spectr_phase_pred.clone().detach().cpu().numpy()[np.searchsorted(spectr_X_ph, xlim[0]): np.searchsorted(spectr_X_ph, xlim[1])], 
+                 linestyle = "dashed", color = "green", zorder = 0)
+    ax2_ph.legend(["Transformed signal", "Target signal", "Spectral phase in P-Sh"],
+                                          facecolor="white", framealpha=1, loc="upper right")
 
-    # initial temporal phase
-    '''
-    ax2.plot(initial_pulse_short.X[left_idx: right_idx], 
-            np.unwrap((np.angle(initial_pulse_short.Y[left_idx: right_idx]))), 
-            color = "skyblue",
-            lw = 1,
-            zorder = 0)
-    '''
-    # temporal phase
+    # plot 3
 
-    reconstr_spectrum = sa.spectrum(initial_pulse_short.X[plot_from:plot_to], np.abs(np.reshape(reconstructed.clone().cpu().detach().numpy(), input_dim)[plot_from:plot_to])/norm_const, "time", "intensity")
+    ax3.plot(initial_pulse.X, np.abs(temp_intens_target.clone().detach().cpu().numpy().flatten())**2, color = "blue", alpha = 0.5, lw =5, zorder = 0)            
+    ax3.plot(initial_pulse.X, np.abs(temp_intens_pred2.clone().detach().cpu().numpy().flatten())**2, color="red", lw = 2)    
+    ax3.set_title("Step 3")
+    ax3.set_xlabel("Time (ps)")
+    ax3.set_ylabel("Normalized intensity")
+    ax3.grid()
+    ax3.set_xlim([-1000, 1500])
+
+    # phase of ax3 and legend
+
+    ax3_ph = plt.twinx(ax3)
+    idx_sp_ph_start = np.searchsorted(initial_pulse.X, -150)
+    idx_sp_ph_end = np.searchsorted(initial_pulse.X, 550)
+
+    x = [initial_pulse.X[idx_sp_ph_start:idx_sp_ph_end][0]]
+    y = [np.angle(temp_intens_pred2.clone().detach().cpu().numpy().flatten())[idx_sp_ph_start:idx_sp_ph_end][0]]
+
+    ax3_ph.plot(x, y, color = "red", lw = 2) 
+    ax3_ph.plot(x, y, color = "blue", alpha = 0.5, lw =5, zorder = 0)            
+    ax3_ph.plot(initial_pulse.X[idx_sp_ph_start:idx_sp_ph_end],
+                 np.angle(temp_intens_pred2.clone().detach().cpu().numpy().flatten())[idx_sp_ph_start:idx_sp_ph_end], 
+                 color = "darkorange", alpha = 1, linestyle = "dashed")      
+
+    ax3_ph.legend(["Transformed signal", "Target signal", "Residual temporal phase"],
+                                        facecolor="white", framealpha=1, loc="upper right")      
     
-    left_2 = reconstr_spectrum.quantile(0.02, norm = "L1") 
-    right_2 = reconstr_spectrum.quantile(0.98, norm = "L1")
-    left_idx_2 = np.searchsorted(reconstr_spectrum.X, left_2)
-    right_idx_2 = np.searchsorted(reconstr_spectrum.X, right_2)
+    # statistics
 
-    ax2.plot(initial_pulse_short.X[left_idx_2: right_idx_2], 
-            np.unwrap(np.reshape(temporal_phase.clone().cpu().detach().numpy(), input_dim)[left_idx_2:right_idx_2]), 
-            color = "lightcoral",
-            lw = 2,
-            zorder = 0,
-            linestyle = "dashed")
+    t_target = temp_intens_target.clone().detach().cpu().numpy().flatten()
+    t_pred = temp_intens_pred2.clone().detach().cpu().numpy().flatten()
+    s_target = spectr_intens_target.clone().detach().cpu().numpy().flatten()
+    s_pred = spectr_intens_pred.clone().detach().cpu().numpy().flatten()
+    initial = initial_pulse.Y
+
+    init_power = "\nInitial power: " + str(round(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)), 5))
+    trg_power = "\nTarget power: " + str(round(np.sum(t_target*np.conjugate(t_target)), 5))
+    pred_power = "\nPrediction power: " + str(round(np.real(np.sum(t_pred*np.conjugate(t_pred))), 5))
     
-    #ax2.legend(["Phase of transformed spectrum"], bbox_to_anchor = [0.721, -0.25])
-    ax2.set_ylabel("Temporal phase (rad)")
+    t_MSE = np.sum(np.abs(t_target-t_pred)**2)
+    s_MSE = np.sum(np.abs(s_target-s_pred)**2)
+    all_MSE = t_MSE + s_MSE
+
+    temp_MSE = "\n\nTemporal MSE: " + str(t_MSE)
+    spectr_MSE = "\nSpectral MSE: " + str(s_MSE)
+    tot_MSE = "\nTotal MSE: " + str(all_MSE)
+
+    init_hom_value =  1/2-1/2*np.sum(initial*np.conjugate(t_target))*np.sum(np.conjugate(initial)*t_target)
+    final_hom_value = np.abs(1/2-1/2*np.sum(t_target*np.conjugate(t_pred))*np.sum(np.conjugate(t_target)*t_pred)) # abs to kill 0j
+
+    init_hom = "\n\nInitial HOM coincidence rate: " + str(round(init_hom_value, 3))
+    final_hom = "\nFinal HOM coincidence rate: " + str(round(final_hom_value, 3))
+
+
+    ax4.axis('off')
+    ax4.text(x = 0, y = 0.5, 
+             s = "STATISTICS:\n" + init_power + trg_power + pred_power + temp_MSE + spectr_MSE + tot_MSE + init_hom + final_hom,
+             transform = ax4.transAxes)
     
-    # second plot in frequency
-
-    plt.subplot(1, 2, 2)
-    
-    if x_type == "freq":
-        plt.title("Frequency domain")
-        plt.xlabel("Frequency (THz)")
-    elif x_type == "wl":
-        plt.title("Wavelength domain")
-        plt.xlabel("Wavelength (nm)")
-    else:
-        raise Exception("x_type must be either \"wl\" or \"freq\"")
-    
-    plt.ylabel("Normalized intensity")
-    plt.grid()
-
-    # just for the legend
-
-    plt.fill_between([500], 
-                     [0],
-                     color = 'orange')
-    plt.plot([500], 
-             [0],
-             lw = 2, 
-             color = "firebrick",
-             zorder = 10)
-    plt.legend(["FT initial intensity", "Transforming phase"], bbox_to_anchor = [0.665, -0.12])
-
-    # preprocessing
-
-    reconstructed_phase = np.unwrap(target_phase_pred.clone().cpu().detach().numpy().reshape(output_dim))
-    reconstructed_phase -= reconstructed_phase[floor(output_dim/2)]
-
-    idx_start = floor(zeros_num + input_dim/2 - output_dim/2)
-    idx_end = floor(zeros_num + input_dim/2 + output_dim/2)
-
-    FT_X = initial_pulse.inv_fourier(inplace = False).X
-    FT_Y = ifftshift(ifft(ifftshift(torch.flatten(initial_intensity))))
-    FT_Y = FT_Y.clone().detach().cpu().numpy()
-
-    FT_Y /= np.max(FT_Y[idx_start: idx_end])
-
-    if x_type == "freq":
-        plt.xlim([FT_X[idx_start] + 375, FT_X[idx_end] + 375])
-    if x_type == "wl":
-        plt.xlim([freq_to_wl(FT_X[idx_end] + 375), freq_to_wl(FT_X[idx_start] + 375)])
-
-    # FT intensity
-
-    if x_type == "freq":
-        plt.fill_between(FT_X[idx_start: idx_end] + 375, 
-                            np.abs(FT_Y[idx_start: idx_end]),
-                            color='orange')
-        
-    elif x_type == "wl":
-        plt.fill_between(freq_to_wl(FT_X[idx_start: idx_end] + 375), 
-                    np.flip(np.abs(FT_Y[idx_start: idx_end])),
-                    color='orange')
-        
-    else:
-        raise Exception("x_type must be either \"wl\" or \"freq\"")
-
-    # transforming phase
-
-    ax3 = plt.gca()
-    ax4 = ax3.twinx()
-
-    if x_type == "freq":
-        ax4.plot(FT_X[idx_start: idx_end] + 375, 
-                    reconstructed_phase, 
-                    lw = 2, 
-                    color = "firebrick",
-                    zorder = 10)
-        
-    elif x_type == "wl":
-        ax4.plot(wl_to_freq(FT_X[idx_start: idx_end] + 375), 
-                    np.flip(reconstructed_phase), 
-                    lw = 2, 
-                    color = "firebrick",
-                    zorder = 10)
-        
-    else:
-        raise Exception("x_type must be either \"wl\" or \"freq\"")
-
-    ax4.set_ylabel("Spectral phase (rad)")
-
-    # the below part of the code isn't always executed and when is, won't probably work correctly
-    
+    # save the figure if needed
     if save:
         if not os.path.isdir("pics"):
             os.mkdir("pics")
-        plt.savefig("pics/reconstructed_{}.svg".format(iter_num), bbox_inches = "tight", dpi = 200)
+        fig.savefig(f"pics/reconstructed_{iter_num}.svg", bbox_inches="tight", dpi=1600)
 
-    return plt, mse(target_pulse.abs(), reconstructed.abs()).clone().cpu().detach().numpy()
-    
-
-def create_target_pulse(pulse_type, initial_pulse, phase_len, device, dtype):
-    '''
-    ## Create a target_intensity within given rules.
-    # Arguments:
-
-    pulse_type - if \"hermite\", then the target intensity is a 1 Hermite-Gauss polynomial.
-    If \"chirp\", then the target intensity is chirped Gaussian function. 
-    If \"from_dataset\", then chooses at random a intensity saved in \"data/train_intensity\".
-    If \"two_pulses\", then returns two separated gaussian pulses.
-
-    initial_pulse - a spectrum class object containing the initial spectrum that is - possibly - transformed into target_pulse.
-
-    phase_len - the length of significant part of the Fourier transformed initial_pulse
-
-    # Returns:
-    "target_pulse" being one-dimensional complex PyTorch Tensor.
-    '''
-
-    if pulse_type == "hermite":
-        target_pulse_ = sa.hermitian_pulse(pol_num = 1,
-                                        bandwidth = (initial_pulse.X[0], initial_pulse.X[-1]),
-                                        centre = 500,
-                                        FWHM = 100,
-                                        num = len(initial_pulse),
-                                    x_type = "time")
-
-        target_pulse_.Y = target_pulse_.Y / np.sqrt(np.sum(target_pulse_.Y*np.conjugate(target_pulse_.Y)))
-        target_pulse_.Y = target_pulse_.Y * np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
-        
-        target_pulse_.very_smart_shift(target_pulse_.comp_center(norm = "L2")-initial_pulse.comp_center(norm = "L2"))
-        target_pulse_ = np_to_complex_pt(target_pulse_.Y, device = device, dtype = dtype)
-
-    elif pulse_type == "chirp":
-        if dtype == torch.float32:
-            new_dtype = np.float32
-        else:
-            new_dtype = dtype
-        initial_intensity = initial_pulse.Y.copy()
-        chirp = 100
-        transform_phase = chirp*np.linspace(-1, 1, phase_len, dtype = new_dtype)**2
-        target_pulse_ = evolve_np(initial_intensity, transform_phase, dtype = new_dtype)
-
-        target_pulse_ = shift_to_centre(target_pulse_, initial_pulse.Y)
-        target_pulse_ = np_to_complex_pt(target_pulse_, device = device, dtype = torch.float32)
-
-    elif pulse_type == "two_pulses":
-        pulses = sa.hermitian_pulse(pol_num = 0, 
-                                    bandwidth = [initial_pulse.X[0], initial_pulse.X[-1]],
-                                    centre = initial_pulse.quantile(0.5),
-                                    FWHM = initial_pulse.FWHM(),
-                                    num = len(initial_pulse),
-                                    x_type = initial_pulse.x_type)
-        pulses.Y = pulses.Y + pulses.very_smart_shift(-0.5, inplace = False).Y + pulses.very_smart_shift(0.5, inplace = False).Y
-        pulses.Y = pulses.Y / np.sqrt(np.sum(pulses.Y*np.conjugate(pulses.Y)))
-        pulses.Y = pulses.Y * np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
-
-        target_pulse_.very_smart_shift(target_pulse_.comp_center()-initial_pulse.comp_center())
-        target_pulse_ = np_to_complex_pt(pulses.Y, device = device, dtype = dtype)
-
-    elif pulse_type == "from_dataset":
-        intensity_labels = os.listdir('data/train_intensity')
-        phase_labels = os.listdir('data/train_phase')
-        dataset_size = len(intensity_labels)
-        number = np.random.randint(low = 0, high = dataset_size)
-        intensity_name = intensity_labels[number]
-        phase_name = phase_labels[number]
-
-        target_pulse_ = np.loadtxt('data/train_intensity/' + intensity_name,
-                 delimiter = " ", dtype = np.float32)
-        transform_phase = np.loadtxt('data/train_phase/' + phase_name,
-                 delimiter = " ", dtype = np.float32)
-        
-        target_pulse_ = shift_to_centre(target_pulse_, initial_pulse.Y)
-        target_pulse_ = np_to_complex_pt(target_pulse_, device = device, dtype = dtype)
-
-    elif pulse_type == "exponential":
-        exp_intensity = np.flip(np.exp(np.linspace(-3, 3, len(initial_pulse))) - np.exp(-3))
-        for i in range(0, floor(len(exp_intensity)*1/3)):
-            exp_intensity[i] = 0
-        exp_intensity = exp_intensity / np.sqrt(np.sum(exp_intensity*np.conjugate(exp_intensity)))
-        exp_intensity = exp_intensity * np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
-
-        #exp_intensity = shift_to_centre(exp_intensity, initial_pulse.Y)
-        target_pulse_ = np_to_complex_pt(exp_intensity, device = device, dtype = dtype)
-
-    elif pulse_type == "gauss":
-        target_pulse_ = sa.hermitian_pulse(pol_num = 0,
-                                    bandwidth = (initial_pulse.X[0], initial_pulse.X[-1]),
-                                    centre = 500,
-                                    FWHM = 200,
-                                    num = len(initial_pulse),
-                                    x_type = "time")
-
-        target_pulse_.Y = target_pulse_.Y / np.sqrt(np.sum(target_pulse_.Y*np.conjugate(target_pulse_.Y)))
-        target_pulse_.Y = target_pulse_.Y * np.sqrt(np.sum(initial_pulse.Y*np.conjugate(initial_pulse.Y)))
-
-        target_pulse_.smart_shift(-target_pulse_.comp_center(norm = "L2")+initial_pulse.comp_center(norm = "L2"))
-        target_pulse_ = np_to_complex_pt(target_pulse_.Y, device = device, dtype = dtype)
-
-    else:
-        raise Exception("Pulse_type not defined.")
-
-    return target_pulse_.clone()
+    return fig, 0
 
 
 def create_initial_pulse(bandwidth, centre, FWHM, num, pulse_type):
@@ -566,35 +232,16 @@ def create_initial_pulse(bandwidth, centre, FWHM, num, pulse_type):
         return pulse
     
     elif pulse_type == "exponential":
-        Y = np.flip(np.exp(np.linspace(-10, 3, num)) - np.exp(-10))
+
+        Y = np.flip(np.exp(1*np.linspace(-10, 3, num)) - np.exp(-10))
         for i in range(0, floor(1/3*num)):
             Y[i] = 0
-
+        Y = Y/np.max(np.abs(Y))
+        Y = np.roll(Y, floor(600*num/5000)) # 600 shifts to center for num=5000
         X = np.linspace(bandwidth[0], bandwidth[1], num)
-        spectrum_out = sa.spectrum(X = X, Y = Y, x_type ="time", y_type ="intensity")
-        spectrum_out.smart_shift(100, inplace = True)
-        spectrum_out.Y = np.abs(spectrum_out.Y)
-        return spectrum_out
+        pulse = sa.spectrum(X = X, Y = Y, x_type ="time", y_type ="intensity")
+        pulse.Y = np.abs(pulse.Y)
+        return pulse
     
     else:
         raise Exception("Pulse_type must be either \"gauss\", \"hermite\" or \"exponential\".")
-    
-
-
-def create_test_set(initial_pulse, phase_len, device, dtype):
-    '''
-    ## Returns a list with predefined test intensities.
-
-    initial_pulse - a spectrum class object containing the initial spectrum that is - possibly - transformed into test_pulse.
-
-    phase_len - the length of significant part of the Fourier transformed initial_pulse
-    '''
-    test_set = []
-    for pulse_type in ["hermite", "chirp", "exponential", "gauss"]:
-        test_set.append(create_test_pulse(pulse_type = pulse_type, 
-                                          initial_pulse = initial_pulse.copy(),
-                                          phase_len = phase_len, 
-                                          device = device, 
-                                          dtype = dtype)[0])
-        
-    return test_set
