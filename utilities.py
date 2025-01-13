@@ -350,6 +350,9 @@ class MSEFFT_1(nn.modules.loss._Loss):
         self.s_factor = s_factor
         self.device = device
         self.dtype = dtype
+        
+        def sigmoid_diff(x, b=7):
+            return 1-4*(torch.nn.Sigmoid(x/b)*(1-torch.nn.Sigmoid(x/b)))
 
     def forward(self, results, target):
 
@@ -357,12 +360,9 @@ class MSEFFT_1(nn.modules.loss._Loss):
 
         MSE_sum = torch.sum(torch.square(pred_intensity - target))
 
-        zero_shape = np.array(torch.diff(pred_phase).shape)
-        zero_shape[-1] = 1
-        zero_shape = tuple(zero_shape)
-
-
         FFT_of_phase = torch.fft.fft(pred_phase)
+        fft_freq = torch.fft.fftfreq(len(FFT_of_phase))
+        
         integral_of_FFT=torch.trapezoid(FFT_of_phase)
         add_penalty = integral_of_FFT
         
