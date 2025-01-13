@@ -5,7 +5,7 @@ import torchaudio
 
 #duble transformations
 
-class network_2_1(nn.Module):
+class network_2_1(nn.Module): #spectral network
     def __init__(self, input_size, n, output_size):
         # super function. It inherits from nn.Module and we can access everything in nn.Module
         super(network_2_1, self).__init__()
@@ -27,7 +27,7 @@ class network_2_1(nn.Module):
 
         return self.tanh(x)* np.pi*6
     
-class network_2_2(nn.Module):
+class network_2_2(nn.Module): #temporal network
     def __init__(self, input_size, n, output_size):
         # super function. It inherits from nn.Module and we can access everything in nn.Module
         super(network_2_2, self).__init__()
