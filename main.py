@@ -138,7 +138,7 @@ def main(_learning_rate,
 
     meta.comp_time_res = 1          # (ps) to avoid border effects we compute with higher resolution than the one of the modulator's
     meta.comp_freq_res = 0.0001     # (THz) as above
-    meta.eopm_res = 11               # (ps)
+    meta.eopm_res = 14               # (ps)
     meta.pulse_shaper_res = 0.0015  # (THz)
     meta.freq_width = 0.5           # (THz) estimated range of the area in the frequency domain where all the spectrum is contained
                                     # WARNING: if initial lr is big and phase is crazy, the spectrum can get VERY broad
@@ -268,12 +268,13 @@ def main(_learning_rate,
             temp_phase_pred, spectr_phase_pred = model(pulse)
 
             # we apply temporal phase
-            temp_phase_pred = u.increase_resolution(temp_phase_pred, meta.eopm_res/meta.comp_time_res, device = my_device, dtype = my_dtype) # 11 ps is the resolution of EOPM
+            temp_phase_pred = u.increase_resolution(temp_phase_pred, meta.eopm_res/meta.comp_time_res, device = my_device, dtype = my_dtype) # 11 ps is the resolution of EOPM            
+            temp_phase_pred = temp_phase_pred.real # this is a dummy fix to correct (probably numerical) bug causing lasing (phase is nor purely real, therefore exp is not unitary)
             temp_intens_pred = u.multiply_by_phase(initial_intensity_pt.clone(), temp_phase_pred, index_start = meta.temp_idx_start, device = my_device, dtype = my_dtype)
 
             # we apply spectral phase
             spectr_intens_pred = u.fourier(temp_intens_pred)
-        
+
             old_length = np.array(spectr_intens_pred.shape)[-1]
             spectr_intens_pred = u.cut(spectr_intens_pred, meta.freq_width/meta.init_freq_res) # we leave central 100 GHz, we delete the rest in order to save GPU
             new_length = np.array(spectr_intens_pred.shape)[-1]
@@ -281,6 +282,7 @@ def main(_learning_rate,
 
             spectr_intens_pred = u.increase_resolution(spectr_intens_pred, meta.increase_freq_res, device = my_device, dtype = my_dtype)
             spectr_phase_pred = u.increase_resolution(spectr_phase_pred, meta.pulse_shaper_res/meta.comp_freq_res, device = my_device, dtype = my_dtype)  # 1.5 GHz is the resolution of the pulse shaper
+            spectr_phase_pred = spectr_phase_pred.real
             spectr_intens_pred = u.multiply_by_phase(spectr_intens_pred, spectr_phase_pred, index_start = floor((spectr_intens_pred.shape[-1]-spectr_phase_pred.shape[-1])/2), device = my_device, dtype = my_dtype)
 
             # and back to time domain
@@ -310,16 +312,16 @@ def main(_learning_rate,
 
             print("Epoch no. {}. Loss {}.".format(epoch, np.mean(np.array(loss_list[epoch*len(dataloader_train): (epoch+1)*len(dataloader_train)]))))
             
-            fig, test_loss = test(model = model,
-                                target_pulse = dataset_train[0],
-                                initial_pulse = initial_pulse,
-                                device = my_device, 
-                                dtype = my_dtype,
-                                iter_num = epoch,
-                                param = meta,
-                                save = True)                        
-            cont_penalty = 0
-            print("phase's variation MSE: {}.".format(cont_penalty))
+            fig, test_loss, hom_visibility = test(model = model,
+                                        target_pulse = dataset_train[0],
+                                        initial_pulse = initial_pulse,
+                                        device = my_device, 
+                                        dtype = my_dtype,
+                                        iter_num = epoch,
+                                        param = meta,
+                                        save = True)                        
+            print("HOM visibiilty: " + str(round(hom_visibility,3)) + "%")
+            #print("phase's variation MSE: {}.".format(cont_penalty))
 
             if test_loss < test_loss_global:
                 # shutil.rmtree(model_save_PATH_dir)
@@ -327,7 +329,7 @@ def main(_learning_rate,
                 torch.save(model.state_dict(), os.path.join(model_save_PATH_dir, f'{_net_architecture}_ep{epoch}.pt'))
             test_loss_global = test_loss
             wandb.log({"chart": fig})
-            print('test_loss',test_loss)
+            #print('test_loss',test_loss)
             wandb.log({"test_loss": test_loss})
 
             model.train()

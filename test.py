@@ -188,12 +188,12 @@ def test(model,
     spectr_MSE = "\nSpectral MSE: " + str(s_MSE)
     tot_MSE = "\nTotal MSE: " + str(all_MSE)
 
-    init_hom_value =  1/2-1/2*np.sum(initial*np.conjugate(t_target))*np.sum(np.conjugate(initial)*t_target)
-    final_hom_value = np.abs(1/2-1/2*np.sum(t_target*np.conjugate(t_pred))*np.sum(np.conjugate(t_target)*t_pred)) # abs to kill 0j
+    init_hom_value =  np.sum(initial*np.conjugate(t_target))*np.sum(np.conjugate(initial)*t_target)
+    final_hom_value = np.abs(np.sum(t_target*np.conjugate(t_pred))*np.sum(np.conjugate(t_target)*t_pred)) # abs to kill 0j
+    #final_hom_value = np.abs(np.sum(t_target*np.conjugate(t_target))*np.sum(np.conjugate(t_target)*t_target)) # abs to kill 0j
 
-    init_hom = "\n\nInitial HOM coincidence rate: " + str(round(init_hom_value, 3))
-    final_hom = "\nFinal HOM coincidence rate: " + str(round(final_hom_value, 3))
-
+    init_hom = "\n\nInitial HOM visibility: " + str(round(100*init_hom_value, 1)) + "%"
+    final_hom = "\nFinal HOM visibility: " + str(round(100*final_hom_value, 1)) + "%"
 
     ax4.axis('off')
     ax4.text(x = 0, y = 0.5, 
@@ -206,7 +206,7 @@ def test(model,
             os.mkdir("pics")
         fig.savefig(f"pics/reconstructed_{iter_num}.svg", bbox_inches="tight", dpi=1600)
 
-    return fig, 0
+    return fig, 0, round(100*final_hom_value, 1)
 
 
 def create_initial_pulse(bandwidth, centre, FWHM, num, pulse_type):

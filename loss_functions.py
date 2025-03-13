@@ -220,5 +220,5 @@ class HOM(nn.modules.loss._Loss):
         self.dtype = dtype
 
     def forward(self, temp_phase_pred, spectr_phase_pred, temp_intens_pred, spectr_intens_pred, temp_intens_target, spectr_intens_target):
-        p = torch.sum(temp_intens_pred*torch.conj(temp_intens_target))*torch.sum(temp_intens_target*torch.conj(temp_intens_pred))
-        return 1/2-1/2*p
+        p = torch.abs(torch.sum(temp_intens_pred*torch.conj(temp_intens_target))*torch.sum(temp_intens_target*torch.conj(temp_intens_pred)))
+        return 1-p

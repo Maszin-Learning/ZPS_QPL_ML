@@ -33,7 +33,7 @@ def evolve_np(intensity, phase, dtype, abs = True):
     output_dim = phase.shape[-1]
 
     intensity = np.fft.fftshift(intensity)
-    intensity = np.fft.fft(intensity)
+    intensity = np.fft.fft(intensity, norm = "ortho")
     intensity = np.fft.fftshift(intensity)
     
     zeroes_shape = np.array(phase.shape)
@@ -79,7 +79,7 @@ def evolve_pt(intensity, phase, device, dtype, abs = True):
     output_dim = phase.shape[-1]
 
     intensity = torch.fft.fftshift(intensity)
-    intensity = torch.fft.fft(intensity)
+    intensity = torch.fft.fft(intensity, norm = "ortho")
     intensity = torch.fft.fftshift(intensity)
     
     zeroes_shape = np.array(phase.shape)
@@ -92,7 +92,7 @@ def evolve_pt(intensity, phase, device, dtype, abs = True):
     compl_intensity = torch.mul(intensity, torch.exp(1j*long_phase))
 
     compl_intensity = torch.fft.ifftshift(compl_intensity)
-    compl_intensity = torch.fft.ifft(compl_intensity)
+    compl_intensity = torch.fft.ifft(compl_intensity, norm = "ortho")
     compl_intensity = torch.fft.ifftshift(compl_intensity)
 
     if abs:
@@ -313,13 +313,16 @@ def increase_resolution(pt_tensor, times, device, dtype, keep_norm = True):
     long_tensor = torch.fft.fftshift(long_tensor)
     long_tensor = torch.fft.fft(long_tensor, norm = "ortho")
     long_tensor = torch.fft.fftshift(long_tensor)
+    vector = long_tensor.clone().cpu().detach().numpy()
 
     zeroes_shape = np.array(long_tensor.shape)
     zeroes_shape[-1] = floor((times*zeroes_shape[-1])/2) # if we want to increase resolution 10 times, we need to pad 10 times more zero than the length of the signal
     zeroes_shape = tuple(zeroes_shape)
+
     long_tensor = torch.concat([torch.zeros(size = zeroes_shape, requires_grad = True, device = device, dtype = dtype), 
                           long_tensor,
-                          torch.zeros(size = zeroes_shape, requires_grad = True, device = device, dtype = dtype)], dim=long_tensor.ndim-1)
+                          torch.zeros(size = zeroes_shape, requires_grad = True, device = device, dtype = dtype)], 
+                          dim=long_tensor.ndim-1)
 
     long_tensor = torch.fft.ifftshift(long_tensor)
     long_tensor = torch.fft.ifft(long_tensor, norm = "ortho")
@@ -344,6 +347,8 @@ def multiply_by_phase(intensity, phase, index_start, device, dtype):
                           phase,
                           torch.zeros(size = zeroes_shape_right, requires_grad = True, device = device, dtype = dtype)], 
                           dim=phase.ndim-1)
+
+    #print(power(torch.mul(intensity, torch.exp(1j*long_phase)))/power(intensity))
 
     return torch.mul(intensity, torch.exp(1j*long_phase))
 
@@ -418,10 +423,11 @@ class Parameters:
 
 # debugging functions
 
-def plot(tensor):
+def plot(tensor, title = "Title"):
     X = np.array(range(np.array(tensor.shape)[-1]))
     Y = np.abs(tensor.clone().detach().cpu().numpy())
     plt.scatter(X, Y, color = "red", s = 1)
+    plt.title(title)
     plt.grid()
     plt.show()
 
