@@ -53,17 +53,15 @@ def test(model,
     # generate phases
     temp_phase_pred, spectr_phase_pred = model(target_pulse)
 
-    # we apply temporal phase
-    temp_phase_pred = u.increase_resolution(temp_phase_pred, param.eopm_res/param.comp_time_res, device = device, dtype = dtype) # 11 ps is the resolution of EOPM
-    initial_intensity_pt = u.np_to_complex_pt(initial_pulse.Y, device = device, dtype = dtype)
-    temp_intens_pred = u.multiply_by_phase(initial_intensity_pt, temp_phase_pred, index_start = param.temp_idx_start, device = device, dtype = dtype)
+    # into frequency domain
 
+    initial_intensity_pt = u.np_to_complex_pt(initial_pulse.Y, device = device, dtype = dtype)
+    temp_intens_pred = initial_intensity_pt.clone()
+    spectr_intens_pred = u.fourier(initial_intensity_pt)
     # we apply spectral phase
-    spectr_intens_pred = u.fourier(temp_intens_pred)
 
     old_length = np.array(spectr_intens_pred.shape)[-1]
     spectr_intens_pred = u.cut(spectr_intens_pred, param.freq_width/param.init_freq_res) # we leave central 100 GHz, we delete the rest in order to save GPU
-
     new_length = np.array(spectr_intens_pred.shape)[-1]
     increase_time_res = old_length/new_length
 
@@ -77,6 +75,10 @@ def test(model,
     temp_intens_pred2 = u.inv_fourier(spectr_intens_pred)
     temp_intens_pred2 = u.increase_resolution(temp_intens_pred2, increase_time_res, device = device, dtype = dtype)
     temp_intens_pred2 = u.cut(temp_intens_pred2, np.array(len(target_pulse)))
+
+    # we apply temporal phase
+    temp_phase_pred = u.increase_resolution(temp_phase_pred, param.eopm_res/param.comp_time_res, device = device, dtype = dtype) # 11 ps is the resolution of EOPM
+    temp_intens_pred2 = u.multiply_by_phase(temp_intens_pred2, temp_phase_pred, index_start = param.temp_idx_start, device = device, dtype = dtype)
 
     # create plots
 
@@ -92,14 +94,18 @@ def test(model,
     ax1.set_title("Step 1")
     ax1.set_xlabel("Time (ps)")
     ax1.set_ylabel("Normalized intensity")
-    ax1.set_xlim([-1000, 2000])
+    ax1.set_xlim([-1000, 500])
     ax1.grid()
     
-    # legend and phase for ax1
+    ax1.legend(["Initial signal", "Target signal"], 
+                    facecolor="white", framealpha=1, loc="upper right")
 
+    # legend and phase for ax1
+    
+    '''
     ax1_ph = plt.twinx(ax1) # ax1 for the phase
     temp_idx_end = np.array(temp_phase_pred.shape)[-1] + param.temp_idx_start   # we want to find the indices of the interval in
-
+    
     x = [initial_pulse.X[param.temp_idx_start: temp_idx_end][0]]
     y = [np.real(temp_phase_pred.clone().detach().cpu().numpy())[0]]
     ax1_ph.plot(x, y, color="red", zorder = 10, lw = 2)     
@@ -110,9 +116,11 @@ def test(model,
     
     ax1_ph.legend(["Initial signal", "Target signal", "Temporal phase in EOPM"], 
                         facecolor="white", framealpha=1, loc="upper right")
+    '''
 
     # plot 2
-    xlim = [110, 140]
+    xlim = [-15, 15]
+
     ax2.plot(spectr_X, np.abs(spectr_intens_pred.clone().detach().cpu().numpy().flatten())**2, color="red", zorder = 10, lw =2)
     ax2.plot(spectr_X, np.abs(spectr_intens_target.clone().detach().cpu().numpy().flatten())**2, color = "darkorange", alpha = 0.7, lw = 5, zorder = 0)
     ax2.set_title("Step 2")
@@ -148,24 +156,31 @@ def test(model,
     ax3.set_xlabel("Time (ps)")
     ax3.set_ylabel("Normalized intensity")
     ax3.grid()
-    ax3.set_xlim([-1000, 1500])
+    ax3.set_xlim([-1500, 1500])
 
     # phase of ax3 and legend
 
     ax3_ph = plt.twinx(ax3)
-    idx_sp_ph_start = np.searchsorted(initial_pulse.X, -150)
-    idx_sp_ph_end = np.searchsorted(initial_pulse.X, 550)
+    idx_sp_ph_start = np.searchsorted(initial_pulse.X, -1200)
+    idx_sp_ph_end = np.searchsorted(initial_pulse.X, 1000)
 
     x = [initial_pulse.X[idx_sp_ph_start:idx_sp_ph_end][0]]
     y = [np.angle(temp_intens_pred2.clone().detach().cpu().numpy().flatten())[idx_sp_ph_start:idx_sp_ph_end][0]]
 
     ax3_ph.plot(x, y, color = "red", lw = 2) 
-    ax3_ph.plot(x, y, color = "blue", alpha = 0.5, lw =5, zorder = 0)            
-    ax3_ph.plot(initial_pulse.X[idx_sp_ph_start:idx_sp_ph_end],
-                 np.angle(temp_intens_pred2.clone().detach().cpu().numpy().flatten())[idx_sp_ph_start:idx_sp_ph_end], 
-                 color = "darkorange", alpha = 1, linestyle = "dashed")      
+    ax3_ph.plot(x, y, color = "blue", alpha = 0.5, lw = 5, zorder = 0)            
+    
+    temp_idx_end = np.array(temp_phase_pred.shape)[-1] + param.temp_idx_start   # we want to find the indices of the interval in
+     
+    ax3_ph.plot(initial_pulse.X[param.temp_idx_start: temp_idx_end],
+                 np.unwrap(np.real(temp_phase_pred.clone().detach().cpu().numpy())),
+                   linestyle = "dashed", color = "darkorange", zorder = 1)
+    
+    ax3_ph.plot(initial_pulse.X[idx_sp_ph_start: idx_sp_ph_end], # Residual phase
+                np.angle(temp_intens_pred2.clone().detach().cpu().numpy().flatten())[idx_sp_ph_start: idx_sp_ph_end], 
+                color = "blue", alpha = 1, linestyle = "dashed")  
 
-    ax3_ph.legend(["Transformed signal", "Target signal", "Residual temporal phase"],
+    ax3_ph.legend(["Transformed signal", "Target signal", "Temporal phase in EOPM", "Residual temporal phase"],
                                         facecolor="white", framealpha=1, loc="upper right")      
     
     # statistics

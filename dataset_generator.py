@@ -158,7 +158,7 @@ class Generator():
             intensity = evolve_np(intensity, phase_significant, dtype = self.dtype)
 
         elif self.target_type == "exponential":
-            intensity = np.flip(np.exp(np.linspace(-3, 3, self.intensity_len)) - np.exp(-3))
+            intensity = np.flip(np.exp(np.linspace(-5, 5, self.intensity_len)) - np.exp(-5))
 
             for i in range(0, floor(len(intensity)*1/3)):
                 intensity[i] = 0
@@ -169,10 +169,10 @@ class Generator():
             correction = 0#np.random.uniform(-0.4, 0.4)
 
             intensity = sa.hermitian_pulse(pol_num = 1,
-                                           bandwidth = [190, 196],
-                                           centre = 193,
-                                           FWHM = 1 + correction,
-                                           num = len(intensity)).Y
+                                            bandwidth = [self.target_metadata[2], self.target_metadata[3]],
+                                            centre = self.target_metadata[0],
+                                            FWHM = self.target_metadata[1],
+                                            num = len(intensity)).Y
 
         elif self.target_type == "gauss":
 

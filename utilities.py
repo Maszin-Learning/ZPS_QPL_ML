@@ -254,7 +254,9 @@ def shift_to_centre(intensity_to_shift, intensity_ref):
 def integrate(intensity):
     return np.sum(intensity*np.conjugate(intensity))
 
-    
+def hom(pred, target):
+    return torch.abs(torch.sum(pred*torch.conj(target))*torch.sum(target*torch.conj(pred)))
+
 def unwrap(x):
     ''''''
     x_1 = 0
@@ -313,10 +315,9 @@ def increase_resolution(pt_tensor, times, device, dtype, keep_norm = True):
     long_tensor = torch.fft.fftshift(long_tensor)
     long_tensor = torch.fft.fft(long_tensor, norm = "ortho")
     long_tensor = torch.fft.fftshift(long_tensor)
-    vector = long_tensor.clone().cpu().detach().numpy()
 
     zeroes_shape = np.array(long_tensor.shape)
-    zeroes_shape[-1] = floor((times*zeroes_shape[-1])/2) # if we want to increase resolution 10 times, we need to pad 10 times more zero than the length of the signal
+    zeroes_shape[-1] = floor(((times-1)*zeroes_shape[-1])/2) # if we want to increase resolution 10 times, we need to pad 10 times more zero than the length of the signal
     zeroes_shape = tuple(zeroes_shape)
 
     long_tensor = torch.concat([torch.zeros(size = zeroes_shape, requires_grad = True, device = device, dtype = dtype), 
@@ -329,6 +330,7 @@ def increase_resolution(pt_tensor, times, device, dtype, keep_norm = True):
     long_tensor = torch.fft.ifftshift(long_tensor)
 
     return long_tensor
+
 
 def multiply_by_phase(intensity, phase, index_start, device, dtype):
 
@@ -351,6 +353,7 @@ def multiply_by_phase(intensity, phase, index_start, device, dtype):
     #print(power(torch.mul(intensity, torch.exp(1j*long_phase)))/power(intensity))
 
     return torch.mul(intensity, torch.exp(1j*long_phase))
+
 
 def cut(pt_array, num):
     '''
@@ -452,3 +455,9 @@ def print_gradient_after(tensor, name = "So far"):
 
 def power(tensor):
     return torch.sum(torch.square(torch.abs(tensor)), axis = -1).detach().cpu().numpy()
+
+def peak_stat(tensor):
+    print("Tensor shape", tensor.shape)
+    vector = tensor.clone().detach().cpu().numpy()
+    print("Max index", np.argmax(np.abs(vector)))
+    print("Relative position of the peak", np.argmax(np.abs(vector))/len(tensor))

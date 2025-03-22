@@ -71,6 +71,8 @@ def main(_learning_rate,
 
     if _net_architecture == 'network_1':
         from nets import network_1 as network
+    if _net_architecture == 'network_01':
+        from nets import network_01 as network
     if _net_architecture == 'network_2':
         from nets import network_2 as network
     if _net_architecture == 'network_3':
@@ -133,8 +135,9 @@ def main(_learning_rate,
 
     bandwidth = [-2500, 2500]   # (ps)
 
-    meta.spectral_phase_len = 14     # so, assuming 1.5 GHz of pulse shaper's resolution, we get 60 GHz of bandwidth
-    meta.temporal_phase_len = 140    # so, assuming 11 ps of modulator's resolution, we get 2200 ps of bandwidth
+    # THESE TWO NEED TO BE FUCKING ODD OR THE SYSTEM WILL START LASING (fftshift in increase_resolution breaks symmetry and makes phase complex)
+    meta.spectral_phase_len = 15     # so, assuming 1.5 GHz of pulse shaper's resolution, we get 60 GHz of bandwidth
+    meta.temporal_phase_len = 151    # so, assuming 11 ps of modulator's resolution, we get 2200 ps of bandwidth
 
     meta.comp_time_res = 1          # (ps) to avoid border effects we compute with higher resolution than the one of the modulator's
     meta.comp_freq_res = 0.0001     # (THz) as above
@@ -145,11 +148,11 @@ def main(_learning_rate,
 
     time_num = floor((bandwidth[1]-bandwidth[0])/meta.comp_time_res)             # number of points in the initial pulse
 
-    centre_init = 500           # not used if initial signal is exponential
-    width_init = 100            # not used if initial signal is exponential
+    centre_init = -700           # not used if initial signal is exponential
+    width_init = 50            # not used if initial signal is exponential
 
-    centre_target = 0           # (ps) centre of the target pulse defined in dataset_generator -> pulse_gen
-    width_target = 200          # (ps) FWHM of the target pulse defined in dataset_generator -> pulse_gen
+    centre_target = -100           # (ps) centre of the target pulse defined in dataset_generator -> pulse_gen # NOT USED SINCE SIGNAL SHIFTED TO KILL LINEAR PHASE
+    width_target = 100           # (ps) FWHM of the target pulse defined in dataset_generator -> pulse_gen
 
     convolution_width = 0.1   # width of the gaussian convolved with the main signal
 
@@ -181,7 +184,7 @@ def main(_learning_rate,
     initial_pulse_FT = initial_pulse.inv_fourier(inplace = False)
     meta.init_freq_res= initial_pulse_FT.calc_spacing()
     meta.increase_freq_res = meta.init_freq_res/meta.comp_freq_res # at the beginning, we dont control the frequency resolution and later we will want to increase it to the computational resolution level
-    meta.temp_idx_start = np.searchsorted(initial_pulse.X, initial_pulse.quantile(1e-3, "L2")-20) # extra 20 ps just to be sure; from this index we start multiplication of phase
+    meta.temp_idx_start = np.searchsorted(initial_pulse.X, initial_pulse.quantile(1e-3, "L2")-250) # extra 20 ps just to be sure; from this index we start multiplication of phase
 
     # generate training data
 
@@ -207,7 +210,7 @@ def main(_learning_rate,
     
     dataset_train = Dataset_train(root='', transform=True, device = my_device)
     dataloader_train = torch.utils.data.DataLoader(dataset=dataset_train, batch_size=_batch_size, num_workers=0, shuffle=True)
- 
+
     # create NN
 
     model = network(input_size = time_num, 
@@ -263,32 +266,30 @@ def main(_learning_rate,
     wandb.watch(model, criterion, log="all", log_freq=400)
 
     for epoch in range(_epoch_num):
-        for pulse, _ in tqdm(dataloader_train):
-
+        for pulse, _ in tqdm(dataloader_train): # pulse is in temporal domain with the resolution of comp_time_res
+            
             temp_phase_pred, spectr_phase_pred = model(pulse)
-
-            # we apply temporal phase
-            temp_phase_pred = u.increase_resolution(temp_phase_pred, meta.eopm_res/meta.comp_time_res, device = my_device, dtype = my_dtype) # 11 ps is the resolution of EOPM            
-            temp_phase_pred = temp_phase_pred.real # this is a dummy fix to correct (probably numerical) bug causing lasing (phase is nor purely real, therefore exp is not unitary)
-            temp_intens_pred = u.multiply_by_phase(initial_intensity_pt.clone(), temp_phase_pred, index_start = meta.temp_idx_start, device = my_device, dtype = my_dtype)
+            spectr_intens_pred = u.fourier(initial_intensity_pt)    # pulse in frequency domain with some random resolution
 
             # we apply spectral phase
-            spectr_intens_pred = u.fourier(temp_intens_pred)
 
             old_length = np.array(spectr_intens_pred.shape)[-1]
             spectr_intens_pred = u.cut(spectr_intens_pred, meta.freq_width/meta.init_freq_res) # we leave central 100 GHz, we delete the rest in order to save GPU
             new_length = np.array(spectr_intens_pred.shape)[-1]
             increase_time_res = old_length/new_length
 
-            spectr_intens_pred = u.increase_resolution(spectr_intens_pred, meta.increase_freq_res, device = my_device, dtype = my_dtype)
+            spectr_intens_pred = u.increase_resolution(spectr_intens_pred, meta.increase_freq_res, device = my_device, dtype = my_dtype)            # pulse in frequency domain with comp_freq_res
             spectr_phase_pred = u.increase_resolution(spectr_phase_pred, meta.pulse_shaper_res/meta.comp_freq_res, device = my_device, dtype = my_dtype)  # 1.5 GHz is the resolution of the pulse shaper
-            spectr_phase_pred = spectr_phase_pred.real
             spectr_intens_pred = u.multiply_by_phase(spectr_intens_pred, spectr_phase_pred, index_start = floor((spectr_intens_pred.shape[-1]-spectr_phase_pred.shape[-1])/2), device = my_device, dtype = my_dtype)
 
             # and back to time domain
             temp_intens_pred_2 = u.inv_fourier(spectr_intens_pred)
             temp_intens_pred_2 = u.increase_resolution(temp_intens_pred_2, increase_time_res, device = my_device, dtype = my_dtype)
-            temp_intens_pred_2 = u.cut(temp_intens_pred_2, np.array(temp_intens_target.shape)[-1])
+            temp_intens_pred_2 = u.cut(temp_intens_pred_2, np.array(temp_intens_target.shape)[-1])      
+
+            # we apply temporal phase
+            temp_phase_pred = u.increase_resolution(temp_phase_pred, meta.eopm_res/meta.comp_time_res, device = my_device, dtype = my_dtype) # 11 ps is the resolution of EOPM            
+            temp_intens_pred_2 = u.multiply_by_phase(temp_intens_pred_2.clone(), temp_phase_pred, index_start = meta.temp_idx_start, device = my_device, dtype = my_dtype)
 
             # calculating back-propagation
             loss = criterion(temp_phase_pred,
