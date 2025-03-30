@@ -133,8 +133,8 @@ def main(_learning_rate,
 
     bandwidth = [-2500, 2500]   # (ps)
 
-    meta.spectral_phase_len = 14     # so, assuming 1.5 GHz of pulse shaper's resolution, we get 60 GHz of bandwidth
-    meta.temporal_phase_len = 140    # so, assuming 11 ps of modulator's resolution, we get 2200 ps of bandwidth
+    meta.spectral_phase_len = 15     # so, assuming 1.5 GHz of pulse shaper's resolution, we get 60 GHz of bandwidth
+    meta.temporal_phase_len = 141    # so, assuming 11 ps of modulator's resolution, we get 2200 ps of bandwidth
 
     meta.comp_time_res = 1          # (ps) to avoid border effects we compute with higher resolution than the one of the modulator's
     meta.comp_freq_res = 0.0001     # (THz) as above
@@ -149,7 +149,7 @@ def main(_learning_rate,
     width_init = 100            # not used if initial signal is exponential
 
     centre_target = 0           # (ps) centre of the target pulse defined in dataset_generator -> pulse_gen
-    width_target = 200          # (ps) FWHM of the target pulse defined in dataset_generator -> pulse_gen
+    width_target = 50          # (ps) FWHM of the target pulse defined in dataset_generator -> pulse_gen
 
     convolution_width = 0.1   # width of the gaussian convolved with the main signal
 
@@ -249,12 +249,7 @@ def main(_learning_rate,
 
     # prepare targets
 
-    temp_intens_target = dataset_train[0].clone()
-    temp_intens_target = torch.tensor(temp_intens_target, requires_grad = False, device = my_device, dtype = my_dtype)  # well, it was a tensor even before, but now we know its properties
-
-    spectr_intens_target = u.fourier(temp_intens_target)
-    spectr_intens_target = u.cut(spectr_intens_target, meta.freq_width/meta.init_freq_res) # we leave central 100 GHz, we delete the rest in order to save GPU
-    spectr_intens_target = u.increase_resolution(spectr_intens_target, meta.increase_freq_res, device = my_device, dtype = my_dtype)
+    target_temp = dataset_train[0].clone()
 
     # learning loop
 
@@ -269,34 +264,36 @@ def main(_learning_rate,
 
             # we apply temporal phase
             temp_phase_pred = u.increase_resolution(temp_phase_pred, meta.eopm_res/meta.comp_time_res, device = my_device, dtype = my_dtype) # 11 ps is the resolution of EOPM            
-            temp_phase_pred = temp_phase_pred.real # this is a dummy fix to correct (probably numerical) bug causing lasing (phase is nor purely real, therefore exp is not unitary)
-            temp_intens_pred = u.multiply_by_phase(initial_intensity_pt.clone(), temp_phase_pred, index_start = meta.temp_idx_start, device = my_device, dtype = my_dtype)
-
+            signal_1_temp = u.multiply_by_phase(initial_intensity_pt.clone(), temp_phase_pred, index_start = meta.temp_idx_start, device = my_device, dtype = my_dtype)
+            
+            signal_1_spectr = u.fourier(signal_1_temp)
+            signal_1_spectr = u.cut(signal_1_spectr, meta.freq_width/meta.init_freq_res) # we leave central 100 GHz, we delete the rest in order to save GPU
+            signal_1_spectr = u.increase_resolution(signal_1_spectr, meta.increase_freq_res, device = my_device, dtype = my_dtype)
+            
             # we apply spectral phase
-            spectr_intens_pred = u.fourier(temp_intens_pred)
+            signal_2_spectr = u.fourier(target_temp)
 
-            old_length = np.array(spectr_intens_pred.shape)[-1]
-            spectr_intens_pred = u.cut(spectr_intens_pred, meta.freq_width/meta.init_freq_res) # we leave central 100 GHz, we delete the rest in order to save GPU
-            new_length = np.array(spectr_intens_pred.shape)[-1]
+            old_length = np.array(signal_2_spectr.shape)[-1]
+            signal_2_spectr = u.cut(signal_2_spectr, meta.freq_width/meta.init_freq_res) # we leave central 100 GHz, we delete the rest in order to save GPU
+            new_length = np.array(signal_2_spectr.shape)[-1]
             increase_time_res = old_length/new_length
 
-            spectr_intens_pred = u.increase_resolution(spectr_intens_pred, meta.increase_freq_res, device = my_device, dtype = my_dtype)
+            signal_2_spectr = u.increase_resolution(signal_2_spectr, meta.increase_freq_res, device = my_device, dtype = my_dtype)
             spectr_phase_pred = u.increase_resolution(spectr_phase_pred, meta.pulse_shaper_res/meta.comp_freq_res, device = my_device, dtype = my_dtype)  # 1.5 GHz is the resolution of the pulse shaper
-            spectr_phase_pred = spectr_phase_pred.real
-            spectr_intens_pred = u.multiply_by_phase(spectr_intens_pred, spectr_phase_pred, index_start = floor((spectr_intens_pred.shape[-1]-spectr_phase_pred.shape[-1])/2), device = my_device, dtype = my_dtype)
+            signal_2_spectr = u.multiply_by_phase(signal_2_spectr, spectr_phase_pred, index_start = floor((signal_2_spectr.shape[-1]-spectr_phase_pred.shape[-1])/2), device = my_device, dtype = my_dtype)
 
             # and back to time domain
-            temp_intens_pred_2 = u.inv_fourier(spectr_intens_pred)
-            temp_intens_pred_2 = u.increase_resolution(temp_intens_pred_2, increase_time_res, device = my_device, dtype = my_dtype)
-            temp_intens_pred_2 = u.cut(temp_intens_pred_2, np.array(temp_intens_target.shape)[-1])
+            signal_2_temp = u.inv_fourier(signal_2_spectr)
+            signal_2_temp = u.increase_resolution(signal_2_temp, increase_time_res, device = my_device, dtype = my_dtype)
+            signal_2_temp = u.cut(signal_2_temp, np.array(target_temp.shape)[-1])
 
             # calculating back-propagation
             loss = criterion(temp_phase_pred,
                              spectr_phase_pred, 
-                             temp_intens_pred_2,
-                             spectr_intens_pred,
-                             temp_intens_target, 
-                             spectr_intens_target)
+                             signal_1_temp,
+                             signal_1_spectr,
+                             signal_2_temp, 
+                             signal_2_spectr)
 
             loss.backward()
             optimizer.step()
