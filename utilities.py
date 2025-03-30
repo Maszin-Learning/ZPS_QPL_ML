@@ -380,6 +380,7 @@ def fourier(tensor, keep_norm = False):
         tensor2 = tensor2*soft_abs(tensor2)
     return tensor2
 
+
 def inv_fourier(tensor, keep_norm = False):
     tensor2 = tensor.clone()
     if keep_norm:
@@ -390,6 +391,12 @@ def inv_fourier(tensor, keep_norm = False):
     if keep_norm:
         tensor2 = tensor2*soft_abs(tensor2)
     return tensor2
+
+
+def parabole(length, device, dtype):
+    X = np.linspace(-1, 1, length)
+    Y = X**2
+    return torch.Tensor(Y, device = device, dtype = dtype)
 
 
 class Parameters:

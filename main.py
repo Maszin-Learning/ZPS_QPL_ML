@@ -256,6 +256,8 @@ def main(_learning_rate,
     spectr_intens_target = u.cut(spectr_intens_target, meta.freq_width/meta.init_freq_res) # we leave central 100 GHz, we delete the rest in order to save GPU
     spectr_intens_target = u.increase_resolution(spectr_intens_target, meta.increase_freq_res, device = my_device, dtype = my_dtype)
 
+    chirp_phase = u.parabole(meta.spectral_phase_len, my_device, my_dtype)
+
     # learning loop
 
     loss_list = []
@@ -265,12 +267,30 @@ def main(_learning_rate,
     for epoch in range(_epoch_num):
         for pulse, _ in tqdm(dataloader_train):
 
-            temp_phase_pred, spectr_phase_pred = model(pulse)
+            temp_phase_pred, spectr_phase_pred, chirp_coef = model(pulse)
 
+            temp_intens_pred = initial_intensity_pt.clone()
+
+            # first chirp
+            spectr_intens_pred_0 = u.fourier(temp_intens_pred)
+            old_length = np.array(spectr_intens_pred_0.shape)[-1]
+            spectr_intens_pred_0 = u.cut(spectr_intens_pred_0, meta.freq_width/meta.init_freq_res) # we leave central 100 GHz, we delete the rest in order to save GPU
+            new_length = np.array(spectr_intens_pred_0.shape)[-1]
+            increase_time_res = old_length/new_length
+
+            spectr_intens_pred_0 = u.increase_resolution(spectr_intens_pred_0, meta.increase_freq_res, device = my_device, dtype = my_dtype)
+            first_chirp_phase = u.increase_resolution(chirp_phase.clone(), meta.pulse_shaper_res/meta.comp_freq_res, device = my_device, dtype = my_dtype)  # 1.5 GHz is the resolution of the pulse shaper
+            first_chirp_phase = chirp_coef[0]*first_chirp_phase
+            spectr_intens_pred_0 = u.multiply_by_phase(spectr_intens_pred_0, first_chirp_phase, index_start = floor((spectr_intens_pred_0.shape[-1]-spectr_phase_pred.shape[-1])/2), device = my_device, dtype = my_dtype)
+            
+            temp_intens_pred = u.inv_fourier(spectr_intens_pred)
+            temp_intens_pred = u.increase_resolution(temp_intens_pred, increase_time_res, device = my_device, dtype = my_dtype)
+            temp_intens_pred = u.cut(temp_intens_pred, np.array(temp_intens_target.shape)[-1])
+            
             # we apply temporal phase
             temp_phase_pred = u.increase_resolution(temp_phase_pred, meta.eopm_res/meta.comp_time_res, device = my_device, dtype = my_dtype) # 11 ps is the resolution of EOPM            
             temp_phase_pred = temp_phase_pred.real # this is a dummy fix to correct (probably numerical) bug causing lasing (phase is nor purely real, therefore exp is not unitary)
-            temp_intens_pred = u.multiply_by_phase(initial_intensity_pt.clone(), temp_phase_pred, index_start = meta.temp_idx_start, device = my_device, dtype = my_dtype)
+            temp_intens_pred = u.multiply_by_phase(temp_intens_pred, temp_phase_pred, index_start = meta.temp_idx_start, device = my_device, dtype = my_dtype)
 
             # we apply spectral phase
             spectr_intens_pred = u.fourier(temp_intens_pred)
@@ -284,7 +304,12 @@ def main(_learning_rate,
             spectr_phase_pred = u.increase_resolution(spectr_phase_pred, meta.pulse_shaper_res/meta.comp_freq_res, device = my_device, dtype = my_dtype)  # 1.5 GHz is the resolution of the pulse shaper
             spectr_phase_pred = spectr_phase_pred.real
             spectr_intens_pred = u.multiply_by_phase(spectr_intens_pred, spectr_phase_pred, index_start = floor((spectr_intens_pred.shape[-1]-spectr_phase_pred.shape[-1])/2), device = my_device, dtype = my_dtype)
-
+            
+            # second chirp
+            second_chirp_phase = u.increase_resolution(chirp_phase.clone(), meta.pulse_shaper_res/meta.comp_freq_res, device = my_device, dtype = my_dtype)  # 1.5 GHz is the resolution of the pulse shaper
+            second_chirp_phase = chirp_coef[1]*second_chirp_phase
+            spectr_intens_pred = u.multiply_by_phase(spectr_intens_pred, second_chirp_phase, index_start = floor((spectr_intens_pred.shape[-1]-spectr_phase_pred.shape[-1])/2), device = my_device, dtype = my_dtype)
+            
             # and back to time domain
             temp_intens_pred_2 = u.inv_fourier(spectr_intens_pred)
             temp_intens_pred_2 = u.increase_resolution(temp_intens_pred_2, increase_time_res, device = my_device, dtype = my_dtype)
