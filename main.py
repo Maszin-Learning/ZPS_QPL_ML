@@ -133,8 +133,8 @@ def main(_learning_rate,
 
     bandwidth = [-2500, 2500]   # (ps)
 
-    meta.spectral_phase_len = 14     # so, assuming 1.5 GHz of pulse shaper's resolution, we get 60 GHz of bandwidth
-    meta.temporal_phase_len = 140    # so, assuming 11 ps of modulator's resolution, we get 2200 ps of bandwidth
+    meta.spectral_phase_len = 15     # so, assuming 1.5 GHz of pulse shaper's resolution, we get 60 GHz of bandwidth
+    meta.temporal_phase_len = 141    # so, assuming 11 ps of modulator's resolution, we get 2200 ps of bandwidth
 
     meta.comp_time_res = 1          # (ps) to avoid border effects we compute with higher resolution than the one of the modulator's
     meta.comp_freq_res = 0.0001     # (THz) as above

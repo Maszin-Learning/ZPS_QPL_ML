@@ -313,10 +313,9 @@ def increase_resolution(pt_tensor, times, device, dtype, keep_norm = True):
     long_tensor = torch.fft.fftshift(long_tensor)
     long_tensor = torch.fft.fft(long_tensor, norm = "ortho")
     long_tensor = torch.fft.fftshift(long_tensor)
-    vector = long_tensor.clone().cpu().detach().numpy()
 
     zeroes_shape = np.array(long_tensor.shape)
-    zeroes_shape[-1] = floor((times*zeroes_shape[-1])/2) # if we want to increase resolution 10 times, we need to pad 10 times more zero than the length of the signal
+    zeroes_shape[-1] = floor(((times - 1)*zeroes_shape[-1])/2) # if we want to increase resolution 10 times, we need to pad 10 times more zero than the length of the signal
     zeroes_shape = tuple(zeroes_shape)
 
     long_tensor = torch.concat([torch.zeros(size = zeroes_shape, requires_grad = True, device = device, dtype = dtype), 

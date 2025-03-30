@@ -112,7 +112,7 @@ def test(model,
                         facecolor="white", framealpha=1, loc="upper right")
 
     # plot 2
-    xlim = [110, 140]
+    xlim = [-15, 15]
     ax2.plot(spectr_X, np.abs(spectr_intens_pred.clone().detach().cpu().numpy().flatten())**2, color="red", zorder = 10, lw =2)
     ax2.plot(spectr_X, np.abs(spectr_intens_target.clone().detach().cpu().numpy().flatten())**2, color = "darkorange", alpha = 0.7, lw = 5, zorder = 0)
     ax2.set_title("Step 2")
