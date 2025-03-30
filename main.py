@@ -69,6 +69,8 @@ def main(_learning_rate,
     if _net_architecture == 'network_0':
         from nets import network_0 as network #DEVELOPMENT ARCHITECTURE
 
+    if _net_architecture == 'network_0c':
+        from nets import network_0c as network
     if _net_architecture == 'network_1':
         from nets import network_1 as network
     if _net_architecture == 'network_2':
@@ -146,10 +148,10 @@ def main(_learning_rate,
     time_num = floor((bandwidth[1]-bandwidth[0])/meta.comp_time_res)             # number of points in the initial pulse
 
     centre_init = 500           # not used if initial signal is exponential
-    width_init = 100            # not used if initial signal is exponential
+    width_init = 50            # not used if initial signal is exponential
 
     centre_target = 0           # (ps) centre of the target pulse defined in dataset_generator -> pulse_gen
-    width_target = 200          # (ps) FWHM of the target pulse defined in dataset_generator -> pulse_gen
+    width_target = 100          # (ps) FWHM of the target pulse defined in dataset_generator -> pulse_gen
 
     convolution_width = 0.1   # width of the gaussian convolved with the main signal
 
@@ -181,7 +183,7 @@ def main(_learning_rate,
     initial_pulse_FT = initial_pulse.inv_fourier(inplace = False)
     meta.init_freq_res= initial_pulse_FT.calc_spacing()
     meta.increase_freq_res = meta.init_freq_res/meta.comp_freq_res # at the beginning, we dont control the frequency resolution and later we will want to increase it to the computational resolution level
-    meta.temp_idx_start = np.searchsorted(initial_pulse.X, initial_pulse.quantile(1e-3, "L2")-20) # extra 20 ps just to be sure; from this index we start multiplication of phase
+    meta.temp_idx_start = np.searchsorted(initial_pulse.X, initial_pulse.quantile(1e-3, "L2")-400) # extra 20 ps just to be sure; from this index we start multiplication of phase
 
     # generate training data
 
@@ -283,7 +285,7 @@ def main(_learning_rate,
             first_chirp_phase = chirp_coef[0]*first_chirp_phase
             spectr_intens_pred_0 = u.multiply_by_phase(spectr_intens_pred_0, first_chirp_phase, index_start = floor((spectr_intens_pred_0.shape[-1]-spectr_phase_pred.shape[-1])/2), device = my_device, dtype = my_dtype)
             
-            temp_intens_pred = u.inv_fourier(spectr_intens_pred)
+            temp_intens_pred = u.inv_fourier(spectr_intens_pred_0)
             temp_intens_pred = u.increase_resolution(temp_intens_pred, increase_time_res, device = my_device, dtype = my_dtype)
             temp_intens_pred = u.cut(temp_intens_pred, np.array(temp_intens_target.shape)[-1])
             

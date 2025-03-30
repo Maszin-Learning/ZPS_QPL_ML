@@ -49,14 +49,33 @@ def test(model,
     spectr_intens_target = u.fourier(temp_intens_target)
     spectr_intens_target = u.cut(spectr_intens_target, param.freq_width/param.init_freq_res) # we leave central 100 GHz, we delete the rest in order to save GPU
     spectr_intens_target = u.increase_resolution(spectr_intens_target, param.increase_freq_res, device = device, dtype = dtype) # now it's comp_resolution               
+    
+    # prepare other stuff
+    temp_intens_pred = u.np_to_complex_pt(initial_pulse.Y, device = device, dtype = dtype)
+    chirp_phase = u.parabole(param.spectral_phase_len, device, dtype)
 
     # generate phases
-    temp_phase_pred, spectr_phase_pred = model(target_pulse)
+    temp_phase_pred, spectr_phase_pred, chirp_coef = model(target_pulse)
+
+    # first chirp
+    spectr_intens_pred_0 = u.fourier(temp_intens_pred)
+    old_length = np.array(spectr_intens_pred_0.shape)[-1]
+    spectr_intens_pred_0 = u.cut(spectr_intens_pred_0, param.freq_width/param.init_freq_res) # we leave central 100 GHz, we delete the rest in order to save GPU
+    new_length = np.array(spectr_intens_pred_0.shape)[-1]
+    increase_time_res = old_length/new_length
+
+    spectr_intens_pred_0 = u.increase_resolution(spectr_intens_pred_0, param.increase_freq_res, device = device, dtype = dtype)
+    first_chirp_phase = u.increase_resolution(chirp_phase.clone(), param.pulse_shaper_res/param.comp_freq_res, device = device, dtype = dtype)  # 1.5 GHz is the resolution of the pulse shaper
+    first_chirp_phase = chirp_coef[0]*first_chirp_phase
+    spectr_intens_pred_0 = u.multiply_by_phase(spectr_intens_pred_0, first_chirp_phase, index_start = floor((spectr_intens_pred_0.shape[-1]-spectr_phase_pred.shape[-1])/2), device = device, dtype = dtype)
+    
+    temp_intens_pred = u.inv_fourier(spectr_intens_pred_0)
+    temp_intens_pred = u.increase_resolution(temp_intens_pred, increase_time_res, device = device, dtype = dtype)
+    temp_intens_pred = u.cut(temp_intens_pred, np.array(temp_intens_target.shape)[-1])
 
     # we apply temporal phase
     temp_phase_pred = u.increase_resolution(temp_phase_pred, param.eopm_res/param.comp_time_res, device = device, dtype = dtype) # 11 ps is the resolution of EOPM
-    initial_intensity_pt = u.np_to_complex_pt(initial_pulse.Y, device = device, dtype = dtype)
-    temp_intens_pred = u.multiply_by_phase(initial_intensity_pt, temp_phase_pred, index_start = param.temp_idx_start, device = device, dtype = dtype)
+    temp_intens_pred = u.multiply_by_phase(temp_intens_pred, temp_phase_pred, index_start = param.temp_idx_start, device = device, dtype = dtype)
 
     # we apply spectral phase
     spectr_intens_pred = u.fourier(temp_intens_pred)
@@ -73,6 +92,11 @@ def test(model,
     spectr_intens_pred = u.multiply_by_phase(spectr_intens_pred, spectr_phase_pred, index_start = spectr_idx_start, device = device, dtype = dtype)
     spectr_X = np.array([-param.freq_width*1000/2 + param.comp_freq_res*1000*n for n in range(spectr_intens_pred.shape[-1])])# this is in GHz!!!
 
+    # second chirp
+    second_chirp_phase = u.increase_resolution(chirp_phase.clone(), param.pulse_shaper_res/param.comp_freq_res, device = device, dtype = dtype)  # 1.5 GHz is the resolution of the pulse shaper
+    second_chirp_phase = chirp_coef[1]*second_chirp_phase
+    spectr_intens_pred = u.multiply_by_phase(spectr_intens_pred, second_chirp_phase, index_start = floor((spectr_intens_pred.shape[-1]-spectr_phase_pred.shape[-1])/2), device = device, dtype = dtype)
+    
     # and back to time domain
     temp_intens_pred2 = u.inv_fourier(spectr_intens_pred)
     temp_intens_pred2 = u.increase_resolution(temp_intens_pred2, increase_time_res, device = device, dtype = dtype)
@@ -87,7 +111,7 @@ def test(model,
     ax4 = axes[1, 1]
 
     # plot 1
-    ax1.plot(initial_pulse.X, np.abs(initial_pulse.Y)**2, color="red", zorder = 10, lw = 2)     
+    ax1.plot(initial_pulse.X, np.abs(temp_intens_pred.clone().detach().cpu().numpy().flatten())**2, color="red", zorder = 10, lw = 2)     
     ax1.plot(initial_pulse.X, (temp_intens_target.clone().detach().cpu().numpy().flatten())**2, color = "blue", alpha = 0.5, lw =5, zorder = 0)            
     ax1.set_title("Step 1")
     ax1.set_xlabel("Time (ps)")
@@ -137,7 +161,11 @@ def test(model,
     ax2_ph.plot(spectr_X_ph,
                  spectr_phase_pred.clone().detach().cpu().numpy()[np.searchsorted(spectr_X_ph, xlim[0]): np.searchsorted(spectr_X_ph, xlim[1])], 
                  linestyle = "dashed", color = "green", zorder = 0)
-    ax2_ph.legend(["Transformed signal", "Target signal", "Spectral phase in P-Sh"],
+    ax2_ph.plot(spectr_X_ph,
+                 first_chirp_phase.clone().detach().cpu().numpy()[np.searchsorted(spectr_X_ph, xlim[0]): np.searchsorted(spectr_X_ph, xlim[1])], 
+                 linestyle = "dashed", color = "darkviolet", zorder = 0)
+        
+    ax2_ph.legend(["Transformed signal", "Target signal", "Spectral phase in P-Sh", "First chirp phase"],
                                           facecolor="white", framealpha=1, loc="upper right")
 
     # plot 3

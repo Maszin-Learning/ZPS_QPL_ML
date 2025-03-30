@@ -65,7 +65,7 @@ class network_0c(nn.Module):
 
         c = self.linear_chirp(x)
 
-        return (6*np.pi*self.sigmoid(t), 6*np.pi*self.sigmoid(s), c)
+        return (6*np.pi*self.sigmoid(t), 6*np.pi*self.sigmoid(s), 3e2*c)
 
 
 

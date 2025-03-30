@@ -396,7 +396,7 @@ def inv_fourier(tensor, keep_norm = False):
 def parabole(length, device, dtype):
     X = np.linspace(-1, 1, length)
     Y = X**2
-    return torch.Tensor(Y, device = device, dtype = dtype)
+    return torch.tensor(Y, device = device, dtype = dtype)
 
 
 class Parameters:
