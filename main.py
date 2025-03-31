@@ -148,7 +148,7 @@ def main(_learning_rate,
     time_num = floor((bandwidth[1]-bandwidth[0])/meta.comp_time_res)             # number of points in the initial pulse
 
     centre_init = 500           # not used if initial signal is exponential
-    width_init = 50            # not used if initial signal is exponential
+    width_init = 100            # not used if initial signal is exponential
 
     centre_target = 0           # (ps) centre of the target pulse defined in dataset_generator -> pulse_gen
     width_target = 100          # (ps) FWHM of the target pulse defined in dataset_generator -> pulse_gen
@@ -259,6 +259,7 @@ def main(_learning_rate,
     spectr_intens_target = u.increase_resolution(spectr_intens_target, meta.increase_freq_res, device = my_device, dtype = my_dtype)
 
     chirp_phase = u.parabole(meta.spectral_phase_len, my_device, my_dtype)
+    chirp_phase = chirp_phase*u.phase_amplitude(meta.spectral_phase_len, meta.pulse_shaper_res)
 
     # learning loop
 

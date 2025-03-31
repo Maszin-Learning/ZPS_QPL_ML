@@ -53,6 +53,7 @@ def test(model,
     # prepare other stuff
     temp_intens_pred = u.np_to_complex_pt(initial_pulse.Y, device = device, dtype = dtype)
     chirp_phase = u.parabole(param.spectral_phase_len, device, dtype)
+    chirp_phase = chirp_phase*u.phase_amplitude(param.spectral_phase_len, param.pulse_shaper_res)
 
     # generate phases
     temp_phase_pred, spectr_phase_pred, chirp_coef = model(target_pulse)
@@ -132,13 +133,13 @@ def test(model,
                  np.unwrap(np.real(temp_phase_pred.clone().detach().cpu().numpy())),
                    linestyle = "dashed", color = "darkorange", zorder = 1)
     
-    ax1_ph.legend(["Initial signal", "Target signal", "Temporal phase in EOPM"], 
+    ax1_ph.legend(["Initial chirped signal", "Target signal", "Temporal phase in EOPM"], 
                         facecolor="white", framealpha=1, loc="upper right")
 
     # plot 2
     xlim = [-15, 15]
     ax2.plot(spectr_X, np.abs(spectr_intens_pred.clone().detach().cpu().numpy().flatten())**2, color="red", zorder = 10, lw =2)
-    ax2.plot(spectr_X, np.abs(spectr_intens_target.clone().detach().cpu().numpy().flatten())**2, color = "darkorange", alpha = 0.7, lw = 5, zorder = 0)
+    ax2.plot(spectr_X, np.abs(spectr_intens_target.clone().detach().cpu().numpy().flatten())**2, color = "blue", alpha = 0.7, lw = 5, zorder = 0)
     ax2.set_title("Step 2")
     ax2.set_xlabel("Frequency around centre (GHz)")
     ax2.set_ylabel("Normalized intensity")
@@ -156,7 +157,7 @@ def test(model,
     x = [spectr_X_ph[0]]
     y = [spectr_phase_pred.clone().detach().cpu().numpy()[np.searchsorted(spectr_X_ph, xlim[0]): np.searchsorted(spectr_X_ph, xlim[1])][0]]
     ax2_ph.plot(x, y, color="red", zorder = 10, lw = 2)     
-    ax2_ph.plot(x, y, color = "darkorange", alpha = 0.7, lw = 5, zorder = 0)       
+    ax2_ph.plot(x, y, color = "blue", alpha = 0.7, lw = 5, zorder = 0)       
 
     ax2_ph.plot(spectr_X_ph,
                  spectr_phase_pred.clone().detach().cpu().numpy()[np.searchsorted(spectr_X_ph, xlim[0]): np.searchsorted(spectr_X_ph, xlim[1])], 
@@ -164,13 +165,16 @@ def test(model,
     ax2_ph.plot(spectr_X_ph,
                  first_chirp_phase.clone().detach().cpu().numpy()[np.searchsorted(spectr_X_ph, xlim[0]): np.searchsorted(spectr_X_ph, xlim[1])], 
                  linestyle = "dashed", color = "darkviolet", zorder = 0)
+    ax2_ph.plot(spectr_X_ph,
+                 second_chirp_phase.clone().detach().cpu().numpy()[np.searchsorted(spectr_X_ph, xlim[0]): np.searchsorted(spectr_X_ph, xlim[1])], 
+                 linestyle = "dashed", color = "violet", zorder = 0)
         
-    ax2_ph.legend(["Transformed signal", "Target signal", "Spectral phase in P-Sh", "First chirp phase"],
+    ax2_ph.legend(["Transformed signal", "Target signal", "Spectral phase in P-Sh", "First chirp phase", "Second chirp phase"],
                                           facecolor="white", framealpha=1, loc="upper right")
 
     # plot 3
 
-    ax3.plot(initial_pulse.X, np.abs(temp_intens_target.clone().detach().cpu().numpy().flatten())**2, color = "blue", alpha = 0.5, lw =5, zorder = 0)            
+    ax3.plot(initial_pulse.X, np.abs(temp_intens_target.clone().detach().cpu().numpy().flatten())**2, color = "blue", alpha = 0.7, lw =5, zorder = 0)            
     ax3.plot(initial_pulse.X, np.abs(temp_intens_pred2.clone().detach().cpu().numpy().flatten())**2, color="red", lw = 2)    
     ax3.set_title("Step 3")
     ax3.set_xlabel("Time (ps)")
@@ -188,13 +192,13 @@ def test(model,
     y = [np.angle(temp_intens_pred2.clone().detach().cpu().numpy().flatten())[idx_sp_ph_start:idx_sp_ph_end][0]]
 
     ax3_ph.plot(x, y, color = "red", lw = 2) 
-    ax3_ph.plot(x, y, color = "blue", alpha = 0.5, lw =5, zorder = 0)            
+    ax3_ph.plot(x, y, color = "blue", alpha = 0.5, lw = 5, zorder = 0)            
     ax3_ph.plot(initial_pulse.X[idx_sp_ph_start:idx_sp_ph_end],
                  np.angle(temp_intens_pred2.clone().detach().cpu().numpy().flatten())[idx_sp_ph_start:idx_sp_ph_end], 
                  color = "darkorange", alpha = 1, linestyle = "dashed")      
 
     ax3_ph.legend(["Transformed signal", "Target signal", "Residual temporal phase"],
-                                        facecolor="white", framealpha=1, loc="upper right")      
+                                        facecolor = "white", framealpha = 1, loc = "upper right")      
     
     # statistics
 
