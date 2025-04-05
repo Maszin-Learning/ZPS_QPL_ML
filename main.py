@@ -93,6 +93,9 @@ def main(_learning_rate,
         from nets import network_12 as network
     if _net_architecture == 'network_UNET_1D':
         from nets import UNET_1D as network  
+    if _net_architecture == 'optimizer':
+        from nets import quasi_optimizer as network  
+
 
     # Choose device, disclaimer! on cpu network will not run due to batch normalization
 

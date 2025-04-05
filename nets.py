@@ -34,6 +34,23 @@ class network_0(nn.Module):
         s = self.linear_s(s)
 
         return (6*np.pi*self.sigmoid(t), 6*np.pi*self.sigmoid(s))
+    
+class quasi_optimizer(nn.Module):
+    def __init__(self, input_size, n, spectral_phase_len, temporal_phase_len):
+        # super function. It inherits from nn.Module and we can access everything in nn.Module
+        super(quasi_optimizer, self).__init__()
+        self.input = input_size
+        self.sigmoid = nn.Sigmoid()
+
+        self.linear_s = nn.Linear(input_size, spectral_phase_len) 
+        self.linear_t = nn.Linear(input_size, temporal_phase_len) 
+
+    def forward(self, x):
+
+        t = self.linear_t(x)
+        s = self.linear_s(x)
+
+        return (6*np.pi*self.sigmoid(t), 6*np.pi*self.sigmoid(s))
 
 
 class network_20(nn.Module):
