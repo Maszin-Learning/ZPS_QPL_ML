@@ -1302,6 +1302,7 @@ def chirp_phase(bandwidth, centre, fiber_length, num):
         X = bandwidth.copy()
     omega = X*2*np.pi
     omega_mean = centre*2*np.pi
+    print(l_0**2*fiber_length*D_l/(4*np.pi*c))
     return l_0**2*fiber_length*D_l/(4*np.pi*c)*(omega-omega_mean)**2
 
 

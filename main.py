@@ -135,12 +135,12 @@ def main(_learning_rate,
 
     bandwidth = [-2500, 2500]   # (ps)
 
-    meta.spectral_phase_len = 15     # so, assuming 1.5 GHz of pulse shaper's resolution, we get 60 GHz of bandwidth
+    meta.spectral_phase_len = 41     # so, assuming 1.5 GHz of pulse shaper's resolution, we get 60 GHz of bandwidth
     meta.temporal_phase_len = 141    # so, assuming 11 ps of modulator's resolution, we get 2200 ps of bandwidth
 
     meta.comp_time_res = 1          # (ps) to avoid border effects we compute with higher resolution than the one of the modulator's
     meta.comp_freq_res = 0.0001     # (THz) as above
-    meta.eopm_res = 14               # (ps)
+    meta.eopm_res = 14              # (ps)
     meta.pulse_shaper_res = 0.0015  # (THz)
     meta.freq_width = 0.5           # (THz) estimated range of the area in the frequency domain where all the spectrum is contained
                                     # WARNING: if initial lr is big and phase is crazy, the spectrum can get VERY broad
@@ -151,7 +151,7 @@ def main(_learning_rate,
     width_init = 100            # not used if initial signal is exponential
 
     centre_target = 0           # (ps) centre of the target pulse defined in dataset_generator -> pulse_gen
-    width_target = 100          # (ps) FWHM of the target pulse defined in dataset_generator -> pulse_gen
+    width_target = 25          # (ps) FWHM of the target pulse defined in dataset_generator -> pulse_gen
 
     convolution_width = 0.1   # width of the gaussian convolved with the main signal
 

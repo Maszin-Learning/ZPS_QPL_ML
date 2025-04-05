@@ -67,7 +67,8 @@ def test(model,
 
     spectr_intens_pred_0 = u.increase_resolution(spectr_intens_pred_0, param.increase_freq_res, device = device, dtype = dtype)
     first_chirp_phase = u.increase_resolution(chirp_phase.clone(), param.pulse_shaper_res/param.comp_freq_res, device = device, dtype = dtype)  # 1.5 GHz is the resolution of the pulse shaper
-    first_chirp_phase = chirp_coef[0]*first_chirp_phase
+    first_chirp_phase = chirp_coef[1]*first_chirp_phase
+
     spectr_intens_pred_0 = u.multiply_by_phase(spectr_intens_pred_0, first_chirp_phase, index_start = floor((spectr_intens_pred_0.shape[-1]-spectr_phase_pred.shape[-1])/2), device = device, dtype = dtype)
     
     temp_intens_pred = u.inv_fourier(spectr_intens_pred_0)
@@ -137,7 +138,7 @@ def test(model,
                         facecolor="white", framealpha=1, loc="upper right")
 
     # plot 2
-    xlim = [-15, 15]
+    xlim = [-25, 25]
     ax2.plot(spectr_X, np.abs(spectr_intens_pred.clone().detach().cpu().numpy().flatten())**2, color="red", zorder = 10, lw =2)
     ax2.plot(spectr_X, np.abs(spectr_intens_target.clone().detach().cpu().numpy().flatten())**2, color = "blue", alpha = 0.7, lw = 5, zorder = 0)
     ax2.set_title("Step 2")
@@ -227,9 +228,12 @@ def test(model,
     init_hom = "\n\nInitial HOM visibility: " + str(round(100*init_hom_value, 1)) + "%"
     final_hom = "\nFinal HOM visibility: " + str(round(100*final_hom_value, 1)) + "%"
 
+    chirp_1 = "\n\n1st chirp: " + str(np.round(chirp_coef[0].clone().cpu().detach().numpy(), 3)) + " ns/nm"
+    chirp_2 = "\n2nd chirp: " + str(np.round(chirp_coef[1].clone().cpu().detach().numpy(), 3)) + " ns/nm"
+
     ax4.axis('off')
-    ax4.text(x = 0, y = 0.5, 
-             s = "STATISTICS:\n" + init_power + trg_power + pred_power + temp_MSE + spectr_MSE + tot_MSE + init_hom + final_hom,
+    ax4.text(x = 0, y = 0.4, 
+             s = "STATISTICS:\n" + init_power + trg_power + pred_power + temp_MSE + spectr_MSE + tot_MSE + init_hom + final_hom + chirp_1 + chirp_2,
              transform = ax4.transAxes)
     
     # save the figure if needed

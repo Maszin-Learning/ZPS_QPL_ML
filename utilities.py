@@ -400,14 +400,13 @@ def parabole(length, device, dtype):
 
 
 def phase_amplitude(sp_phase_length, ps_resolution):
-    c = 299792458
-    wl_0 = 1550
-    fiber_length = 1e6
-    D_l = 20
+    c = 299792458          # pm/ps
+    wl_0 = 1550*1e3        # pm
+    dispersion = 1        # ps/pm (we want network to find the dispersion)
 
-    bandwidth_freq = sp_phase_length*ps_resolution
-    max_phase = wl_0**2*fiber_length*D_l/(4*np.pi*c)*(bandwidth_freq/2)**2
-    return 500*max_phase
+    bandwidth_freq = sp_phase_length*ps_resolution # 1/ps
+    max_phase = (wl_0**2*dispersion/(4*np.pi*c))*(bandwidth_freq/2)**2
+    return max_phase
 
 
 class Parameters:
